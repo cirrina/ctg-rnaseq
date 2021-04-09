@@ -101,13 +101,13 @@ process fastqc {
 
     	cd ${QCDIR}/FastQC
       
-	read1=\$(echo ${FQDIR}/${sid}/${sname}_*R1*fastq.gz)
-   	read2=\$(echo ${FQDIR}/${sid}/${sname}_*R2*fastq.gz)
+	read1=\$(echo ${FQDIR}/${sid}/${sname}*_R1_*fastq.gz)
+   	read2=\$(echo ${FQDIR}/${sid}/${sname}*_R2_*fastq.gz)
 
     	# Check if fastq is not containing wildcards (due to sample fastq are not put in sample id folder
     	if [[ \${read1} == *"*R1*"* ]]; then
-       	   read1=\$(echo ${FQDIR}/${sname}_*R1*fastq.gz)
-       	   read2=\$(echo ${FQDIR}/${sname}_*R2*fastq.gz)
+       	   read1=\$(echo ${FQDIR}/${sname}*_R1_*fastq.gz)
+       	   read2=\$(echo ${FQDIR}/${sname}*_R2_*fastq.gz)
     	fi
 
 	fastqc -t ${task.cpus} --outdir ${QCDIR}/FastQC \${read1}
@@ -134,13 +134,13 @@ process fastqScreen {
     mkdir -p ${FQSDIR}
     echo "HELLO COW"
     echo "${FQSDIR}"
-    read1=\$(echo ${FQDIR}/$sid/${sname}_*R1*fastq.gz)
-    read2=\$(echo ${FQDIR}/$sid/${sname}_*R2*fastq.gz)
+    read1=\$(echo ${FQDIR}/$sid/${sname}*_R1_*fastq.gz)
+    read2=\$(echo ${FQDIR}/$sid/${sname}*_R2_*fastq.gz)
 
     # Check if fastq is not containing wildcards (due to sample fastq are not put in sample id folder
     if [[ \${read1} == *"*R1*"* ]]; then
-       read1=\$(echo ${FQDIR}/${sname}_*R1*fastq.gz)
-       read2=\$(echo ${FQDIR}/${sname}_*R2*fastq.gz)
+       read1=\$(echo ${FQDIR}/${sname}*_R1_*fastq.gz)
+       read2=\$(echo ${FQDIR}/${sname}*_R2_*fastq.gz)
     fi
 
     
@@ -201,7 +201,7 @@ process STAR  {
     --outSAMtype BAM SortedByCoordinate \\
     --readFilesCommand zcat \\
     --limitBAMsortRAM 10000000000 \\
-    --outFileNamePrefix ${sname}
+    --outFileNamePrefix ${sname}_
 
     """ 
 
@@ -257,40 +257,7 @@ process picardRNAmetrics {
 }
 
 
-process picardMarkDups {
 
-    input:
-    file bam_pmd from starPicardMarkDups
-
-    output:
-    val "x" into postPicardMarkdups
-
-    when:
-    params.quant
-
-    """
-    mkdir -p ${PICARDDIR}/markdups
-    # mkdir -p ${PICARDDIR}/markdups/bam_out
-    mkdir -p ${OUTDIR}/STAR_markedDups
-
-    # outfile=${OUTDIR}/markdups/bam_out/${bam_pmd}_marked_dups.bam
-    outfile=${OUTDIR}/STAR_markedDups/${bam_pmd}_markedDups.bam
-    metricsfile=${PICARDDIR}/markdups/${bam_pmd}_markedDup_metrics.txt
-
-    java -jar /usr/local/bin/picard.jar MarkDuplicates \\
-      I=${bam_pmd} \\
-      O=\${outfile}
-      M=\${metricsfile} \\
-      REMOVE_DUPLICATES=false \\
-      ASSUME_SORTED=true \\
-      MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=2000
- 
- #    O=/dev/null \\     
-  
-
-     """
-
-}
 
 
 
@@ -299,7 +266,6 @@ process multiqc_postCount {
     input:
     val x from postCount
     val x from postPicardRNAmetrics.collect()
-    val x from postPicardMarkdups.collect()
     val x from multiqc_fastqscreen.collect()
     
     output:
@@ -310,8 +276,8 @@ process multiqc_postCount {
     
     script:
     """
-    mkdir -p ${QCDIR}/DemuxStats/
-    cp ${DMXSTATDIR}/* ${QCDIR}/DemuxStats/
+   # mkdir -p ${QCDIR}/DemuxStats/
+   # cp ${DMXSTATDIR}/* ${QCDIR}/DemuxStats/
 
     cd ${OUTDIR}
     multiqc -n ${projectID}_multiqc_report --interactive -o ${QCDIR} .
@@ -333,8 +299,8 @@ process multiqc_preCount {
     
     script:
     """
-    mkdir -p ${QCDIR}/DemuxStats/
-    cp ${DMXSTATDIR}/* ${QCDIR}/DemuxStats/
+    # mkdir -p ${QCDIR}/DemuxStats/
+    # cp ${DMXSTATDIR}/* ${QCDIR}/DemuxStats/
 
     cd ${OUTDIR}
     multiqc -o ${QCDIR}/ -n ${projectID}_multiqc_report_fq --interactive .
