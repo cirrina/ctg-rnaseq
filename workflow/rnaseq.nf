@@ -101,14 +101,8 @@ process fastqc {
 
     	cd ${QCDIR}/FastQC
       
-	read1=\$(echo ${FQDIR}/${sid}/${sname}*_R1_*fastq.gz)
-   	read2=\$(echo ${FQDIR}/${sid}/${sname}*_R2_*fastq.gz)
-
-    	# Check if fastq is not containing wildcards (due to sample fastq are not put in sample id folder
-    	if [[ \${read1} == *"*R1*"* ]]; then
-       	   read1=\$(echo ${FQDIR}/${sname}*_R1_*fastq.gz)
-       	   read2=\$(echo ${FQDIR}/${sname}*_R2_*fastq.gz)
-    	fi
+     	read1=\$(echo ${FQDIR}/${sname}*_R1_*fastq.gz)
+       	read2=\$(echo ${FQDIR}/${sname}*_R2_*fastq.gz)
 
 	fastqc -t ${task.cpus} --outdir ${QCDIR}/FastQC \${read1}
 	fastqc -t ${task.cpus} --outdir ${QCDIR}/FastQC \${read2}
@@ -134,15 +128,10 @@ process fastqScreen {
     mkdir -p ${FQSDIR}
     echo "HELLO COW"
     echo "${FQSDIR}"
-    read1=\$(echo ${FQDIR}/$sid/${sname}*_R1_*fastq.gz)
-    read2=\$(echo ${FQDIR}/$sid/${sname}*_R2_*fastq.gz)
-
-    # Check if fastq is not containing wildcards (due to sample fastq are not put in sample id folder
-    if [[ \${read1} == *"*R1*"* ]]; then
-       read1=\$(echo ${FQDIR}/${sname}*_R1_*fastq.gz)
-       read2=\$(echo ${FQDIR}/${sname}*_R2_*fastq.gz)
-    fi
-
+    
+    read1=\$(echo ${FQDIR}/${sname}*_R1_*fastq.gz)
+    read2=\$(echo ${FQDIR}/${sname}*_R2_*fastq.gz)
+    
     
     echo "READ 1 : \${read1}"
     echo "READ 2 : \${read2}"
@@ -172,7 +161,6 @@ process STAR  {
     set val(sname), file("${sname}*") into postStar
     file "${sname}_Aligned.sortedByCoord.out.bam" into starFeatureCounts
     file "${sname}_Aligned.sortedByCoord.out.bam" into starPicardRNA
-    file "${sname}_Aligned.sortedByCoord.out.bam" into starPicardMarkDups
     
 
     when:
