@@ -170,15 +170,9 @@ process STAR  {
     mkdir -p ${OUTDIR}
     mkdir -p ${STARDIR}
 
-    read1=\$(echo ${FQDIR}/$sid/${sname}_*R1*fastq.gz)
-    read2=\$(echo ${FQDIR}/$sid/${sname}_*R2*fastq.gz)
-
-    # Check if fastq is not containing wildcards (due to sample fastq are not put in sample id folder
-    if [[ \${read1} == *"*R1*"* ]]; then
-       read1=\$(echo ${FQDIR}/${sname}_*R1*fastq.gz)
-       read2=\$(echo ${FQDIR}/${sname}_*R2*fastq.gz)
-    fi
-
+    read1=\$(echo ${FQDIR}/${sname}*_R1_*fastq.gz)
+    read2=\$(echo ${FQDIR}/${sname}*_R2_*fastq.gz)
+   
     
     echo "READ 1 : \${read1}"
     echo "READ 2 : \${read2}"
