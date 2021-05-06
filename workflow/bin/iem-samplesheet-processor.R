@@ -1,0 +1,685 @@
+#!/usr/bin/env Rscript
+
+## ========================================== ##
+##    Sctipt usage
+## ========================================== ##
+
+# Input:    An Illumina IEM style .csv sample sheet as input. "-s", "--sample_sheet"
+# Input:   AND a project ID ("-i", "--project_id")
+
+# Output:  'ctg-demux' sample sheet.  Illiumina IEM style csv.
+# Output:  "-o", "--output_ctg_sheet" AND a
+#             CTG style sample sheet for delivery and nextflow processes. Will include file names for e.g. fastq and bam.
+#    Columns:
+#       - paired: TRUE/FALSE
+#       - fastq_1
+
+
+## Will Read and SET PARAMETERS (COLUMNS) in the nf sample sheet:
+# [Header]
+
+# 'Instrument Type' : -> To column
+# 'Assay'           : -> To column
+                    # : -> Chec assay sheet. WARN IF NOT PRESENT
+                    # : -> Will determine, Starndness
+                    # : -> Will determine, Starndness (reverse or forward)
+# 'Index Adapters'  : -> To column
+                    # : -> Chec insdex sheet. combine 'Index_Plate_Well' with index kit
+
+# [Reads]:
+#   Determine if paired or not, depending on ammount of numbers given in this setting
+#   Warn: if reads no 1 != reads no 2
+
+# [Settings]
+## Use Assay fromn above to check Adapter. WARN if not matching
+
+
+# ALSO
+
+# 1: Check and substitute for illegal characters
+# 2: Forces Sample_Name to Sample_ID
+# 3: Forces Sample_Project same as input flag '-i --project_id'.
+
+# Optional:
+# 2: Add Lana column to sample sheets (1 or 2). This e.g. if lane divider is used.
+
+# OPTION: Species can be defiined as a column in sample sheet. BUT cab optionally be defined as 'species' parameter in the [Header] section. IF SO, THIS WILL CREATE/OVERWRITE the specis column in darta section.
+
+
+## Develiopment possibilities / known issues
+## 1: cross check index sequences
+## 2: cross check start read X from. e.g. Read2StartFrom, 4
+
+
+
+## Example Problems with sample sheets
+## ----------------------------
+#
+# Novaseq 1.0 instead of NovaSeq 1.5. I5 sequences. (1.5 shpuld ne reverse complement). Very common. (4). This is checked by giving "NovaSeq1.0"
+# Index wells are supplied in incorerect format, e,g. A1 instead of A01. This is not checked for, will produce NA-matches.
+# Incorrect characters in Sample_ID and Sample_Name (blanks, and other special characters otehr than '-' and '_')
+# Missing [Reads] section
+# Missting or wrong 'Instrument Type', 'Assay', 'Index Adapters'
+
+
+
+# ========================================== ##
+## LOAD PACKAGES                             ##
+## ========================================== ##
+library(optparse)
+library(dplyr)
+
+
+## ========================================== ##
+## PARSE COMMAND-LINE PARAMETERS              ##
+## ========================================== ##
+
+option_list <- list(
+  ## global params
+  make_option(c("-i", "--project_id"     ), type="character" , default=NULL   , metavar="character"   , help="Project id. Required. NOTE: This will overwrite Sample_Project column in sample sheet"    ),
+  make_option(c("-s", "--sample_sheet"  ), type="character" , default=NULL   , metavar="path"   , help="Sample Sheet, colData, where samples are rows and columns are sample annotations."    ),
+
+  ## helper cheklist files for checking input params and indexes
+  make_option(c("-b", "--bin_dir"  ), type="character" , default=NULL   , metavar="path"   , help="Directory where to locate helper cheklist files; checklist-iem.csv and checklist-index.csv"    ),
+
+  ## demux specific params
+
+  make_option(c("-d", "--output_demux_sheet"  ), type="character"   , default=NULL  , metavar="path", help="Name of demux sample sheet"                          ),
+  make_option(c("-o", "--output_ctg_sheet"    ), type="character"   , default=NULL  , metavar="path", help="Name of output sample sheet"                          ),
+  make_option(c("-l", "--force_lane"          ), type="numeric"     , default=0  , metavar="numeric", help="If to force lane, this is mostly only used if lane divider is used. Default is 0 which means no action. If '1' or '2' an exta column is added in the demux sample sheet."),
+  make_option(c("-x", "--force_replace_index" ), type="logical"     , default=FALSE  , metavar="boelean", help="If to use the checklist-index.csv to fordce update I7/I5 IDs and Sequences. Use this option if you are sure that i) the 'Index_Plate_Well' column is supplied corectly AND that ii) the correct 'Index Adapters' kit is supplied  ")
+
+)
+
+opt_parser <- OptionParser(option_list=option_list, add_help_option=FALSE)
+opt        <- parse_args(opt_parser)
+
+# ====================
+#  Other parameters
+# ====================
+fastq.sufifx <- "_001.fastq.qz"
+bam.suffix <- "_Aligned.sortedByCoord.out.bam"
+index_columns <- c('Index_Plate_Well',	'I7_Index_ID',	'index',	'I5_Index_ID', 'index2')
+
+
+
+# opt = list()
+# opt$project_id = '2021_20'
+# opt$sample_sheet= '~/tasks/rnaseq_test/dummyRundir/2021_21_IEM_SampleSheet.csv'
+# opt$output_demux_sheet= '~/tasks/rnaseq_test/dummyRundir/sheet_demux_test.csv'
+# opt$output_ctg_sheet = '~/tasks/rnaseq_test/dummyRundir/sheet_nf_test.csv'
+# opt$force_lane = '0'
+# opt$bin_dir = '~/tasks/ctg-rnaseq/bin/'
+# opt$output_demux_sheet <- '~/tasks/rnaseq_test/dummyRundir/samplesheet_demux.csv'
+# opt$output_ctg_sheet <- '~/tasks/rnaseq_test/dummyRundir/samplesheet_ctg.csv'
+
+if (is.null(opt$project_id)){
+  print_help(opt_parser)
+  stop("Please provide p --project_id.", call.=FALSE)
+}
+if (is.null(opt$sample_sheet)){
+  print_help(opt_parser)
+  stop("You must provide name and full path of input --sample_sheet file.", call.=FALSE)
+}
+if (is.null(opt$output_demux_sheet)){
+  print_help(opt_parser)
+  stop("You must provide name and full path of --output_demux_sheet file.", call.=FALSE)
+}
+if (is.null(opt$output_ctg_sheet)){
+  print_help(opt_parser)
+  stop("You must provide name and full path of --output_ctg_sheet file.", call.=FALSE)
+}
+if (is.null(opt$bin_dir)){
+  print_help(opt_parser)
+  stop("You must provide name and full path of -bin_dir where refenrece files 'checklist-iem.csv' and 'checklist-index.csv' are located", call.=FALSE)
+}
+# if (is.null(opt$bam_path)){
+#   print_help(opt_parser)
+#   stop("Please provide a --bam_path file.", call.=FALSE)
+# }
+
+if(!opt$force_lane %in% c(0,1,2)){
+  print_help(opt_parser)
+  stop("--force_lane must be set to '0', '1' or '2'. Default is '0'.", call.=FALSE)
+}
+
+
+cat("\n ... Rscript: Processing sample sheet. \n\n")
+
+
+# =================================================================
+# Initial processing -  Check basic integriyty of IEM sample sheet
+# ================================================================
+all.lines <- scan(file = opt$sample_sheet, what = "character", sep="\n", nmax = 250)
+
+# See if comma or tab separated
+if(!length(grep( '[,]' , all.lines[1]))) stop("Input 'sample_sheet' does not seem to be in correct csv format!")
+
+## Start replacing non ascii characters if present
+all.lines=iconv(all.lines, "latin1", "ASCII", sub="")
+
+## check nlines of document, max is set to 500
+if(length(all.lines)>=1000) stop("Number of rows in sample sheet exceeds what is read by the scan function ('nmax' set to 1000)")
+
+
+## Check that IEM sheet contains expected sections
+iem.headers <- list(Header="[[]Header[]]", Reads="[[]Reads[]]",Settings="[[]Settings[]]",Data="[[]Data[]]")
+iem.index <- sapply(iem.headers, function(x) grep(x, all.lines))
+if(!any(unlist(lapply(iem.index, length)==1))){
+  stop("Sample Sheet Not IEM format - check Illumina IEM sections, must include - [Header], [Reads], [Settings], [Data] ...\n")
+}
+iem.index <- sapply(iem.headers, function(x) grep(x, all.lines))
+
+
+# ====================================================
+#  Read cheklists from within specified bin_dir
+# ====================================================
+
+iem_df = read.delim(file.path(opt$bin_dir, 'checklist-iem.csv'), header=T, as.is=T, sep = ",", comment="#")
+index_df = read.delim(file.path(opt$bin_dir, 'checklist-index.csv'), header=T, as.is=T, sep = ",", comment="#")
+# str(iem_df)
+# str(index_df)
+
+checklist_flags = list()
+checklist_flags$project_id <- opt$project_id
+checklist_flags$input_samplesheet <- opt$sample_sheet
+checklist_flags$output_demux_sheet <- opt$output_demux_sheet
+checklist_flags$output_ctg_sheet <- opt$output_ctg_sheet
+
+# ================
+#  ASCII check
+# ================
+## non ascii characters if present
+## --------------------------------
+# if(!identical(data_df, iconv(data_df, "latin1", "ASCII", sub=""))) stop("non ascii characters in data section!")
+# all.lines[corpus::!utf8_valid(all.lines)]
+
+
+
+# ====================================================
+#  [Header] section: Check and extract relevant params
+# ====================================================
+header_cheklist = iem_df[iem_df$iem_section == '[Header]', ]
+# Should Extraxt
+# Instrument Type: e.g. 'NovaSeq'
+# Assay
+# Index Adapters
+header_df = read.delim(file=opt$sample_sheet, header = FALSE, sep = ",",
+                       skip = iem.index["Header"], nrows = iem.index["Reads"]-iem.index["Header"]-1)
+if(any(duplicated(header_df$V1))) stop("IEM Sample sheet contains duplicated parameters")
+row_vec <- header_df$V1
+row_vec[row_vec==""] <- paste0("R",1:length(which(row_vec=="")))
+rownames(header_df) = row_vec
+
+
+
+# check if 'Instrument Type' is present and if alllowed value
+if('Instrument Type' %in% rownames(header_df)){
+  instrument_type = header_df['Instrument Type', 'V2']
+
+  if(any(instrument_type %in% header_cheklist$value[header_cheklist$parameter=='Instrument Type'])){
+    checklist_flags$Instrument_type = instrument_type
+    }else{
+    checklist_flags$Instrument_type = paste0("Warning! Parameter 'Instrument Type'. Allowed values are : ", paste(header_cheklist$value[header_cheklist$parameter=='Instrument Type'], collapse = ", "))
+     }
+}else{
+   checklist_flags$Instrument_type = paste0("Warning! Parameter 'Instrument Type' is not present in [Header] section. Allowed values are: ", paste(header_cheklist$value[header_cheklist$parameter=='Instrument Type'], collapse = ", "))
+}
+
+# check if 'Assay' is present and if alllowed value
+if('Assay' %in% rownames(header_df)){
+  assay = header_df['Assay', 'V2']
+
+  if(any(assay %in% header_cheklist$value[header_cheklist$parameter=='Assay'])){
+    checklist_flags$Assay = assay
+  }else{
+    checklist_flags$Assay = paste0("Warning! Parameter 'Assay'. Allowed values are: ", paste(header_cheklist$value[header_cheklist$parameter=='Assay'], collapse = ", " ))
+  }
+}else{
+  checklist_flags$Assay = paste0("Warning! Parameter 'Assay' is not present in [Header] section. Allowed values are: ", paste(header_cheklist$value[header_cheklist$parameter=='Assay'], collapse = ", " ) )
+}
+
+
+# check if 'Index Adapters' is present and if alllowed value
+if('Index Adapters' %in% rownames(header_df)){
+  index_adapters = header_df['Index Adapters', 'V2']
+
+  if(any(index_adapters %in% header_cheklist$value[header_cheklist$parameter=='Index Adapters'])){
+    checklist_flags$Index_Adapters = index_adapters
+  }else{
+    checklist_flags$Index_Adapters = paste0("Warning! Parameter 'Index Adapters'. Allowed values are: ", paste(header_cheklist$value[header_cheklist$parameter=='Index Adapters'], collapse = ", " ) )
+  }
+}else{
+  checklist_flags$Index_Adapters = paste0("Warning! Parameter 'Index Adapters' is not present in [Header] section. Allowed values are: ", paste(header_cheklist$value[header_cheklist$parameter=='Index Adapters'], collapse = ", " ))
+}
+
+
+# ====================================================
+#  [Reads] section: Extract read lenngths and if paired
+# ====================================================
+
+reads_df = read.delim(file=opt$sample_sheet, header = FALSE, sep = ",",
+                       skip = iem.index["Reads"], nrows = iem.index["Settings"]-iem.index["Reads"]-1)
+reads = as.numeric(reads_df$V1)
+reads = reads[!is.na(reads)]
+if(length(reads)%in%c(1,2)){
+  paired = length(reads) =="2"
+  checklist_flags$Paired <- paired
+  checklist_flags$Reads <- paste(reads, collapse = '|')
+}else{
+  checklist_flags$Paired <- "Warning: Error setting paired TRUE/FALSE. Check [Reads] section."
+  checklist_flags$Reads <- "Warning: Error setting reads. Check [Reads] section."
+  paired <- FALSE
+  }
+
+
+
+
+# ====================================================
+#  [Settings] section. Check conditional parameters
+# ====================================================
+## use the iem_df (checklist-iem.csv) as template to check for Settings that are not as is required
+settings_df = read.delim(file=opt$sample_sheet, header = FALSE, sep = ",",
+                       skip = iem.index["Settings"], nrows = iem.index["Data"]-iem.index["Settings"]-1)
+row_vec <- settings_df$V1
+row_vec[row_vec==""] <- paste("R",1:length(which(row_vec=="")))
+rownames(settings_df) = row_vec
+
+
+# limit df to the conditions apllicable for this experiment
+# these hould be present / defined  in the header_df read above
+check_df <- iem_df[iem_df$iem_section == "[Settings]",]
+
+## loop through all conditional parameters
+for(i in unique(check_df$conditional_parameter)){
+  ii <-  header_df[i,'V2']
+  check_i <- check_df[check_df$conditional_parameter==i & check_df$conditional_value==ii, ]
+  if(nrow(check_i)){
+    # loop and check all individual paramters within'conditional_parameter i'
+    for(j in unique(check_i$parameter)){
+        req_value <- check_i$value[check_i$parameter==j]
+
+        if(j %in% rownames(settings_df)){
+          if(!is.na(settings_df[j,'V2'])){
+            if(settings_df[j,'V2']==req_value){
+              checklist_flags[[j]] = settings_df[j,'V2']
+            }else{
+              checklist_flags[[j]] = paste0("Warning! [Settings] setction parameter '", j ,"' does not match required value: ", req_value)
+            }
+          }else{
+            checklist_flags[[j]] = paste0("Warning! Value for [Settings] setction parameter '", j ,"' is missing ('NA'). Suggested value is: ", req_value)
+            }
+
+        }else{
+          checklist_flags[[j]] = paste0("Warning! Required [Settings] setction parameter '", j ,"' is missing from sample sheet. Suggested value is: ", req_value)
+        }
+    }
+  }else{
+    # checklist_flags$settings <- "Warning: No [Settings] parameters found to crosscheck"
+  }
+}
+
+
+
+# ====================================================
+#  Define Strandness
+# ====================================================
+
+##  Start checking strandness
+check_df <- iem_df[iem_df$parameter == "Strandness" & iem_df$conditional_parameter == "Assay" & iem_df$conditional_value == assay,]
+if(nrow(check_df)==1){
+  strandness <- check_df$value
+  checklist_flags$Strandness <- strandness
+}else{
+  checklist_flags$Strandness <- "Warning: Error setting 'Strandness' flag. Check that current 'Assay' is present (once) in checkist-iem.csv"
+  strandness <- NA
+}
+
+
+# ====================================================
+#  Read the [Data] section as
+# ====================================================
+
+## Read the 'Data' Section as data frame
+## ---------------------------------
+#  read data sheet as data frame (from below Data section header)
+data_df <- read.delim(file=opt$sample_sheet, header = TRUE, sep = ",",
+                           skip = iem.index["Data"])
+
+
+
+# ========================================================
+#  add Header specific columns
+# ========================================================
+data_df$Assay <- assay
+data_df$Instrument_type <- instrument_type
+data_df$Index_Adapters <- index_adapters
+
+# ========================================================
+#  add 'paired' and 'strandness' to data_df
+# ========================================================
+data_df$Paired <- paired
+data_df$Strandness <- strandness
+
+
+# ====================================================
+#  Check and set 'Species'
+# ====================================================
+  # If exists and if in correct format
+  # OPTION: Species can be defiined as a column in sample sheet. BUT cab optionally be defined as 'species' parameter in the [Header] section.
+
+species_values <- iem_df[iem_df$parameter == 'Species',]$value
+
+# str(data_df)
+if('Species' %in% rownames(header_df)){
+  species <- header_df['Species','V2']
+  if(is.na(species))  checklist_flags$Species <- "Warning: 'Species' in [Header] section is set to NA."
+  if(!all(species %in% species_values)){
+    checklist_flags$Species <- paste("Warning: 'Species' value in [Header] section is not among allowed values:  ", paste(species_values, collapse = ", "))
+  }else{
+    data_df$Species <- species # Create 'Species' column. Force/overwrite if already present
+    checklist_flags$Species <- species}
+  }else{
+    if("Species" %in% colnames(data_df)){
+      species <- unique(data_df$Species)
+
+      if(!all(species %in% species_values)){ checklist_flags$Species <- paste("Warning: Unexpected 'Species' value(s) in 'Species' column [Data]. ", paste(species[!(species %in% species_values)], collapse = ', '), " are not allowed")
+      }else{
+        checklist_flags$Species <- paste(species, collapse = '|')
+        }
+      }else{
+      checklist_flags$Species <- "Warning: 'Species' is not defined. Must be included as a column in [Data] OR as parameter 'Species' in [Header] section. The latter will overwrite column (if present) in [Data] section. "
+      }
+}
+
+
+
+
+
+
+
+# ================================================
+#  Sample_Name. Sample_Project (Forced values)
+# ================================================
+
+### NOTE THAT Samlple_Name is not needed. Sample_Name will be forced to same as Sample_ID
+### NOTE that 'Sample_Project' is not longer needed/used. This will be forced from 'opt$project_id'
+data_df$Sample_Project <- opt$project_id
+data_df$Sample_Name <- data_df$Sample_ID
+
+
+
+# ========================================================
+#  [Data] Section Columns
+# ========================================================
+##  Columns must include
+# Sample_ID, Sample_Name, Sample_Project, 'Sample_Well'	'Index_Plate_Well'	'I7_Index_ID'	'index'	'I5_Index_ID'	'index2'
+
+
+required.columns <- c("Sample_ID","Sample_Project", "Sample_Name", "Index_Plate_Well", 	'I7_Index_ID',	'index',	'I5_Index_ID',	'index2')
+if(!all (required.columns %in% colnames(data_df))){
+  checklist_flags$required_columns <- paste("Warning: required [Data] section columns not found. Required are: ", paste(required.columns, collapse =", "))
+}
+
+
+# ========================================================
+#  Check if Sample_ID contain duplicates
+# ========================================================
+u <- duplicated(data_df$Sample_ID)
+if(any(u)) checklist_flags$duplicated.Sample_ID <- paste("Warning: 'Sample_Name' contains duplicated ectries: ", paste( data_df$Sample_ID[u], collapse = "|"))# stop("Duplicated Sample_ID present: ", data_df$Sample_ID[u])
+# cat("\n\n ... OK, no duplicate Sample_IDs found.")
+
+# ========================================================
+#  add force_lane if specified
+# ========================================================
+if(opt$force_lane != 0) data_df$Lane <- opt$force_lane
+if(opt$force_lane != 0) data_df <- dplyr::select(.data = data_df, c(Lane, everything())) # strandness
+
+
+
+
+# ========================================================
+#   non-permitted /special characters
+# ========================================================
+## The Description column, if present, is treated a bit more gentle. Only type_a specials are disallowed here amd spaces, dashes, parenthese, dots are allowed
+## Generate 'data_df.out' that will contain columns with special characters replaced by ''
+## SO! from hereon 'data_df' is replaced by 'data_df.out'
+
+specials <- list(
+  type_a=c("[*]","[/]","[+]","[']","[`]","[?]","[=]"),  # never permitted
+  type_b=c("[:]","[-]","[(]","[)]","[.]","[ ]")          # permitted in most columns
+  )
+
+# matrix(data_df)
+special.flag <- F
+data_df.out <- data_df
+
+## Check and replace the specific columnns in data section for stricter chacacter rules.
+# cat("\n\n ... Checking data columns and replacing special characters. ")
+
+special.flag <- F # used to keep track if special characters are present in any column
+
+test_columns = unique(c(required.columns, c('Lane'), index_columns))
+
+for(i in 1:ncol(data_df.out)){
+  # test_specials <- unlist(specials)
+  # if(colnames(data_df.out)[i]=="Description") test_specials <- specials$type_a
+  ## the test_columns will be tested for the most strict character list, i.e type_a
+  if(colnames(data_df.out)[i] %in% test_columns){
+    test_specials <-  unlist(specials)
+  }else{
+    test_specials <- specials$type_a
+    }
+
+  for(ii in 1:length(test_specials)){
+    u<-grepl(test_specials[ii], data_df.out[,i])
+    if(any(u)){
+      special.flag <- T
+      column_name <- paste0('characters.replaced.',colnames(data_df.out)[i])
+      if(length(checklist_flags[[column_name]])==0 ){
+        checklist_flags[[column_name]] <- test_specials[[ii]]
+      }else{
+        checklist_flags[[column_name]] <- paste(checklist_flags[[column_name]], test_specials[[ii]], collapse="|")
+        }
+
+      # cat("\n ... ... Warning: column  '", colnames(data_df.out)[i], "'  contains: ", ifelse(test_specials[ii]==" ", "white space. Replacing with ''", test_specials[ii]))
+      ## replace these with underscore in out-file
+      data_df.out[,i] <- gsub(test_specials[ii], "", data_df.out[,i])
+      }
+  }
+}
+special.flag <- if_else(special.flag, "File modified: some special characters have been replaced (see above)", "No replacements needed")
+checklist_flags$special_characters_replaced <- special.flag
+
+
+
+
+
+# ========================================================
+#  Check indexes
+# ========================================================
+# Use the 'index_df' read from 'checklist-index.csv'
+# Match
+# index_df
+
+# 1. Check if any duplicated entries in the list of
+index_dup <- sapply(index_columns, function(x) any(duplicated(data_df.out[,x])) )
+
+if(any(index_dup)){
+  index_dup <- index_dup[index_dup==T]
+  index_dup <- sapply(index_dup, function(x) if_else(x==T, 'Warning: Column contains duplicate entries', 'ok unique'))
+  checklist_flags <- append(checklist_flags, index_dup)
+}
+
+
+## 2: Cross ceck indexes with 'checklist-index.csv'
+# Filter on the currect 'Index Adapters' kit and the 'Insterument Type' (and version)
+# Note that NovaSeq1.5 will produce reverse complement reads of the I5/index2 sequence from NovaSeq1.0
+# Use ONLY 'Index_Plate_Well' to extract index data from the checklist. Then simple check if all collumns are identical.
+check_df <- index_df %>% dplyr::filter(Index_Adapters == checklist_flags$Index_Adapters & Instrument_Type==checklist_flags$Instrument_type)
+
+if(nrow(check_df) <1 ){ # chek if reference index table is ok
+  checklist_flags$Index.reference.table.error <- paste("Warning: Error creting reference table for index adapters from checklist-index.csv' Make sure 'Index Adapters' and 'Instrument Type' are correctly supplied. ", paste(checklist_flags$Index_Adapters, checklist_flags$Instrument_type, sep=', '))
+}
+
+# 2a check if any indexes wells are not present in refenrece file
+u <- match(data_df.out$Index_Plate_Well, check_df$Index_Plate_Well)
+if(any(is.na(u))){
+  checklist_flags$Index_Plate_Well.error <- paste("Warning: Index(es) not present in 'checklist-index.csv'. Check values: ", paste(data_df.out$Index_Plate_Well[is.na(u)], collapse = ", "))
+}
+
+
+# 2b generate reference index table - and cross check
+if(!all(is.na(u))){
+  index_input <- data_df.out[,index_columns]
+  rownames(index_input) <- 1:nrow(index_input)
+  index_reference <- check_df[u, index_columns]
+  index_reference <- index_reference[!is.na(index_reference$Index_Plate_Well), ]
+  rownames(index_reference) <- 1:nrow(index_reference)
+  if(identical(index_input, index_reference)){
+    checklist_flags$Index.Columns <- "indexes seem OK "
+  }else{
+    y <- sapply(index_input$Index_Plate_Well, function(x){
+      i <- paste(index_input[index_input$Index_Plate_Well==x, ], collapse = ', ')
+      r <- paste(index_reference[index_reference$Index_Plate_Well==x, ], collapse = ', ')
+      if(!identical(i,r)) {return(i)}
+    })
+    y <- y[!sapply(y, is.null)]
+    y <-  sapply(y, function(x) paste(x, collapse = ", "))
+
+    if(length(y)>5){
+      checklist_flags$index.individual.reference.error <- "Warning: More than 5 index entries are different from what is supplied in 'checklist-index.csv' given 'Index Adapters' and 'Instrument Type'."
+    }else{
+      checklist_flags$index.individual.reference.error <- paste("Warning: Some index entries differ from 'checklist-index.csv' given 'Index Adapters' and 'Instrument Type'.: ", paste(y, collapse=';  '))
+    }
+  }
+}
+
+# ========================================================
+#  Force replace indexes
+# ========================================================
+#If to use the checklist-index.csv to fordce update I7/I5 IDs and Sequences. Use this option if you are sure that
+# i) the 'Index_Plate_Well' column is supplied corectly
+# AND that ii) the correct 'Index Adapters' kit is supplied
+# AND that iii) all 'Index_Plate_Well' are represented in the index reference file
+
+if(opt$force_replace_index){
+  u <- match(data_df.out$Index_Plate_Well, check_df$Index_Plate_Well)
+  if(any(is.na(u))){
+    stop (paste("Cannot --force_replace_index: Some Index(es) wells not present in 'checklist-index.csv'. Check values: ", paste(data_df.out$Index_Plate_Well[is.na(u)], collapse = ", ")))
+  }
+
+  index_input <- data_df.out[,index_columns]
+  index_reference <- check_df[u, index_columns]
+  data_df.out[ , index_columns] <-  index_reference
+  checklist_flags$force.replace.index <- "Indexes were replaced using '--force_replace_index' flag with supplied 'Index_Plate_Well' with 'checklist-index.csv' "
+}
+
+
+
+# ========================================================
+#   Additional columns added for the ctg pipeline
+# ========================================================
+# nf core style of sample sheet.
+# must containcolumns ...
+# Strandneess - and paired should preferrably be obtained from IEM, but as for now supplied as input variables
+# Paired -
+# Group Replicate fastq_1 fastq_2
+# Group: try to get Group from sample sheet, if not available, then use Sample_Project
+## Replicate: use if presernt in sample sheet, else create one using Sample_Project
+## For each Sample_Name processed, a suffiux is added as:
+## _nS_R1_001.fastq.qz. The S-counter  will just be numeric order 1:nrow
+## The L00X wil be differnent if multiple libraries, as for now 001 is the only one supported
+
+
+## create Group column
+if(!("Group" %in% colnames(data_df.out))){
+  #cat("\n ... creating 'Group' column from ¨Sample_Project¨")
+  data_df.out$Group <- data_df.out$Sample_Project
+}
+# generate Replicate column
+if(!("Replicate" %in% colnames(data_df.out))){
+  #cat("\n ... creating 'Replicate' column from 'Group'")
+  u <- sapply(unique(data_df.out$Group), function(x) length(which(data_df.out$Group==x)))
+  rep.vec <- data_df.out$Group
+  for(i in 1:length(u)){
+    rep.vec[which(rep.vec==names(u)[i])] <- 1:u[i]
+  }
+  data_df.out$Replicate <- as.integer(rep.vec)
+}
+# generate Batch column
+if(!("Batch" %in% colnames(data_df.out))){
+  # cat("\n ... creating 'Batch' column from ¨Sample_Project¨")
+  data_df.out$Batch <- data_df.out$Sample_Project
+}
+
+
+
+# ========================================================
+#   fastq and bam file namings
+# ========================================================
+## File names are here generated based on the default ooutput naming suffixes from 'bcl2fastq'
+
+## bcl2Fastq will name fastq files: "FASTQ files are named with i) the sample name 2) and number, 3) the flow cell lane, 4) and read. 5) After that # 001.
+## The file extension is *.fastq.gz. Forexample:<samplename>_S1_L001_R1_001.fastq.gz"
+## Note that when path is defined it is assumed that Sample_ID == Sample_Name (blc2fastq2 generate flat output). If name != ID folder is created for Name
+
+
+data_df.out$fastq_1 <- paste(data_df.out$Sample_Name, "_S",1:nrow(data_df.out), "_R1", fastq.sufifx, sep="")
+if(paired) data_df.out$fastq_2 <- paste(data_df.out$Sample_Name, "_S",1:nrow(data_df.out), "_R2", fastq.sufifx, sep="")
+
+## if bam - supply bam path
+if(!is.null(bam.suffix)) data_df.out$bam <- paste0(data_df.out$Sample_Name, bam.suffix)
+# data_df.out$counts_matrix_id <- paste0(data_df.out$Sample_Name, opt$count_mat_siuffix)
+
+## re-order sheet
+if(paired) data_df.out <- dplyr::select(.data = data_df.out, c(Sample_ID, Sample_Name, Group, Replicate, Strandness, Paired, Assay, Instrument_type, Index_Adapters, everything())) # strandness
+
+
+
+
+
+
+# ========================================================
+#  C: SAVE FILES
+# ========================================================
+#  save demux sample sheet (special characters replaced etc)
+
+# ========================================================
+#  DEMUX sample sheet  (special characters replaced etc)
+# ========================================================
+# IEM style for bcl2fastqc input
+out.file.name <- opt$output_demux_sheet
+
+# if(file.exists(out.file.name)) stop("Out file already exists: ",out.file.name)
+# cat("\n\n ... writing checked ctg-demux sample sheet file to output: \n ",out.file.name)
+cat(all.lines[1:iem.index["Data"]], file = out.file.name, sep = "\n", append = F)
+cat(colnames(data_df.out), file = out.file.name, sep = ",", append = T) # save the ctg style sample sheet here as well
+cat("\n", file = out.file.name, sep = ",", append = T)
+write.table(x = data_df.out, file = out.file.name, sep = ",", append = T, quote = F, row.names = F, col.names = F, na="", )
+
+
+
+
+# ========================================================
+#   CTG STYLE SAMPLE SHEET - data frame only
+# ========================================================
+  # out.file.name <- paste(opt$sample_sheet, "_ctg.csv", sep="")
+ out.file.name <- opt$output_ctg_sheet
+
+
+  # if(grepl("[.]csv", opt$sample_sheet)) out.file.name <- gsub(pattern = "[.]csv", replacement = "_ctg.csv", x = opt$sample_sheet)
+  # cat("\n\n ... writing ctg style sample sheet with expected filenames: \n ", out.file.name, "\n\n")
+  write.table(x = data_df.out, file = out.file.name, sep = ",", append = F, quote = F, row.names = F, col.names = T, na="", )
+
+
+# ========================================================
+#   Save and Print Log
+# ========================================================
+  iem.log <- t(data.frame(checklist_flags))
+  cat("\n\n\n\n=============================================================================== \n   iem-samplesheet-processer COMPLETE. Check log for appropriate actions  \n=============================================================================== \n\n")
+  print(iem.log)
+  cat("\n=============================================================================== \n\n\n ")
+  out.file.name <- file.path(dirname(opt$sample_sheet), 'iem.rscript.log')
+  cat(c("# Log file from Rscript iem-samplesheet-processer. Warnings below should be modified before re-running script.\n"), file=out.file.name)
+  write.table(iem.log, file=out.file.name, sep = ",", row.names = T, col.names = F, append = T, quote = FALSE)

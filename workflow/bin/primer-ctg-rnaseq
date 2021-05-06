@@ -1,0 +1,296 @@
+#!/bin/bash
+
+
+
+## Develiopment possibilities / known issues
+# - since the create samples sheet Rscripts are run in the driver, not in the nf workflow, strandness is not yet included in the ctg samplesheet
+# Chmods of generated files and fodlers !! should be full access by all within the lsens4 group. Add chmods to script? What about executables...
+
+## One nmore rscript to check if no deux samplesheet is supplied
+
+#######################################
+# Initiation - Prime the ctg rnaseq pipeline
+#######################################
+
+overwrite=false
+force_lane='0'
+force_replace_index='false'
+# usage message
+usage() {
+    echo ""
+    echo ""
+    echo "usage: prime-ctg-rnaseq [ -i projectid ] [ -s samplesheet ] [ -l force_lane ] [ -l force_replace_index ] [ -h help ] "  1>&2
+    echo ""
+    echo "------------------- "
+    echo " arguments : "
+    echo "------------------- "
+    echo " project_id         -i : Define 'project id'. Typically 202X-XXX. This will define the runfolder, but also define some output folders, such as blc2fastq2 output folders."
+    echo " samplesheet        -s : IEM style laboratory samplesheet for this run. Within runfolder. (Default: CTG_SampleSheet.csv) "
+    echo ""
+    echo "------------------- "
+    echo " optional : "
+    echo "------------------- "
+    echo " force_lane             -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will overrid the Lane column in sample sheet"
+    echo " force_replace_index:   -f : Set this flag if to force iem samplesheet Rscript to overwrite index id and sequence informations based on index well id. "
+    echo " help                   -h : print help message"
+    echo "------------------- "
+    echo ""
+    echo ""
+}
+
+exit_abnormal() {
+    usage
+    exit 1
+}
+
+# Read and control input arguments
+while getopts ":i:s:lfh" opt; do
+    case $opt in
+      i) id=$OPTARG
+	     ;;
+      s) samplesheet=$OPTARG
+	     ;;
+      l) force_lane=$OPTARG
+        ;;
+      f) force_replace_index=true
+          ;;
+      h) exit_abnormal
+        ;;
+      \?) echo echo ""; echo "Error:";"Invalid option -$OPTARG" >&2
+        exit_abnormal ;;
+      :) echo ""; echo "Error:"; echo " -${OPTARG} requires an argument!"
+	     exit_abnormal ;;
+    esac
+done
+
+
+
+################################################
+# Define variables
+################################################
+
+## Root directories (based on ourr set folder naming conventions on lsens)
+project_root='/Users/david/tasks/rnaseq_test/ctg-projects' ## root_rootdir for ctg-projects (not same as delivery dir) /projects/fs1/shared/ctg-projects/ctg-rnaesq
+delivery_root='/Users/david/tasks/rnaseq/nftest/ctg-delivery' # root dir for where files are copied upon COMPLETION of the flow. Only files to be delivered to customer are copied here
+qc_root='Users/david/tasks/rnaseq/nftest/ctg-qc' # ctg qc root_root directory. folder where qc stats shpuld be copied to
+log_root='' # logfolder='/Users/david/tasks/rnaseq/rnaseq_test/logs'
+
+## project specific directories
+execdir=$(pwd) # execution dir. Should be either illumina runfolder dir or within the project dir where the pipe is run
+projectdir=${project_root}/${id}
+runfolderdir=$execdir # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
+runfolder=$(basename $runfolderdir) #
+fastqdir="${projectdir}/fastq/${id}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
+
+## logs
+# logfile="${logfolder}/$id.log"
+logfile=${log_root}/${id}.rnaseq.log
+
+# nextflow scripts.
+# Folder where nextflow script, nextflow configs and supplementary scripts are found
+# Must contains /bin/ in which rscripts are found
+nfdir="/Users/david/tasks/ctg-rnaseq/"
+nf_pipe='ctg-rnaseq.nf'
+
+
+
+
+# Sampleshee output from rscripts
+samplesheet_demux="${projectdir}/SampleSheet-${id}-demux.csv"
+samplesheet_ctg="${projectdir}/SampleSheet-${id}-ctg.csv"
+
+
+
+
+################################################
+# Check arguments and variables
+################################################
+shift "$(( OPTIND -1 ))"
+
+## check  projct id input
+if [ -z $id ]; then
+  echo ""; echo "Error: "
+  echo "Specify Project id: '-i' flag"; echo""; echo ""
+  exit_abnormal
+fi
+
+
+## Check Sample Sheet. if file is present in work directory.
+if [ -z $samplesheet ]; then
+  echo ""; echo "Error:"
+  echo "Specify sample sheet (in current dir): '-s' flag. "; echo ""
+  exit_abnormal
+  # sheet="CTG_SampleSheet.csv"
+  # echo "- Using 'CTG_SampleSheet.csv'"
+fi
+if [ ! -f $samplesheet ]; then
+  echo ""; echo "Error:"
+  echo "Sample Sheet does not exist (in current dir)"
+  #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
+  exit_abnormal
+fi
+
+
+#
+##############
+# Print info #
+##############
+echo ""
+echo "ctg-rnaseq priming parameters       "
+echo "----------------------------------  "
+echo "project id            : $id"          ;
+echo "primer execution dir  : $execdir"     ;
+echo "runfolder dir         : $runfolderdir"     ;
+echo "project dir           : $projectdir"     ;
+echo "";
+echo "samplesheet           : $samplesheet"         ;
+echo "samplesheet-ctg       : $samplesheet_ctg" ;
+echo "samplesheet-demux     : $samplesheet_demux"         ;
+echo "";
+echo "force_lane            : $force_lane";
+echo "force_replace_index   : $force_replace_index";
+echo "";
+
+# Prompt user to approve running in current directory and input
+read -p "
+
+  this primer should be run from within:
+
+  i ) illumina runfolder (if priming nextflow analysis for demux)
+  ii) project folder (if not priming for demux)
+
+  current directory is:
+  '${execdir}'
+
+  Are input execution parameters correct?
+
+  (y/n)  ... " prompt
+if [[ $prompt != "y" ]]
+then
+    echo ""; echo "Exiting!! "
+    exit 0
+fi
+echo ""
+echo ""
+
+#################################################
+# Set up Project directory & nextflow scripts
+#################################################
+
+if [[ -d ${projectdir} ]]; then
+  read -p "Warning:
+
+  project folder already exists:
+  '${projectdir}'
+
+  sample sheets and scripts may be overwritten. Are you sure?
+
+  (y/n)  ...
+
+  " prompt
+  if [[ $prompt != "y" ]]
+  then
+      echo ""; echo "Exiting!! "
+      exit 0
+  fi
+fi
+echo ""
+echo ""
+
+mkdir -p $projectdir
+rsync -av $nfdir $projectdir # rsync nextflow foles. Will overwrite configs
+
+
+
+#######################################################
+# Generate sample sheets using Rscripts
+#######################################################
+
+  ${projectdir}/bin/iem-samplesheet-processor.R \
+      --project_id ${id} \
+      --sample_sheet ${samplesheet} \
+      --output_demux_sheet ${samplesheet_demux}  \
+      --output_ctg_sheet ${samplesheet_ctg} \
+      --bin_dir "${projectdir}/bin/" \
+      --force_lane ${force_lane} \
+      --force_replace_index FALSE
+
+
+#################################################################
+# Retrieve info extracted by Rscript  (pass to nf config)
+#################################################################
+
+# echo "$samplesheet_ctg"
+assay=$(cat rscript.log.csv | grep 'Assay' |  cut -f2 -d",")
+instrument_type=$(cat rscript.log.csv | grep 'Instrument_type' |  cut -f2 -d",")
+index_adapters=$(cat rscript.log.csv | grep 'Index_Adapters' |  cut -f2 -d",")
+paired=$(cat rscript.log.csv | grep 'Paired' |  cut -f2 -d",")
+strandness=$(cat rscript.log.csv | grep 'Strandness' |  cut -f2 -d",")
+
+
+
+#######################################################################
+# Prime nextflow configuration file -- nextflow.params_${id}.config --
+#######################################################################
+
+# Edit config file
+nf_conf="${projectdir}/nextflow.params_${id}.config"
+
+echo ""                                    > $nf_conf
+echo "// ${id}"                           >> $nf_conf
+echo "//  nextflow configuration file"           >> $nf_conf
+echo "//  project specific parameters"    >> $nf_conf
+echo "//  adds to - and overrides - parameters in 'nextflow.config' " >> $nf_conf
+echo "params {                                                      " >> $nf_conf
+echo "  //  project samplesheet and run folders                     " >> $nf_conf
+echo "  projectid           =  '${id}'                              " >> $nf_conf
+echo "  samplesheet         =  '${samplesheet_ctg}'                 " >> $nf_conf
+echo "  projectdir          =  '${projectdir}'                      " >> $nf_conf
+echo "  execdir             =  '${execdir}'                         " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  assay specific                                          " >> $nf_conf
+echo "  assay               =  '${assay}'                          " >> $nf_conf
+echo "  instrument_type     =  '${instrument_type}'                 " >> $nf_conf
+echo "  index_adapters      =  '${index_adapters}'                  " >> $nf_conf
+echo "  paired              =  '${paired}'                          " >> $nf_conf
+echo "  strandness          =  '${strandness}'                      " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  demux specific                                          " >> $nf_conf
+echo "  demux               =  'true'                               " >> $nf_conf
+echo "  samplesheet_demux   =  '${samplesheet_demux}'               " >> $nf_conf
+echo "  runfolderdir        =  '${runfolderdir}'                    " >> $nf_conf
+echo "  runfolder           =  '${runfolder}'                       " >> $nf_conf
+echo "  fastqdir            =  '${fastdir}'                         " >> $nf_conf
+echo "  pooled              =  'false'                              " >> $nf_conf
+echo ""   >> $nf_conf
+echo "}"  >> $nf_conf
+echo ""   >> $nf_conf
+
+
+#######################################################################
+#  Final chmods
+#######################################################################
+
+
+#######################################################################
+#  Script complete
+#######################################################################
+
+
+echo ""; echo ""
+echo "#####################################"
+echo "  ctg-rnaseq project primed"
+echo "#####################################"
+echo ""
+echo " check and modify nextflow.params.${id}  "
+echo " before running "
+echo ""; echo "";
+#
+# ##################
+# # ctg-interop-qc #
+# ##################
+# # Will do interop analysis on runfolder, and compile multiqc report.
+# # This is written to
+# # 1. runfolder/ctg-interop
+# # 2. ctg-qc/interop
+# ctg-interop-qc

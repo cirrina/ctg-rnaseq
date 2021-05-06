@@ -1,0 +1,442 @@
+#!/bin/bash
+
+#######################################
+# driver for the ctg rnaseq pipeline
+#######################################
+
+### This script will
+## - 1 - Create project folder used for this run. The project folder will NOT be generated within the runfolder.
+## - 2 - Check sample sheet and generate two new ones used for i) demux and ii) downstream analyses and QC
+## - 3 - Copy the ctg-rnaseq nextflows scripts to project dir.
+## - 4 - Initialize the ctg-rnaseq workflow
+
+## The nextflow worklow will ....
+
+## Develiopment possibilities / known issues
+# - since the create samples sheet Rscripts are run in the driver, not in the nf workflow, strandness is not yet included in the ctg samplesheet
+
+
+# Initialize variables asdsadasd adfdsf
+execdir=$(pwd)
+#runfolderdir=''
+#runfolder='' # runfolder will be set to execfolder if demux is true. It is possible to execute scriipt outside illumina runfolder if demux is FALSE
+projectbase='/Users/david/tasks/rnaseq_test/ctg-projects' ## /projects/fs1/shared/ctg-projects/ctg-rnaesq
+logfolder='/Users/david/tasks/rnaseq/rnaseq_test/logs'
+resume=false
+aligned=false
+overwrite=false
+demux=true
+pooled=false
+paired=true
+force_lane="0"
+sheet_custom=false
+
+# nextfloew scripts
+nfdir="/Users/david/tasks/ctg-rnaseq/"
+nf_pipe='ctg-rnaseq.nf'
+
+# allowed workflows
+allowed_species=("hs" "mm")
+allowed_assays=(
+  TruSeq_Stranded_mRNA
+  Illumina_Stranded_mRNA_Prep
+  SMARTer_Stranded_Total_RNA_Sample_Prep_Kit_HI_Mammalian
+  QIAseq_FastSelet_BrRNAdepl_SMARTer_Stranded_Total_RNA_Seq_Kit_v2_PicoInput)
+
+# usage message
+usage() {
+    echo ""
+    echo ""
+    echo "Usage: ctg-rnaseq [ -i PROJECT_ID ] [ -w WORKFLOW ] [ -a ALIGNED] [ -s SAMPLESHEET ] [ -e SPECIES ] [ -p PAIRED ] [ -o POOLED ] [ -c CHECK_SHEET ] [ -x OVERWRITE ] [ -d DEMUX-OFF ] [ -l FORCE_LANE ] [ -r RESUME ] [ -h HELP ] "  1>&2
+    echo ""
+    echo "------------------- "
+    echo "Arguments: "
+    echo "------------------- "
+    echo "PROJECT_ID     -i : Define 'project id'. Typically 202X-XXX. This will define the runfolder, but also define some output folders, such as blc2fastq2 output folders."
+    echo "WORKFLOW       -w : Define the Laboratory Library prep workflow. Used to acitvate profiles defined in the nextflow.config."
+    echo "                      - TruSeq_Stranded_mRNA"
+    echo "                      - Illumina_Stranded_mRNA_Prep"
+    echo "                      - SMARTer_Stranded_Total_RNA_Sample_Prep_Kit_HI_Mammalian"
+    echo "                      - QIAseq_FastSelet_BrRNAdepl_SMARTer_Stranded_Total_RNA_Seq_Kit_v2_PicoInput"
+    echo ""
+    echo "ALIGNED        -a : Set if to run full pipeline including aligned data "
+    echo "SAMPLESHEET    -s : IEM style laboratory samplesheet for this run. Within runfolder. (Default: CTG_SampleSheet.csv) "
+    echo "SPECIES        -e : Define speicies. Currently human or mouse."
+    echo "POOLED         -o : Set if this project is pooled togehter with other projects, i.e, if runfolder contains data from multiple customers. This will affect the delivery of files, such as the Undetermimned faastq reads."
+    echo ""
+    echo "------------------- "
+    echo "Optional arguments: "
+    echo "------------------- "
+    echo "OVERWRITE      -x : Set if to allow overvrite data. If already run. Typically  If RESUME is true, but also if when demux is false, overwrite will be set to yes"
+    echo "DEMUX-OFF      -d : Set flag to skip demux (then fastq files must be defined in samplesheet) "
+    echo "CUSTOM SHEET   -c : Set this flag if the sampple sheet set by '-s' is custom. Will skip the Rscript sheet check. Will force demux to FALSE. Assumes that sample sheet is in correct ctg-rnaseq format. "
+    echo "RESUME         -r : If to resume nextflow run"
+    echo "FORCE_LANE     -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will overrid the Lane column in sample sheet"
+    echo "HELP           -h : print help message"
+    echo "------------------- "
+    echo ""
+    echo ""
+}
+
+exit_abnormal() {
+    usage
+    exit 1
+}
+
+# Read and control input arguments
+while getopts ":i:w:as:e:pxdcl:rh" opt; do
+    case $opt in
+      i) id=$OPTARG
+	     ;;
+      w) assay=$OPTARG
+        ;;
+      a) aligned=true
+        ;;
+      s) sheet=$OPTARG
+	     ;;
+      e) species=$OPTARG
+        ;;
+      p) paired=$OPTARG
+        ;;
+      o) pooled=true
+        ;;
+      x) overwrite=true
+        ;;
+      d) demux=false
+    	  ;;
+      c) sheet_custom=true
+          ;;
+      l) force_lane=$OPTARG
+        ;;
+      r) resume=true
+	     ;;
+	    h) exit_abnormal
+        ;;
+      \?) echo echo ""; echo "Error:";"Invalid option -$OPTARG" >&2
+        exit_abnormal ;;
+      :) echo ""; echo "Error:"; echo " -${OPTARG} requires an argument!"
+	     exit_abnormal ;;
+    esac
+done
+
+
+
+################################################
+# Define variables based on input arguments
+################################################
+
+projectdir=${projectbase}/${id}
+logfile="${logfolder}/$id.log"
+# if demux - illumina runfolder will be same as execution dir
+if [ "$demux" = true ]; then
+  runfolderdir="$execdir"
+  runfolder=$(basename $runfolderdir)
+fi
+# fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
+# sample fastq files will be in /projectdir/fastq/project
+# fastqdir="${projectdir}/fastq" # set in nef script instead
+
+
+
+
+## Check arguments
+shift "$(( OPTIND -1 ))"
+
+## check  projct id input
+if [ -z $id ]; then
+  echo ""; echo "Error: "
+  echo "Specify Project id: '-i' flag"; echo""; echo ""
+  # metaid=$(echo $run | cut -f1 -d"_")
+  # id="${metaid}-sc-rna-10x"
+  # echo "- Using: '${id}'"
+  exit_abnormal
+fi
+
+if [ -z "$species" ]; then
+  echo ""; echo "Error: "
+  echo "Specify Species: '-e hs'"; echo""
+  exit_abnormal
+fi
+## Check species (-e) from list of allowed
+if [[ " "${allowed_species[@]}" " != *" "$species" "* ]] ;then
+  #echo "$species: ok"
+  # else
+  echo ""; echo "Error:"
+  echo "$species: not recognized. Valid names are:"
+  echo "${allowed_species[@]/%/,}"; echo ""; echo ""
+  exit 1
+fi
+
+## check paired
+if [ -z $paired ]; then
+  echo ""; echo "Error: "; echo "  Specify Paired: '-p' flag, 'true' or 'false'"; echo""; echo ""
+  exit_abnormal
+fi
+if [ "$paired" != true ]; then
+  paired=false
+  # echo "   Paired set FALSE."
+fi
+
+## Check workflow blank
+if [ -z $assay ]; then
+  echo ""; echo "Error: "
+  echo "Specify library workflow: '-w' flag"; echo""
+  exit_abnormal
+fi
+## Check workflow (-w) from list of allowed
+if [[ " "${allowed_assays[@]}" " != *" "$assay" "* ]] ;then
+    #echo "$assay: ok"
+# else
+    echo ""; echo "Error:"
+    echo "$assay: not recognized. Valid names are:"
+    echo "${allowed_assays[@]/%/,}"; echo ""; echo ""
+    exit 1
+fi
+
+## Check force_lane !! NOT WORKING (Rscript will test this. ..)
+# allowed_lane=('0' '1' '2')
+# if [[ " "${allowed_lane[@]}" " != *" "$force_lane" "* ]] ;then
+#     #echo "$assay: ok"
+# # else
+#     echo ""
+#     echo "Failed check for '-l' flag. "
+#     echo "$force_lane: not recognized. Valid names are:"
+#     echo "${allowed_lane[@]/%/,}"; echo ""; echo ""
+#     exit 1
+# fi
+
+
+
+# if resume - set overwrite to TRUE
+if [ "$resume" == true ]; then
+  overwrite=true
+  # echo "   Resume set TRUE. Overwrite forced to TRUE."
+fi
+
+## Check if project (folder) exists from before. If so overwrite has to be set true with -x flag
+if [ -d ${projectdir} ] && [ "$overwrite" != true ]; then
+  echo ""; echo "Error:"
+  echo "Project id '${id}' is laready in use: "
+  echo "Directory '${projectdir}' exists."
+  echo "Please chose another project id OR use flag -x to allow overwrite."; echo ""; echo ""
+  exit_abnormal
+  # echo "'${projectdir}' already exists. Overwriting this folder."
+fi
+if [ -d ${projectdir} ] && [ "$overwrite" == true ]; then
+  echo ""
+  echo " Directory '${projectdir}' exists."
+  echo "   Overwrite is set to TRUE. Will overrite data in directory. "
+  echo ""
+  # echo "'${projectdir}' already exists. Overwriting this folder."
+fi
+
+## Check Sample Sheet. if file is present in work directory.
+if [ -z $sheet ]; then
+  echo ""; echo "Error:"
+  echo "Specify sample sheet (in current dir): '-s' flag. "; echo ""
+  exit_abnormal
+  # sheet="CTG_SampleSheet.csv"
+  # echo "- Using 'CTG_SampleSheet.csv'"
+fi
+if [ ! -f $sheet ]; then
+  echo ""; echo "Error:"
+  echo "Sample Sheet does not exist (in current dir)"
+  #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
+  exit_abnormal
+fi
+
+## if a custom sheet is set to true - set demux to FALSE
+if [ "$sheet_custom" == true ]; then
+  demux=false
+fi
+
+
+#
+##############
+# Print info #
+##############
+echo ""
+echo "Driver execution parameters "
+echo "----------------------------"
+echo "Project ID            : $id";
+echo "Driver Execution dir  : $execdir";
+echo "Overwrite             : $overwrite";
+echo "";
+echo "Sample Sheet          : $sheet";
+echo "Custom Sheet          : $sheet_custom";
+echo "";
+echo "Libprep assay         : $assay";
+echo "";
+echo "Demux specific: "
+echo "Demux                 : $demux";
+echo "Runfolder             : $runfolder";
+echo "Runfolder Path        : $runfolderdir";
+echo "Fastq output          : $fastqdir";
+echo "Pooled (with other)   : $pooled";
+echo "Force Lane            : $force_lane";
+echo "";
+echo "BNF specific: "
+echo "Nextflow exec. dir    : $projectdir";
+echo "Align data            : $aligned";
+echo "Species               : $species";
+echo "Paired                : $paired";
+echo "";
+echo "";
+echo "Log file              : $logfile";
+echo "";
+echo "";
+echo "Project output dir    : $projectdir";
+echo "Project delivery dir  : ";
+echo "";
+echo "";
+
+# Prompt user to approve running in current directory and input
+read -p "Warning:
+  Can only be run from i) within runfolder or ii) within project folder if using custom samplesheet and no demux
+  Are you in the folder in which you want run?
+  Are input execution parameters correct?
+
+  (y/n)  ... " prompt
+if [[ $prompt != "y" ]]
+then
+    echo ""; echo "Exiting!! "
+    exit 0
+fi
+
+
+
+###############################
+# Set up Project directory
+###############################
+# Create project dir for nextflow exection
+mkdir -p $projectdir
+# Copy nextflow script and config to project folder
+rsync -av $nfdir $projectdir
+
+
+
+
+
+#######################################################
+# Generate sample sheets using Rscripts
+#######################################################
+
+
+if [ "$sheet_custom" == false ]; then
+  samplesheet_demux="${projectdir}/SampleSheet-${id}-demux.csv"
+  samplesheet_ctg="${projectdir}/SampleSheet-${id}-ctg.csv"
+
+  ${projectdir}/bin/iem2ctg-samplesheet-demux.R \
+      --projectid ${id} \
+      --sample_sheet ${sheet} \
+      --output_demux_sheet ${samplesheet_demux}  \
+      --force_lane ${force_lane}\
+      --require_adapter TRUE \
+      --output_ctg_sheet ${samplesheet_ctg} \
+      --paired ${paired} \
+      --fastq_path "${fastqdir}/${id}" \
+      --bam_path "${fastqdir}/${id}"
+else
+  # if custom sample sheet is sipplied - then let this be the samplesheet
+  samplesheet_ctg="${execdir}/${sheet}"
+  samplesheet_demux=''
+fi
+
+
+# echo "$samplesheet_ctg"
+#
+#
+# ${projectdir}/bin/ctg_sampleSheetCheck.R \
+#     --projectid ${id} \
+#     --sample_sheet ${sheet} \
+#     --output_ctg_sheet ${samplesheet_ctg} \
+#     --output_demux_sheet ${samplesheet_demux}  \
+#     --iem_format TRUE \
+#     --paired ${paired} \
+#     --force_lane ${force_lane}\
+#     --require_adapter FALSE \
+#     --allow_num_prefix FALSE \
+#     --bam_suffix "_Aligned.sortedByCoord.out.bam" \
+
+
+
+###############################
+# Modify the nextflow.config
+###############################
+
+# Edit config file
+nf_conf="${projectdir}/nextflow.params_${id}.config"
+
+echo ""   > $nf_conf
+echo "// ${id}" >> $nf_conf
+echo "//  nextflow config file" >> $nf_conf
+echo "//  Project specific parameters" >> $nf_conf
+echo "//  Adds to and overrides parameters in nextflow.config " >> $nf_conf
+echo "params {" >> $nf_conf
+echo "  projectid           =  '${id}'                " >> $nf_conf
+echo "  custom_samplesheet  =  '${sheet_custom}'        " >> $nf_conf
+echo "  samplesheet_ctg     =  '${samplesheet_ctg}'         " >> $nf_conf
+echo "  projectdir          =  '${projectdir}'    " >> $nf_conf
+echo "  execdir             =  '${execdir}'    " >> $nf_conf
+echo "" >> $nf_conf
+echo "  demux               =  '${demux}'         " >> $nf_conf
+
+if [[ "$demux" == true ]]; then
+  echo "  //  demux specific                        " >> $nf_conf
+  echo "  samplesheet_demux   =  '${samplesheet_demux}'       " >> $nf_conf
+  echo "  runfolderdir        =  '${runfolderdir}'  " >> $nf_conf
+  echo "  fastqdir            =  '${fastdir}'  " >> $nf_conf
+  # echo "  fastqdir            =  '${fastqdir}'      " >> $nf_conf
+fi
+if [[ "$pooled" == true ]]; then
+  echo "  pooled               =  '${pooled}'         " >> $nf_conf
+fi
+if [[ "$paired" == true ]]; then
+  echo "  paired               =  '${paired}'         " >> $nf_conf
+fi
+echo "}"  >> $nf_conf
+echo ""   >> $nf_conf
+
+
+# sed "s/xmetaidx/$id/g" $nf_conf > tmp.txt; mv tmp.txt $proj_conf
+# sed "s/xrunfolderx/$run/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+# if [ ! -z $custom_genome ]; then
+#     sed "s/xcustomgenomex/$custom_genome/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+# fi
+# if [ $demux == "ON" ];then
+#     sed "s/xdemuxx/y/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+# else
+#     sed "s/xdemuxx/n/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+# fi
+
+# Copy edited config to runfolder
+# cp $proj_conf $runfolder
+# # Copy samplesheet to project folder (ctg-projects..)
+# cp $sheet $projdir
+
+
+
+# #############################
+#  Initiate Nextflow Pipeline
+# #############################
+if [ "$resume" == true ]; then
+    nohup nextflow run $nf_pipe -c $nf_conf -profile $assay $species -resume > nf.log.ctg-rnaseq &
+else
+    #  nohup nextflow run $nf_pipe -c $nf_conf -profile $assay $species > nf.log.ctg-rnaseq &
+    nextflow run $nf_pipe -c $nf_conf -profile $assay $species
+    echo "nextflow run $nf_pipe -c $nf_conf -profile $assay $species"
+fi
+echo ""; echo ""
+echo "#################################"
+echo "# rnaseq pipeline submitted #"
+echo "#################################"
+echo ""; echo "";
+#
+# ##################
+# # ctg-interop-qc #
+# ##################
+# # Will do interop analysis on runfolder, and compile multiqc report.
+# # This is written to
+# # 1. runfolder/ctg-interop
+# # 2. ctg-qc/interop
+# ctg-interop-qc
