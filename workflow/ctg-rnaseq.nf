@@ -1,13 +1,66 @@
 
+// Configuration implicit variables. These are implicitly defined in the Nextflow configuration file
+  // baseDir    - projectDir in v20.04.x: The directory where the main workflow script is located
+  // workDir    - the work folder for nextflow temporary work-files
+  // launchDir  - the directory where the workflow is run (requires version 20.04.0 or later).
 
-// Define parameters from config
+
+//  project specific config
 // -----------------------------
-projectid           =  params.projectid
-samplesheet         =  params.samplesheet_ctg
-custom_samplesheet  =  params.custom_samplesheet
-pooled              =  params.pooled
-paired              =  params.paired
 
+// root directories
+project_root        =  params.project_root
+delivery_root       =  params.delivery_root
+qc_root             =  params.qc_root
+log_root            =  params.log_root
+
+//  project  and run folders
+projectid           =  params.projectid
+projectdir          =  params.projectdir
+execdir             =  params.execdir
+bindir              =  params.bindir
+
+
+//  samplesheets
+samplesheet         =  params.samplesheet
+samplesheet_demux   =  params.samplesheet_demux
+
+//  assay specific
+assay               =  params.assay
+instrument_type     =  params.instrument_type
+index_adapters      =  params.index_adapters
+paired              =  params.paired
+strandness          =  params.strandness
+
+//  demux specific
+runfolderdir        =  params.runfolderdir
+runfolder           =  params.runFolder
+fastqdir            =  params.fastqdir
+pooled              =  params.pooled
+
+//  module specific
+run_demux             =  params.run_demux
+run_fastqc            =  params.run_fastqc
+run_multiqc           =  params.run_multiqc
+run_multiqc_ctg       =  params.run_multiqc_ctg
+run_fastq_screen      =  params.run_fastq_screen
+bam_indexing          =  params.bam_index
+piccard_markdups      =  params.run_markdups
+picard_rnaseqmetrics  =  params.run_rnaseqmetrics
+
+//  log files
+logdir               =  '/Users/david/tasks/rnaseq_test/ctg-projects/2021_030'
+
+
+
+
+//  Other Parameters
+// -----------------------------
+
+
+
+//  Check paramters
+// -----------------------------
 if (projectid      == '') {exit 1, "You must define a project_id in the nextflow.config"}
 if (samplesheet    == '') {exit 1, "You must define a sample sheet path in the nextflow.config"}
 
@@ -18,8 +71,7 @@ if (samplesheet    == '') {exit 1, "You must define a sample sheet path in the n
 projectdir         =  params.projectdir// prev. set by basedir+'/'+projectid  // defined by project id set in config
 nfworkdir          =  workDir // mind the difference between workdir and workDir that is reserved for nextflow
 outputdir          =  projectdir+'/nf-output' // main ooutput directory for files genetated with the Pipeline
-bindir             =  projectdir+'/bin' // Directory where to find scrits used by this workflow. These are copied from the git dirextory togehter with teh main nf script and config
-logdir            = projectdir+'/logfiles'
+logdir             = projectdir+'/logfiles'
 
 // create output and logdirs
 file(outputdir).mkdir()

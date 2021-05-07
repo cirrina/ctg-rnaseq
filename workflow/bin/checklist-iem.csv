@@ -2,7 +2,7 @@
 iem_section,parameter,conditional_parameter,conditional_value,value,Comment
 [Header],Instrument Type,,,NovaSeq,Short for NovaSeq1.5. Default run.
 [Header],Instrument Type,,,NovaSeq1.0,
-[Header],Assay,,,TruSeq Stranded mRNA,TruSeq Stranded mRNA Sample Preparation Guide (Part 15031047 Rev. E) Modification of ÒEnrich DNA FragmentÓ step:from 15 to 13 PCR cycles
+[Header],Assay,,,TruSeq Stranded mRNA,TruSeq Stranded mRNA Sample Preparation Guide (Part 15031047 Rev. E) Modification of Enrich DNA Fragment step:from 15 to 13 PCR cycles
 [Header],Assay,,,Illumina Stranded mRNA,"Illumina Stranded mRNA Prep, Ligation (20040534, Illumina)"
 [Header],Assay,,,SMARTer Stranded Total RNA HI Mammalian,"SMARTer Stranded Total RNA Sample Prep Kit  HI Mammalian (634873, Takara Bio USA, Inc.)"
 [Header],Assay,,,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,"SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian Components (634418, Takara Bio USA, Inc.) "
@@ -16,8 +16,8 @@ iem_section,parameter,conditional_parameter,conditional_value,value,Comment
 [Settings],AdapterRead2,Index Adapters,IDT-ILMN TruSeq RNA UD Indexes (96 Indexes),AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,
 [Settings],Adapter,Index Adapters,IDT-Ilmn RNA UD Indexes SetA Ligation,CTGTCTCTTATACACATCT,
 [Settings],Adapter,Index Adapters,IDT-Ilmn RNA UD Indexes SetB Ligation,CTGTCTCTTATACACATCT,
-[Settings],Adapter,Index Adapters,SMARTer RNA Unique Dual Index Kit Ð96U Set A,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,
-[Settings],AdapterRead2,Index Adapters,SMARTer RNA Unique Dual Index Kit Ð96U Set A,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,
+[Settings],Adapter,Index Adapters,SMARTer RNA Unique Dual Index Kit ï¿½96U Set A,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,
+[Settings],AdapterRead2,Index Adapters,SMARTer RNA Unique Dual Index Kit ï¿½96U Set A,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,
 [Settings],Adapter,Index Adapters,IDT-ILMN Nextera DNA UD Indexes (96 Indexes) Set C,CTGTCTCTTATACACATCT,
 [Settings],Read1StartFromCycle,Index Adapters,IDT-Ilmn RNA UD Indexes SetA Ligation,2,
 [Settings],Read2StartFromCycle,Index Adapters,IDT-Ilmn RNA UD Indexes SetA Ligation,2,

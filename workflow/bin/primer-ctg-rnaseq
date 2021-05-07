@@ -11,8 +11,6 @@
 #######################################
 # Initiation - Prime the ctg rnaseq pipeline
 #######################################
-
-overwrite=false
 force_lane='0'
 force_replace_index='false'
 # usage message
@@ -44,7 +42,7 @@ exit_abnormal() {
 }
 
 # Read and control input arguments
-while getopts ":i:s:lfh" opt; do
+while getopts ":i:s:l:fh" opt; do
     case $opt in
       i) id=$OPTARG
 	     ;;
@@ -73,7 +71,7 @@ done
 project_root='/Users/david/tasks/rnaseq_test/ctg-projects' ## root_rootdir for ctg-projects (not same as delivery dir) /projects/fs1/shared/ctg-projects/ctg-rnaesq
 delivery_root='/Users/david/tasks/rnaseq/nftest/ctg-delivery' # root dir for where files are copied upon COMPLETION of the flow. Only files to be delivered to customer are copied here
 qc_root='Users/david/tasks/rnaseq/nftest/ctg-qc' # ctg qc root_root directory. folder where qc stats shpuld be copied to
-log_root='' # logfolder='/Users/david/tasks/rnaseq/rnaseq_test/logs'
+log_root='Users/david/tasks/rnaseq/nftest/logs' # logfolder='/Users/david/tasks/rnaseq/rnaseq_test/logs'
 
 ## project specific directories
 execdir=$(pwd) # execution dir. Should be either illumina runfolder dir or within the project dir where the pipe is run
@@ -84,12 +82,13 @@ fastqdir="${projectdir}/fastq/${id}" # fastq dir (bcl2fastq demux dir) will be s
 
 ## logs
 # logfile="${logfolder}/$id.log"
-logfile=${log_root}/${id}.rnaseq.log
+logdir=${projectdir} ## "${log_root}/${id}"
+logfile="${log_root}/${id}.rnaseq.log"
 
 # nextflow scripts.
 # Folder where nextflow script, nextflow configs and supplementary scripts are found
 # Must contains /bin/ in which rscripts are found
-nfdir="/Users/david/tasks/ctg-rnaseq/"
+nfdir="/Users/david/scripts/ctg-rnaseq/workflow/"
 nf_pipe='ctg-rnaseq.nf'
 
 
@@ -213,7 +212,7 @@ rsync -av $nfdir $projectdir # rsync nextflow foles. Will overwrite configs
       --output_ctg_sheet ${samplesheet_ctg} \
       --bin_dir "${projectdir}/bin/" \
       --force_lane ${force_lane} \
-      --force_replace_index FALSE
+      --force_replace_index ${force_replace_index}
 
 
 #################################################################
@@ -221,11 +220,12 @@ rsync -av $nfdir $projectdir # rsync nextflow foles. Will overwrite configs
 #################################################################
 
 # echo "$samplesheet_ctg"
-assay=$(cat rscript.log.csv | grep 'Assay' |  cut -f2 -d",")
-instrument_type=$(cat rscript.log.csv | grep 'Instrument_type' |  cut -f2 -d",")
-index_adapters=$(cat rscript.log.csv | grep 'Index_Adapters' |  cut -f2 -d",")
-paired=$(cat rscript.log.csv | grep 'Paired' |  cut -f2 -d",")
-strandness=$(cat rscript.log.csv | grep 'Strandness' |  cut -f2 -d",")
+logfile_iem="${execdir}/iem.rscript.log" ## path and file suffix 'iem.rscript.log' is dedfined within 'iem-samplesheet-processor.R'.
+assay=$(cat ${logfile_iem} | grep 'Assay' |  cut -f2 -d",")
+instrument_type=$(cat ${logfile_iem} | grep 'Instrument_type' |  cut -f2 -d",")
+index_adapters=$(cat ${logfile_iem} | grep 'Index_Adapters' |  cut -f2 -d",")
+paired=$(cat ${logfile_iem} | grep 'Paired' |  cut -f2 -d",")
+strandness=$(cat ${logfile_iem} | grep 'Strandness' |  cut -f2 -d",")
 
 
 
@@ -234,7 +234,7 @@ strandness=$(cat rscript.log.csv | grep 'Strandness' |  cut -f2 -d",")
 #######################################################################
 
 # Edit config file
-nf_conf="${projectdir}/nextflow.params_${id}.config"
+nf_conf="${projectdir}/nextflow.params.${id}.config"
 
 echo ""                                    > $nf_conf
 echo "// ${id}"                           >> $nf_conf
@@ -242,26 +242,48 @@ echo "//  nextflow configuration file"           >> $nf_conf
 echo "//  project specific parameters"    >> $nf_conf
 echo "//  adds to - and overrides - parameters in 'nextflow.config' " >> $nf_conf
 echo "params {                                                      " >> $nf_conf
-echo "  //  project samplesheet and run folders                     " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  // root directories                                           " >> $nf_conf
+echo "  project_root        =  '${project_root}'                     " >> $nf_conf
+echo "  delivery_root       =  '${delivery_root}'                    " >> $nf_conf
+echo "  qc_root             =  '${qc_root}'                         " >> $nf_conf
+echo "  log_root            =  '${log_root}'                         " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  project and workfolders                                " >> $nf_conf
 echo "  projectid           =  '${id}'                              " >> $nf_conf
-echo "  samplesheet         =  '${samplesheet_ctg}'                 " >> $nf_conf
 echo "  projectdir          =  '${projectdir}'                      " >> $nf_conf
 echo "  execdir             =  '${execdir}'                         " >> $nf_conf
+echo "  bindir             =  '${projectdir}/bin/'                 " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  samplesheets                                            " >> $nf_conf
+echo "  samplesheet         =  '${samplesheet_ctg}'                 " >> $nf_conf
+echo "  samplesheet_demux   =  '${samplesheet_demux}'               " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  assay specific                                          " >> $nf_conf
-echo "  assay               =  '${assay}'                          " >> $nf_conf
+echo "  assay               =  '${assay}'                           " >> $nf_conf
 echo "  instrument_type     =  '${instrument_type}'                 " >> $nf_conf
 echo "  index_adapters      =  '${index_adapters}'                  " >> $nf_conf
-echo "  paired              =  '${paired}'                          " >> $nf_conf
+echo "  paired              =   ${paired}                           " >> $nf_conf
 echo "  strandness          =  '${strandness}'                      " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  demux specific                                          " >> $nf_conf
-echo "  demux               =  'true'                               " >> $nf_conf
-echo "  samplesheet_demux   =  '${samplesheet_demux}'               " >> $nf_conf
 echo "  runfolderdir        =  '${runfolderdir}'                    " >> $nf_conf
 echo "  runfolder           =  '${runfolder}'                       " >> $nf_conf
-echo "  fastqdir            =  '${fastdir}'                         " >> $nf_conf
-echo "  pooled              =  'false'                              " >> $nf_conf
+echo "  fastqdir            =  '${fastqdir}'                         " >> $nf_conf
+echo "  pooled              =  false                                " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  module specific                                         " >> $nf_conf
+echo "  run_demux             =  true                               " >> $nf_conf
+echo "  run_fastqc            =  true                               " >> $nf_conf
+echo "  run_multiqc           =  true                               " >> $nf_conf
+echo "  run_multiqc_ctg       =  true                               " >> $nf_conf
+echo "  run_fastq_screen      =  true                               " >> $nf_conf
+echo "  bam_indexing          =  true                               " >> $nf_conf
+echo "  run_markdups      =  true                               " >> $nf_conf
+echo "  run_rnaseqmetrics  =  true                               " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  log files                                              " >> $nf_conf
+echo "  logdir               =  '$logdir'                          " >> $nf_conf
 echo ""   >> $nf_conf
 echo "}"  >> $nf_conf
 echo ""   >> $nf_conf
@@ -282,8 +304,22 @@ echo "#####################################"
 echo "  ctg-rnaseq project primed"
 echo "#####################################"
 echo ""
-echo " check and modify nextflow.params.${id}  "
-echo " before running "
+echo "primed project directory for '${id}'"
+echo "${projectdir}"
+echo ""
+echo "generated demux and ctg sample sheets: "
+echo "${samplesheet_ctg}"
+echo "${samplesheet_demux}"
+echo ""
+echo "copied ctg-rnaseq nextflow files into projectdir and generated project-specific parameter config file: "
+echo "${nf_conf}"
+echo ""
+echo "check iem logfile to see if original sample sheet need to be modified (and primer script re-run):"
+echo "${logfile_iem} "
+echo ""
+echo "when sample sheets are ok, move to project dir and check the project specific nextflow config':"
+echo "'${nf_conf}'"
+echo "before running 'driver-ctg-rnaseq' while in project dir"
 echo ""; echo "";
 #
 # ##################

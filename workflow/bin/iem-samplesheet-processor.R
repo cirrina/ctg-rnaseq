@@ -87,7 +87,7 @@ option_list <- list(
   make_option(c("-d", "--output_demux_sheet"  ), type="character"   , default=NULL  , metavar="path", help="Name of demux sample sheet"                          ),
   make_option(c("-o", "--output_ctg_sheet"    ), type="character"   , default=NULL  , metavar="path", help="Name of output sample sheet"                          ),
   make_option(c("-l", "--force_lane"          ), type="numeric"     , default=0  , metavar="numeric", help="If to force lane, this is mostly only used if lane divider is used. Default is 0 which means no action. If '1' or '2' an exta column is added in the demux sample sheet."),
-  make_option(c("-x", "--force_replace_index" ), type="logical"     , default=FALSE  , metavar="boelean", help="If to use the checklist-index.csv to fordce update I7/I5 IDs and Sequences. Use this option if you are sure that i) the 'Index_Plate_Well' column is supplied corectly AND that ii) the correct 'Index Adapters' kit is supplied  ")
+  make_option(c("-f", "--force_replace_index" ), type="logical"     , default=FALSE  , metavar="boelean", help="If to use the checklist-index.csv to fordce update I7/I5 IDs and Sequences. Use this option if you are sure that i) the 'Index_Plate_Well' column is supplied corectly AND that ii) the correct 'Index Adapters' kit is supplied  ")
 
 )
 
@@ -264,7 +264,7 @@ reads = as.numeric(reads_df$V1)
 reads = reads[!is.na(reads)]
 if(length(reads)%in%c(1,2)){
   paired = length(reads) =="2"
-  checklist_flags$Paired <- paired
+  checklist_flags$Paired <- if_else(paired,'true','false')
   checklist_flags$Reads <- paste(reads, collapse = '|')
 }else{
   checklist_flags$Paired <- "Warning: Error setting paired TRUE/FALSE. Check [Reads] section."
@@ -373,7 +373,7 @@ species_values <- iem_df[iem_df$parameter == 'Species',]$value
 # str(data_df)
 if('Species' %in% rownames(header_df)){
   species <- header_df['Species','V2']
-  if(is.na(species))  checklist_flags$Species <- "Warning: 'Species' in [Header] section is set to NA."
+  if(is.na(species))  checklist_flags$Species <- "Warning: 'Species' in [Header] section is 'NA'. Set to approriate species or remove."
   if(!all(species %in% species_values)){
     checklist_flags$Species <- paste("Warning: 'Species' value in [Header] section is not among allowed values:  ", paste(species_values, collapse = ", "))
   }else{
@@ -548,10 +548,14 @@ if(!all(is.na(u))){
     y <-  sapply(y, function(x) paste(x, collapse = ", "))
 
     if(length(y)>5){
-      checklist_flags$index.individual.reference.error <- "Warning: More than 5 index entries are different from what is supplied in 'checklist-index.csv' given 'Index Adapters' and 'Instrument Type'."
+      checklist_flags$index.individual.reference.error <- "Warning: More than 5 index entries are different from what is supplied in 'checklist-index.csv' given 'Index Adapters' and 'Instrument Type'. Check 'index.error.log'"
     }else{
       checklist_flags$index.individual.reference.error <- paste("Warning: Some index entries differ from 'checklist-index.csv' given 'Index Adapters' and 'Instrument Type'.: ", paste(y, collapse=';  '))
     }
+    # Also dump the index input & reference table for reference.
+   colnames(index_reference) <- paste0(colnames(index_reference),".reference.file")
+   write.table(index_input, file= file.path(dirname(opt$sample_sheet), 'index.error.log'), append = F, row.names = F, sep=",", quote = F, col.names = T)
+   suppressWarnings(write.table(index_reference, file= file.path(dirname(opt$sample_sheet), 'index.error.log'), append = T, row.names = F, sep=",", quote = F, col.names = T))
   }
 }
 
@@ -572,7 +576,7 @@ if(opt$force_replace_index){
   index_input <- data_df.out[,index_columns]
   index_reference <- check_df[u, index_columns]
   data_df.out[ , index_columns] <-  index_reference
-  checklist_flags$force.replace.index <- "Indexes were replaced using '--force_replace_index' flag with supplied 'Index_Plate_Well' with 'checklist-index.csv' "
+  checklist_flags$force.replace.index <- "Indexes were replaced using '--force_replace_index' using 'Index_Plate_Well' "
 }
 
 

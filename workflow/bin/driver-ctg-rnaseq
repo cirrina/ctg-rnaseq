@@ -20,60 +20,16 @@
 execdir=$(pwd)
 #runfolderdir=''
 #runfolder='' # runfolder will be set to execfolder if demux is true. It is possible to execute scriipt outside illumina runfolder if demux is FALSE
-projectbase='/Users/david/tasks/rnaseq_test/ctg-projects' ## /projects/fs1/shared/ctg-projects/ctg-rnaesq
-logfolder='/Users/david/tasks/rnaseq/rnaseq_test/logs'
-resume=false
-aligned=false
-overwrite=false
-demux=true
-pooled=false
-paired=true
-force_lane="0"
-sheet_custom=false
-
-# nextfloew scripts
-nfdir="/Users/david/tasks/ctg-rnaseq/"
-nf_pipe='ctg-rnaseq.nf'
-
-# allowed workflows
-allowed_species=("hs" "mm")
-allowed_assays=(
-  TruSeq_Stranded_mRNA
-  Illumina_Stranded_mRNA_Prep
-  SMARTer_Stranded_Total_RNA_Sample_Prep_Kit_HI_Mammalian
-  QIAseq_FastSelet_BrRNAdepl_SMARTer_Stranded_Total_RNA_Seq_Kit_v2_PicoInput)
-
 # usage message
 usage() {
     echo ""
     echo ""
-    echo "Usage: ctg-rnaseq [ -i PROJECT_ID ] [ -w WORKFLOW ] [ -a ALIGNED] [ -s SAMPLESHEET ] [ -e SPECIES ] [ -p PAIRED ] [ -o POOLED ] [ -c CHECK_SHEET ] [ -x OVERWRITE ] [ -d DEMUX-OFF ] [ -l FORCE_LANE ] [ -r RESUME ] [ -h HELP ] "  1>&2
+    echo "usage: prime-ctg-rnaseq [ -i projectid ] [ -s samplesheet ] [ -l force_lane ] [ -l force_replace_index ] [ -h help ] "  1>&2
     echo ""
     echo "------------------- "
-    echo "Arguments: "
+    echo " arguments : "
     echo "------------------- "
-    echo "PROJECT_ID     -i : Define 'project id'. Typically 202X-XXX. This will define the runfolder, but also define some output folders, such as blc2fastq2 output folders."
-    echo "WORKFLOW       -w : Define the Laboratory Library prep workflow. Used to acitvate profiles defined in the nextflow.config."
-    echo "                      - TruSeq_Stranded_mRNA"
-    echo "                      - Illumina_Stranded_mRNA_Prep"
-    echo "                      - SMARTer_Stranded_Total_RNA_Sample_Prep_Kit_HI_Mammalian"
-    echo "                      - QIAseq_FastSelet_BrRNAdepl_SMARTer_Stranded_Total_RNA_Seq_Kit_v2_PicoInput"
-    echo ""
-    echo "ALIGNED        -a : Set if to run full pipeline including aligned data "
-    echo "SAMPLESHEET    -s : IEM style laboratory samplesheet for this run. Within runfolder. (Default: CTG_SampleSheet.csv) "
-    echo "SPECIES        -e : Define speicies. Currently human or mouse."
-    echo "POOLED         -o : Set if this project is pooled togehter with other projects, i.e, if runfolder contains data from multiple customers. This will affect the delivery of files, such as the Undetermimned faastq reads."
-    echo ""
-    echo "------------------- "
-    echo "Optional arguments: "
-    echo "------------------- "
-    echo "OVERWRITE      -x : Set if to allow overvrite data. If already run. Typically  If RESUME is true, but also if when demux is false, overwrite will be set to yes"
-    echo "DEMUX-OFF      -d : Set flag to skip demux (then fastq files must be defined in samplesheet) "
-    echo "CUSTOM SHEET   -c : Set this flag if the sampple sheet set by '-s' is custom. Will skip the Rscript sheet check. Will force demux to FALSE. Assumes that sample sheet is in correct ctg-rnaseq format. "
-    echo "RESUME         -r : If to resume nextflow run"
-    echo "FORCE_LANE     -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will overrid the Lane column in sample sheet"
-    echo "HELP           -h : print help message"
-    echo "------------------- "
+    echo " project_id         -i : Define 'project id'. Typically 202X-XXX. This MUST MATCH the project folder that you are in. The script use the rpojec t id to check the integrity of files - and that the project specific nf params file is present "
     echo ""
     echo ""
 }
@@ -84,33 +40,11 @@ exit_abnormal() {
 }
 
 # Read and control input arguments
-while getopts ":i:w:as:e:pxdcl:rh" opt; do
+while getopts ":i:h" opt; do
     case $opt in
       i) id=$OPTARG
 	     ;;
-      w) assay=$OPTARG
-        ;;
-      a) aligned=true
-        ;;
-      s) sheet=$OPTARG
-	     ;;
-      e) species=$OPTARG
-        ;;
-      p) paired=$OPTARG
-        ;;
-      o) pooled=true
-        ;;
-      x) overwrite=true
-        ;;
-      d) demux=false
-    	  ;;
-      c) sheet_custom=true
-          ;;
-      l) force_lane=$OPTARG
-        ;;
-      r) resume=true
-	     ;;
-	    h) exit_abnormal
+      h) exit_abnormal
         ;;
       \?) echo echo ""; echo "Error:";"Invalid option -$OPTARG" >&2
         exit_abnormal ;;
@@ -119,79 +53,33 @@ while getopts ":i:w:as:e:pxdcl:rh" opt; do
     esac
 done
 
-
+## check  projct id input
+if [ -z $id ]; then
+  echo ""; echo "Error: "
+  echo "Specify Project id ('-i' flag)"; echo""
+  exit_abnormal
+fi
 
 ################################################
 # Define variables based on input arguments
 ################################################
 
-projectdir=${projectbase}/${id}
-logfile="${logfolder}/$id.log"
-# if demux - illumina runfolder will be same as execution dir
-if [ "$demux" = true ]; then
-  runfolderdir="$execdir"
-  runfolder=$(basename $runfolderdir)
+projectdir=${execdir}
+# logfile="${logfolder}/$id.log"
+projectfolder=$(basename ${execdir})
+nf_conf="${projectdir}/nextflow.params.${id}.config"
+
+if [ ${id} != ${projectfolder} ]; then
+  echo "Error: Project id (flag '-i') must be same as execution dir. the script must be initiated within the proect folder "
+  echo""; exit_abnormal
 fi
-# fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
-# sample fastq files will be in /projectdir/fastq/project
-# fastqdir="${projectdir}/fastq" # set in nef script instead
-
-
-
 
 ## Check arguments
 shift "$(( OPTIND -1 ))"
 
-## check  projct id input
-if [ -z $id ]; then
-  echo ""; echo "Error: "
-  echo "Specify Project id: '-i' flag"; echo""; echo ""
-  # metaid=$(echo $run | cut -f1 -d"_")
-  # id="${metaid}-sc-rna-10x"
-  # echo "- Using: '${id}'"
-  exit_abnormal
-fi
 
-if [ -z "$species" ]; then
-  echo ""; echo "Error: "
-  echo "Specify Species: '-e hs'"; echo""
-  exit_abnormal
-fi
-## Check species (-e) from list of allowed
-if [[ " "${allowed_species[@]}" " != *" "$species" "* ]] ;then
-  #echo "$species: ok"
-  # else
-  echo ""; echo "Error:"
-  echo "$species: not recognized. Valid names are:"
-  echo "${allowed_species[@]/%/,}"; echo ""; echo ""
-  exit 1
-fi
 
-## check paired
-if [ -z $paired ]; then
-  echo ""; echo "Error: "; echo "  Specify Paired: '-p' flag, 'true' or 'false'"; echo""; echo ""
-  exit_abnormal
-fi
-if [ "$paired" != true ]; then
-  paired=false
-  # echo "   Paired set FALSE."
-fi
 
-## Check workflow blank
-if [ -z $assay ]; then
-  echo ""; echo "Error: "
-  echo "Specify library workflow: '-w' flag"; echo""
-  exit_abnormal
-fi
-## Check workflow (-w) from list of allowed
-if [[ " "${allowed_assays[@]}" " != *" "$assay" "* ]] ;then
-    #echo "$assay: ok"
-# else
-    echo ""; echo "Error:"
-    echo "$assay: not recognized. Valid names are:"
-    echo "${allowed_assays[@]/%/,}"; echo ""; echo ""
-    exit 1
-fi
 
 ## Check force_lane !! NOT WORKING (Rscript will test this. ..)
 # allowed_lane=('0' '1' '2')
