@@ -18,18 +18,20 @@
 
 # Initialize variables asdsadasd adfdsf
 execdir=$(pwd)
-#runfolderdir=''
+resume=false
+
 #runfolder='' # runfolder will be set to execfolder if demux is true. It is possible to execute scriipt outside illumina runfolder if demux is FALSE
 # usage message
 usage() {
     echo ""
     echo ""
-    echo "usage: prime-ctg-rnaseq [ -i projectid ] [ -s samplesheet ] [ -l force_lane ] [ -l force_replace_index ] [ -h help ] "  1>&2
+    echo "usage: prime-ctg-rnaseq [ -i projectid ] [ -r resume ] [ -h help ] "  1>&2
     echo ""
     echo "------------------- "
     echo " arguments : "
     echo "------------------- "
     echo " project_id         -i : Define 'project id'. Typically 202X-XXX. This MUST MATCH the project folder that you are in. The script use the rpojec t id to check the integrity of files - and that the project specific nf params file is present "
+    echo " resume             -r : If to resume nextflow run"
     echo ""
     echo ""
 }
@@ -40,10 +42,12 @@ exit_abnormal() {
 }
 
 # Read and control input arguments
-while getopts ":i:h" opt; do
+while getopts ":i:rh" opt; do
     case $opt in
       i) id=$OPTARG
 	     ;;
+      r) resume=true
+ 	     ;;
       h) exit_abnormal
         ;;
       \?) echo echo ""; echo "Error:";"Invalid option -$OPTARG" >&2
@@ -67,8 +71,8 @@ fi
 projectdir=${execdir}
 # logfile="${logfolder}/$id.log"
 projectfolder=$(basename ${execdir})
-nf_conf="${projectdir}/nextflow.params.${id}.config"
-
+nf_conf="${projectdir}/nextflow.params.${id}"
+nf_pipe="ctg-rnaseq.nf"
 if [ ${id} != ${projectfolder} ]; then
   echo "Error: Project id (flag '-i') must be same as execution dir. the script must be initiated within the proect folder "
   echo""; exit_abnormal
@@ -93,50 +97,20 @@ shift "$(( OPTIND -1 ))"
 #     exit 1
 # fi
 
-
-
-# if resume - set overwrite to TRUE
-if [ "$resume" == true ]; then
-  overwrite=true
-  # echo "   Resume set TRUE. Overwrite forced to TRUE."
-fi
-
 ## Check if project (folder) exists from before. If so overwrite has to be set true with -x flag
-if [ -d ${projectdir} ] && [ "$overwrite" != true ]; then
+if [ ! -f ${nf_conf} ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/ctg-rnaseq.nf"
   echo ""; echo "Error:"
-  echo "Project id '${id}' is laready in use: "
-  echo "Directory '${projectdir}' exists."
-  echo "Please chose another project id OR use flag -x to allow overwrite."; echo ""; echo ""
+  echo "'${nf_conf}' does not exist in current dir. Run 'primer-ctg-rnaseq' or crete file."; echo ""; echo ""
   exit_abnormal
   # echo "'${projectdir}' already exists. Overwriting this folder."
 fi
-if [ -d ${projectdir} ] && [ "$overwrite" == true ]; then
-  echo ""
-  echo " Directory '${projectdir}' exists."
-  echo "   Overwrite is set to TRUE. Will overrite data in directory. "
-  echo ""
+if [ ! -f "${execdir}/nextflow.config" ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/ctg-rnaseq.nf"
+  echo ""; echo "Error:"
+  echo "'nextflow.configuration' file does not exist in current dir. Run 'primer-ctg-rnaseq' or crete file."; echo ""; echo ""
+  exit_abnormal
   # echo "'${projectdir}' already exists. Overwriting this folder."
 fi
 
-## Check Sample Sheet. if file is present in work directory.
-if [ -z $sheet ]; then
-  echo ""; echo "Error:"
-  echo "Specify sample sheet (in current dir): '-s' flag. "; echo ""
-  exit_abnormal
-  # sheet="CTG_SampleSheet.csv"
-  # echo "- Using 'CTG_SampleSheet.csv'"
-fi
-if [ ! -f $sheet ]; then
-  echo ""; echo "Error:"
-  echo "Sample Sheet does not exist (in current dir)"
-  #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
-  exit_abnormal
-fi
-
-## if a custom sheet is set to true - set demux to FALSE
-if [ "$sheet_custom" == true ]; then
-  demux=false
-fi
 
 
 #
@@ -146,42 +120,21 @@ fi
 echo ""
 echo "Driver execution parameters "
 echo "----------------------------"
-echo "Project ID            : $id";
-echo "Driver Execution dir  : $execdir";
-echo "Overwrite             : $overwrite";
-echo "";
-echo "Sample Sheet          : $sheet";
-echo "Custom Sheet          : $sheet_custom";
-echo "";
-echo "Libprep assay         : $assay";
-echo "";
-echo "Demux specific: "
-echo "Demux                 : $demux";
-echo "Runfolder             : $runfolder";
-echo "Runfolder Path        : $runfolderdir";
-echo "Fastq output          : $fastqdir";
-echo "Pooled (with other)   : $pooled";
-echo "Force Lane            : $force_lane";
-echo "";
-echo "BNF specific: "
-echo "Nextflow exec. dir    : $projectdir";
-echo "Align data            : $aligned";
-echo "Species               : $species";
-echo "Paired                : $paired";
-echo "";
-echo "";
-echo "Log file              : $logfile";
-echo "";
-echo "";
-echo "Project output dir    : $projectdir";
-echo "Project delivery dir  : ";
+echo " project id                : $id";
+echo " execution / project dir   : $execdir";
+echo " resume                    : $resume";
+
 echo "";
 echo "";
 
+echo "'${nf_conf}' project specific configuration file: "
+echo "--------------------------------------------------"
+cat ${nf_conf}
+echo "--------------------------------------------------"
 # Prompt user to approve running in current directory and input
+echo "";
 read -p "Warning:
-  Can only be run from i) within runfolder or ii) within project folder if using custom samplesheet and no demux
-  Are you in the folder in which you want run?
+  Nextflow Pipeline will start using the above nextflow configiration parameters.
   Are input execution parameters correct?
 
   (y/n)  ... " prompt
@@ -190,117 +143,11 @@ then
     echo ""; echo "Exiting!! "
     exit 0
 fi
-
-
-
-###############################
-# Set up Project directory
-###############################
-# Create project dir for nextflow exection
-mkdir -p $projectdir
-# Copy nextflow script and config to project folder
-rsync -av $nfdir $projectdir
+echo "";echo ""
 
 
 
 
-
-#######################################################
-# Generate sample sheets using Rscripts
-#######################################################
-
-
-if [ "$sheet_custom" == false ]; then
-  samplesheet_demux="${projectdir}/SampleSheet-${id}-demux.csv"
-  samplesheet_ctg="${projectdir}/SampleSheet-${id}-ctg.csv"
-
-  ${projectdir}/bin/iem2ctg-samplesheet-demux.R \
-      --projectid ${id} \
-      --sample_sheet ${sheet} \
-      --output_demux_sheet ${samplesheet_demux}  \
-      --force_lane ${force_lane}\
-      --require_adapter TRUE \
-      --output_ctg_sheet ${samplesheet_ctg} \
-      --paired ${paired} \
-      --fastq_path "${fastqdir}/${id}" \
-      --bam_path "${fastqdir}/${id}"
-else
-  # if custom sample sheet is sipplied - then let this be the samplesheet
-  samplesheet_ctg="${execdir}/${sheet}"
-  samplesheet_demux=''
-fi
-
-
-# echo "$samplesheet_ctg"
-#
-#
-# ${projectdir}/bin/ctg_sampleSheetCheck.R \
-#     --projectid ${id} \
-#     --sample_sheet ${sheet} \
-#     --output_ctg_sheet ${samplesheet_ctg} \
-#     --output_demux_sheet ${samplesheet_demux}  \
-#     --iem_format TRUE \
-#     --paired ${paired} \
-#     --force_lane ${force_lane}\
-#     --require_adapter FALSE \
-#     --allow_num_prefix FALSE \
-#     --bam_suffix "_Aligned.sortedByCoord.out.bam" \
-
-
-
-###############################
-# Modify the nextflow.config
-###############################
-
-# Edit config file
-nf_conf="${projectdir}/nextflow.params_${id}.config"
-
-echo ""   > $nf_conf
-echo "// ${id}" >> $nf_conf
-echo "//  nextflow config file" >> $nf_conf
-echo "//  Project specific parameters" >> $nf_conf
-echo "//  Adds to and overrides parameters in nextflow.config " >> $nf_conf
-echo "params {" >> $nf_conf
-echo "  projectid           =  '${id}'                " >> $nf_conf
-echo "  custom_samplesheet  =  '${sheet_custom}'        " >> $nf_conf
-echo "  samplesheet_ctg     =  '${samplesheet_ctg}'         " >> $nf_conf
-echo "  projectdir          =  '${projectdir}'    " >> $nf_conf
-echo "  execdir             =  '${execdir}'    " >> $nf_conf
-echo "" >> $nf_conf
-echo "  demux               =  '${demux}'         " >> $nf_conf
-
-if [[ "$demux" == true ]]; then
-  echo "  //  demux specific                        " >> $nf_conf
-  echo "  samplesheet_demux   =  '${samplesheet_demux}'       " >> $nf_conf
-  echo "  runfolderdir        =  '${runfolderdir}'  " >> $nf_conf
-  echo "  fastqdir            =  '${fastdir}'  " >> $nf_conf
-  # echo "  fastqdir            =  '${fastqdir}'      " >> $nf_conf
-fi
-if [[ "$pooled" == true ]]; then
-  echo "  pooled               =  '${pooled}'         " >> $nf_conf
-fi
-if [[ "$paired" == true ]]; then
-  echo "  paired               =  '${paired}'         " >> $nf_conf
-fi
-echo "}"  >> $nf_conf
-echo ""   >> $nf_conf
-
-
-# sed "s/xmetaidx/$id/g" $nf_conf > tmp.txt; mv tmp.txt $proj_conf
-# sed "s/xrunfolderx/$run/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
-# if [ ! -z $custom_genome ]; then
-#     sed "s/xcustomgenomex/$custom_genome/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
-# fi
-# if [ $demux == "ON" ];then
-#     sed "s/xdemuxx/y/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
-# else
-#     sed "s/xdemuxx/n/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
-# fi
-
-# Copy edited config to runfolder
-# cp $proj_conf $runfolder
-# # Copy samplesheet to project folder (ctg-projects..)
-# cp $sheet $projdir
 
 
 
@@ -308,11 +155,11 @@ echo ""   >> $nf_conf
 #  Initiate Nextflow Pipeline
 # #############################
 if [ "$resume" == true ]; then
-    nohup nextflow run $nf_pipe -c $nf_conf -profile $assay $species -resume > nf.log.ctg-rnaseq &
+    nohup nextflow run $nf_pipe -c $nf_conf --resume > nf.log.ctg-rnaseq &
 else
-    #  nohup nextflow run $nf_pipe -c $nf_conf -profile $assay $species > nf.log.ctg-rnaseq &
-    nextflow run $nf_pipe -c $nf_conf -profile $assay $species
-    echo "nextflow run $nf_pipe -c $nf_conf -profile $assay $species"
+    #nohup nextflow run $nf_pipe -c $nf_conf > nf.log.ctg-rnaseq &
+    nextflow run $nf_pipe -c $nf_conf
+    echo "nextflow run $nf_pipe -c $nf_conf"
 fi
 echo ""; echo ""
 echo "#################################"

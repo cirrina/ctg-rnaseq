@@ -433,9 +433,12 @@ if(any(u)) checklist_flags$duplicated.Sample_ID <- paste("Warning: 'Sample_Name'
 #  add force_lane if specified
 # ========================================================
 if(opt$force_lane != 0) data_df$Lane <- opt$force_lane
-if(opt$force_lane != 0) data_df <- dplyr::select(.data = data_df, c(Lane, everything())) # strandness
 
 
+# ========================================================
+#   Count no samples
+# ========================================================
+checklist_flags$number_samples = nrow(data_df)
 
 
 # ========================================================
@@ -639,6 +642,8 @@ if(!is.null(bam.suffix)) data_df.out$bam <- paste0(data_df.out$Sample_Name, bam.
 ## re-order sheet
 if(paired) data_df.out <- dplyr::select(.data = data_df.out, c(Sample_ID, Sample_Name, Group, Replicate, Strandness, Paired, Assay, Instrument_type, Index_Adapters, everything())) # strandness
 
+## re-order if Lane
+if('Lane' %in% colnames(data_df.out))  data_df.out <- dplyr::select(.data = data_df.out, c(Lane, everything())) # strandness
 
 
 

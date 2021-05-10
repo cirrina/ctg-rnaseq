@@ -69,9 +69,9 @@ done
 
 ## Root directories (based on ourr set folder naming conventions on lsens)
 project_root='/Users/david/tasks/rnaseq_test/ctg-projects' ## root_rootdir for ctg-projects (not same as delivery dir) /projects/fs1/shared/ctg-projects/ctg-rnaesq
-delivery_root='/Users/david/tasks/rnaseq/nftest/ctg-delivery' # root dir for where files are copied upon COMPLETION of the flow. Only files to be delivered to customer are copied here
-qc_root='Users/david/tasks/rnaseq/nftest/ctg-qc' # ctg qc root_root directory. folder where qc stats shpuld be copied to
-log_root='Users/david/tasks/rnaseq/nftest/logs' # logfolder='/Users/david/tasks/rnaseq/rnaseq_test/logs'
+delivery_root='/Users/david/tasks/rnaseq_test/nftest/ctg-delivery' # root dir for where files are copied upon COMPLETION of the flow. Only files to be delivered to customer are copied here
+qc_root='/Users/david/tasks/rnaseq_test/nftest/ctg-qc' # ctg qc root_root directory. folder where qc stats shpuld be copied to
+log_root='/Users/david/tasks/rnaseq_test/nftest/logs' # logfolder='/Users/david/tasks/rnaseq/rnaseq_test/logs'
 
 ## project specific directories
 execdir=$(pwd) # execution dir. Should be either illumina runfolder dir or within the project dir where the pipe is run
@@ -226,15 +226,15 @@ instrument_type=$(cat ${logfile_iem} | grep 'Instrument_type' |  cut -f2 -d",")
 index_adapters=$(cat ${logfile_iem} | grep 'Index_Adapters' |  cut -f2 -d",")
 paired=$(cat ${logfile_iem} | grep 'Paired' |  cut -f2 -d",")
 strandness=$(cat ${logfile_iem} | grep 'Strandness' |  cut -f2 -d",")
-
+n_samples=$(cat ${logfile_iem} | grep 'number_samples' |  cut -f2 -d",")
 
 
 #######################################################################
-# Prime nextflow configuration file -- nextflow.params_${id}.config --
+# Prime nextflow configuration file -- nextflow.params_${id} --
 #######################################################################
 
 # Edit config file
-nf_conf="${projectdir}/nextflow.params.${id}.config"
+nf_conf="${projectdir}/nextflow.params.${id}"
 
 echo ""                                    > $nf_conf
 echo "// ${id}"                           >> $nf_conf
@@ -251,9 +251,10 @@ echo "  log_root            =  '${log_root}'                         " >> $nf_co
 echo ""                                                               >> $nf_conf
 echo "  //  project and workfolders                                " >> $nf_conf
 echo "  projectid           =  '${id}'                              " >> $nf_conf
+echo "  n_samples           =  '${n_samples}'                       " >> $nf_conf
 echo "  projectdir          =  '${projectdir}'                      " >> $nf_conf
-echo "  execdir             =  '${execdir}'                         " >> $nf_conf
-echo "  bindir             =  '${projectdir}/bin/'                 " >> $nf_conf
+# echo "  execdir             =  '${execdir}'                         " >> $nf_conf
+echo "  bindir              =  '${projectdir}/bin/'                 " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  samplesheets                                            " >> $nf_conf
 echo "  samplesheet         =  '${samplesheet_ctg}'                 " >> $nf_conf
@@ -279,11 +280,11 @@ echo "  run_multiqc           =  true                               " >> $nf_con
 echo "  run_multiqc_ctg       =  true                               " >> $nf_conf
 echo "  run_fastq_screen      =  true                               " >> $nf_conf
 echo "  bam_indexing          =  true                               " >> $nf_conf
-echo "  run_markdups      =  true                               " >> $nf_conf
-echo "  run_rnaseqmetrics  =  true                               " >> $nf_conf
+echo "  run_markdups          =  true                               " >> $nf_conf
+echo "  run_rnaseqmetrics     =  true                               " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  log files                                              " >> $nf_conf
-echo "  logdir               =  '$logdir'                          " >> $nf_conf
+echo "  logdir            =  '$logdir'                          " >> $nf_conf
 echo ""   >> $nf_conf
 echo "}"  >> $nf_conf
 echo ""   >> $nf_conf
