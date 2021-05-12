@@ -227,7 +227,7 @@ index_adapters=$(cat ${logfile_iem} | grep 'Index_Adapters' |  cut -f2 -d",")
 paired=$(cat ${logfile_iem} | grep 'Paired' |  cut -f2 -d",")
 strandness=$(cat ${logfile_iem} | grep 'Strandness' |  cut -f2 -d",")
 n_samples=$(cat ${logfile_iem} | grep 'number_samples' |  cut -f2 -d",")
-
+species=$(cat ${logfile_iem} | grep 'species' |  cut -f2 -d",")
 
 #######################################################################
 # Prime nextflow configuration file -- nextflow.params_${id} --
@@ -251,12 +251,14 @@ echo "  log_root            =  '${log_root}'                         " >> $nf_co
 echo ""                                                               >> $nf_conf
 echo "  //  project and workfolders                                " >> $nf_conf
 echo "  projectid           =  '${id}'                              " >> $nf_conf
+echo "  species             =  '${species}'                         " >> $nf_conf
 echo "  n_samples           =  '${n_samples}'                       " >> $nf_conf
 echo "  projectdir          =  '${projectdir}'                      " >> $nf_conf
 # echo "  execdir             =  '${execdir}'                         " >> $nf_conf
 echo "  bindir              =  '${projectdir}/bin/'                 " >> $nf_conf
+echo "  fastqdir            =  '${fastqdir}'                         " >> $nf_conf
 echo ""                                                               >> $nf_conf
-echo "  //  samplesheets                                            " >> $nf_conf
+echo "  //  samplesheets and files                                  " >> $nf_conf
 echo "  samplesheet         =  '${samplesheet_ctg}'                 " >> $nf_conf
 echo "  samplesheet_demux   =  '${samplesheet_demux}'               " >> $nf_conf
 echo ""                                                               >> $nf_conf
@@ -270,18 +272,22 @@ echo ""                                                               >> $nf_con
 echo "  //  demux specific                                          " >> $nf_conf
 echo "  runfolderdir        =  '${runfolderdir}'                    " >> $nf_conf
 echo "  runfolder           =  '${runfolder}'                       " >> $nf_conf
-echo "  fastqdir            =  '${fastqdir}'                         " >> $nf_conf
 echo "  pooled              =  false                                " >> $nf_conf
 echo ""                                                               >> $nf_conf
-echo "  //  module specific                                         " >> $nf_conf
+echo "  //  major modes                                             " >> $nf_conf
 echo "  run_demux             =  true                               " >> $nf_conf
+echo "  run_align             =  true                               " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  optionals                                               " >> $nf_conf
 echo "  run_fastqc            =  true                               " >> $nf_conf
 echo "  run_multiqc           =  true                               " >> $nf_conf
 echo "  run_multiqc_ctg       =  true                               " >> $nf_conf
 echo "  run_fastq_screen      =  true                               " >> $nf_conf
-echo "  bam_indexing          =  true                               " >> $nf_conf
+echo "  run_bam_indexing      =  true                               " >> $nf_conf
 echo "  run_markdups          =  true                               " >> $nf_conf
 echo "  run_rnaseqmetrics     =  true                               " >> $nf_conf
+echo "  run_featurecounts     =  true                               " >> $nf_conf
+echo "  run_checkfiles        =  true                               " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  log files                                              " >> $nf_conf
 echo "  logdir            =  '$logdir'                          " >> $nf_conf
