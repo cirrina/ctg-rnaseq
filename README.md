@@ -47,4 +47,51 @@ markdups_ch
 
 bam_index_complete_ch
 markdups_complete_ch
-rnaseqmtrics_complete_ch
+rnaseqmetrics_complete_ch
+
+bam_featurecounts_ch
+
+
+
+if [ "${species}" == "Homo sapiens" ]
+then
+  gtf=${params.gtf_hs}
+elif [ "${species}" == "Mus musculus" ]
+then
+  gtf=${params.gtf_mm}
+else
+  echo "Warning: featurecounts, Species not recognized. ${species}"
+fi
+
+
+
+featurecountsdir = outputdir+'/featurecounts'
+stardir = outputdir+'/star'
+fastqcdir = outputdir+'/fastqc'
+markdupsqcdir = outputdir+'/markdups'
+rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
+
+fastqdir
+
+pooled
+runfolderdir
+
+markdupsdir = outputdir+'/markdups_bam_tmp'
+
+
+
+
+### OLD ST
+
+# Set Species
+
+if [ "${species}" == "Homo sapiens" ]
+then
+  echo $species
+  genome=${params.star_genome_hs}
+elif [ "${species}" == "Mus musculus" ]
+then
+  genome=${params.star_genome_mm}
+else
+  echo "Warning: Species not recognized. ${species}"
+fi

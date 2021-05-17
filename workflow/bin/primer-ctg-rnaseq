@@ -251,7 +251,7 @@ echo "  log_root            =  '${log_root}'                         " >> $nf_co
 echo ""                                                               >> $nf_conf
 echo "  //  project and workfolders                                " >> $nf_conf
 echo "  projectid           =  '${id}'                              " >> $nf_conf
-echo "  species             =  '${species}'                         " >> $nf_conf
+echo "  species_global      =  '${species}'                         " >> $nf_conf
 echo "  n_samples           =  '${n_samples}'                       " >> $nf_conf
 echo "  projectdir          =  '${projectdir}'                      " >> $nf_conf
 # echo "  execdir             =  '${execdir}'                         " >> $nf_conf
