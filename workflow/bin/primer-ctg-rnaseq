@@ -44,7 +44,7 @@ exit_abnormal() {
 # Read and control input arguments
 while getopts ":i:s:l:fh" opt; do
     case $opt in
-      i) id=$OPTARG
+      i) projectid=$OPTARG
 	     ;;
       s) samplesheet=$OPTARG
 	     ;;
@@ -72,18 +72,19 @@ project_root='/Users/david/tasks/rnaseq_test/ctg-projects' ## root_rootdir for c
 delivery_root='/Users/david/tasks/rnaseq_test/nftest/ctg-delivery' # root dir for where files are copied upon COMPLETION of the flow. Only files to be delivered to customer are copied here
 qc_root='/Users/david/tasks/rnaseq_test/nftest/ctg-qc' # ctg qc root_root directory. folder where qc stats shpuld be copied to
 log_root='/Users/david/tasks/rnaseq_test/nftest/logs' # logfolder='/Users/david/tasks/rnaseq/rnaseq_test/logs'
+runfolder_root='/projects/fs1/nas-sync/upload/'
 
 ## project specific directories
 execdir=$(pwd) # execution dir. Should be either illumina runfolder dir or within the project dir where the pipe is run
-projectdir=${project_root}/${id}
+projectdir=${project_root}/${projectid}
 runfolderdir=$execdir # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
 runfolder=$(basename $runfolderdir) #
-fastqdir="${projectdir}/fastq/${id}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
+fastqdir="${projectdir}/fastq/${projectid}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
 
 ## logs
 # logfile="${logfolder}/$id.log"
-logdir=${projectdir} ## "${log_root}/${id}"
-logfile="${log_root}/${id}.rnaseq.log"
+logdir=${projectdir} ## "${log_root}/${projectid}"
+logfile="${log_root}/${projectid}.rnaseq.log"
 
 # nextflow scripts.
 # Folder where nextflow script, nextflow configs and supplementary scripts are found
@@ -95,8 +96,8 @@ nf_pipe='ctg-rnaseq.nf'
 
 
 # Sampleshee output from rscripts
-samplesheet_demux="${projectdir}/SampleSheet-${id}-demux.csv"
-samplesheet_ctg="${projectdir}/SampleSheet-${id}-ctg.csv"
+samplesheet_demux="${projectdir}/SampleSheet-${projectid}-demux.csv"
+samplesheet_ctg="${projectdir}/SampleSheet-${projectid}-ctg.csv"
 
 
 
@@ -201,12 +202,16 @@ rsync -av $nfdir $projectdir # rsync nextflow foles. Will overwrite configs
 
 
 
+
+
+
+
 #######################################################
 # Generate sample sheets using Rscripts
 #######################################################
 
   ${projectdir}/bin/iem-samplesheet-processor.R \
-      --project_id ${id} \
+      --project_id ${projectid} \
       --sample_sheet ${samplesheet} \
       --output_demux_sheet ${samplesheet_demux}  \
       --output_ctg_sheet ${samplesheet_ctg} \
@@ -230,14 +235,14 @@ n_samples=$(cat ${logfile_iem} | grep 'number_samples' |  cut -f2 -d",")
 species=$(cat ${logfile_iem} | grep 'species' |  cut -f2 -d",")
 
 #######################################################################
-# Prime nextflow configuration file -- nextflow.params_${id} --
+# Prime nextflow configuration file -- nextflow.params_${projectid} --
 #######################################################################
 
 # Edit config file
-nf_conf="${projectdir}/nextflow.params.${id}"
+nf_conf="${projectdir}/nextflow.params.${projectid}"
 
 echo ""                                    > $nf_conf
-echo "// ${id}"                           >> $nf_conf
+echo "// ${projectid}"                           >> $nf_conf
 echo "//  nextflow configuration file"           >> $nf_conf
 echo "//  project specific parameters"    >> $nf_conf
 echo "//  adds to - and overrides - parameters in 'nextflow.config' " >> $nf_conf
@@ -250,7 +255,7 @@ echo "  qc_root             =  '${qc_root}'                         " >> $nf_con
 echo "  log_root            =  '${log_root}'                         " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  project and workfolders                                " >> $nf_conf
-echo "  projectid           =  '${id}'                              " >> $nf_conf
+echo "  projectid           =  '${projectid}'                              " >> $nf_conf
 echo "  species_global      =  '${species}'                         " >> $nf_conf
 echo "  n_samples           =  '${n_samples}'                       " >> $nf_conf
 echo "  projectdir          =  '${projectdir}'                      " >> $nf_conf
@@ -311,7 +316,7 @@ echo "#####################################"
 echo "  ctg-rnaseq project primed"
 echo "#####################################"
 echo ""
-echo "primed project directory for '${id}'"
+echo "primed project directory for '${projectid}'"
 echo "${projectdir}"
 echo ""
 echo "generated demux and ctg sample sheets: "
@@ -329,11 +334,19 @@ echo "'${nf_conf}'"
 echo "before running 'driver-ctg-rnaseq' while in project dir"
 echo ""; echo "";
 #
-# ##################
-# # ctg-interop-qc #
-# ##################
+
+
+# ################################################
+#  run  ctg-interop-qc  - if not run before
+# ################################################
 # # Will do interop analysis on runfolder, and compile multiqc report.
 # # This is written to
 # # 1. runfolder/ctg-interop
 # # 2. ctg-qc/interop
-# ctg-interop-qc
+
+if [[ ${execdir} == "${runfolder_root}/${runfolder}" ]]
+  then
+    echo ""
+    echo "running ctg-interop-qc sctipt"
+    ctg-interop-qc
+fi
