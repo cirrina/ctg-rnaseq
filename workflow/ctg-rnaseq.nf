@@ -301,7 +301,7 @@ process bcl2fastq {
   publishDir "${fastqdir}", mode: 'copy', overwrite: 'true'
   cpus 4
   tag "$id"
-  memory '8 GB'
+  memory '110 GB'
   time '3h'
 
   when:
@@ -418,9 +418,9 @@ if ( run_align == false ) {
 // Run STAR
 process star  {
   tag "$id"
-  cpus 1
-  memory '5 GB'
-  time '3h'
+  cpus 16
+  memory '100 GB'
+  time '36h'
   echo true
   publishDir "${stardir}", mode: 'copy', overwrite: true
 
@@ -445,13 +445,13 @@ process star  {
     println( "Warning: Species not recognized." )}
 
   """
-#  STAR --genomeDir ${genome} \\
-#    --readFilesIn ${fastqdir}/${read1} ${fastqdir}/${read2} \\
-#    --runThreadN ${task.cpus}  \\
-#    --readFilesCommand zcat \\
-#    --outSAMtype BAM SortedByCoordinate \\
-#    --limitBAMsortRAM 10000000000 \\
-#    --outFileNamePrefix ${sid}_
+  STAR --genomeDir ${genome} \\
+    --readFilesIn ${fastqdir}/${read1} ${fastqdir}/${read2} \\
+    --runThreadN ${task.cpus}  \\
+    --readFilesCommand zcat \\
+    --outSAMtype BAM SortedByCoordinate \\
+    --limitBAMsortRAM 10000000000 \\
+    --outFileNamePrefix ${sid}_
   """
 
 }
@@ -466,7 +466,7 @@ process check_bam {
   tag "$id"
   cpus 1
   memory '1 GB'
-  time '3h'
+  time '1h'
   echo true
 
   input:
@@ -507,8 +507,8 @@ process check_bam {
 
 process index_bam {
   tag "$id"
-  cpus 1
-  memory '1 GB'
+  cpus 4
+  memory '32 GB'
   time '3h'
   echo true
   publishDir "${stardir}", mode: 'copy', overwrite: 'true'
@@ -528,7 +528,7 @@ process index_bam {
   if ( run_bam_indexing )
     """
     echo "${stardir}/${bam}"
-    # samtools index -bc ${stardir}/${bam}
+    samtools index -bc ${stardir}/${bam}
     """
   else
     """
@@ -540,9 +540,9 @@ process index_bam {
 
 process markdups {
   tag "$id"
-  cpus 1
-  memory '1 GB'
-  time '3h'
+  cpus 4
+  memory '32 GB'
+  time '24h'
   echo true
 
   input:
@@ -561,18 +561,18 @@ process markdups {
   """
   echo "bam: ${bam}"
   echo "markdupsdir: ${markdupsdir}/${bam}"
-    #java -jar /usr/local/bin/picard.jar MarkDuplicates \\
-    #  INPUT=${stardir}/${bam} \\
-    #  OUTPUT=${markdupsdir}/${bam} \\
-    #  METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
-    #  TAGGING_POLICY=All \\
-    #  REMOVE_DUPLICATES=false \\
-    #  ASSUME_SORTED=true \\
-    #  MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=2000 \\
-    #  QUIET=true \\
-    #  VERBOSITY=WARNING
+    java -jar /usr/local/bin/picard.jar MarkDuplicates \\
+      INPUT=${stardir}/${bam} \\
+      OUTPUT=${markdupsdir}/${bam} \\
+      METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
+      TAGGING_POLICY=All \\
+      REMOVE_DUPLICATES=false \\
+      ASSUME_SORTED=true \\
+      MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=2000 \\
+      QUIET=true \\
+      VERBOSITY=WARNING
 
-    # mv -f ${markdupsdir}/${bam} ${stardir}/${bam}
+    mv -f ${markdupsdir}/${bam} ${stardir}/${bam}
   """
   else
   """
@@ -582,9 +582,9 @@ process markdups {
 
 process rnaseqmetrics {
   tag "$id"
-  cpus 1
-  memory '1 GB'
-  time '3h'
+  cpus 4
+  memory '32 GB'
+  time '24h'
   echo true
 
   input:
@@ -622,29 +622,16 @@ process rnaseqmetrics {
 
   if ( run_rnaseqmetrics )
   """
-  #  if [ "${species}" == "Homo sapiens" ]; then
-  #    refflat=${params.picard_refflat_hs}
-  #    rrna=${params.picard_rrna_hs}
-  #  elif [ "${species}" == "Mus musculus" ]; then
-  #    refflat=${params.picard_refflat_mm}
-  #    rrna=${params.picard_rrna_mm}
-  #  else
-  #    echo "Warning: rnaseqmetrics, Species not recognized"
-  #    refflat="APAs"
-  #    rrna="nbajsss"
-  #  fi
-
     echo "strand: ${strand}"
-
     echo "rrna file: ${rrna}"
     echo "refflat file: ${refflat}"
 
-      ## java -jar /usr/local/bin/picard.jar CollectRnaSeqMetrics \\
-      ##  INPUT=${stardir}/${bam} \\
-      ##  OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
-      ##  REF_FLAT=\${refflat} \\
-      ##  STRAND=${strand} \\
-      ##  RIBOSOMAL_INTERVALS=\${rrna}
+    java -jar /usr/local/bin/picard.jar CollectRnaSeqMetrics \\
+      INPUT=${stardir}/${bam} \\
+      OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
+      REF_FLAT=\${refflat} \\
+      STRAND=${strand} \\
+      RIBOSOMAL_INTERVALS=\${rrna}
     """
   else
     """
@@ -661,9 +648,9 @@ process rnaseqmetrics {
 
 process featurecounts {
   tag "$id"
-  cpus 1
-  memory '1 GB'
-  time '3h'
+  cpus 20
+  memory '100 GB'
+  time '24h'
   echo true
 
 	input:
@@ -698,13 +685,13 @@ process featurecounts {
   if( params.run_featurecounts )
     """
       echo "gtf: ${gtf}"
-      ## featureCounts -T ${task.cpus} \\
-      ##  -t ${params.fcounts_feature} \\
-      ##  --extraAttributes gene_name,gene_type \\
-      ##  -a ${gtf} -g gene_id  \\
-      ##  -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
-      ##  -p \\
-      ##  -s ${strand_numeric} ${bams}
+      featureCounts -T ${task.cpus} \\
+        -t ${params.fcounts_feature} \\
+        --extraAttributes gene_name,gene_type \\
+        -a ${gtf} -g gene_id  \\
+        -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
+        -p \\
+        -s ${strand_numeric} ${bams}
 
     """
   else
@@ -719,7 +706,7 @@ process featurecounts {
 process collect_align {
   tag "$id"
   cpus 1
-  memory '5 GB'
+  memory '8 GB'
   time '3h'
   // echo true
 
@@ -758,8 +745,8 @@ process collect_align {
 process fastqc {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
   tag "$id"
-  cpus 1
-  memory '5 GB'
+  cpus 6
+  memory '32 GB'
   time '3h'
   // echo true
 
@@ -778,15 +765,16 @@ process fastqc {
   if(params.paired)
     """
       echo "running fastqc in paired reads mode"
-      ## fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
+      fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
   """
   else
     """
       echo "running fastqc in non paired reads mode "
-      ## fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
+      fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
     """
 
 }
+
 
 
 
@@ -800,8 +788,8 @@ process fastqc {
 process multiqc_ctg {
   //publishDir "${multiqcctgdir}", mode: 'copy', overwrite: 'true'
   tag "$id"
-  cpus 1
-  memory '5 GB'
+  cpus 6
+  memory '32 GB'
   time '3h'
   echo true
 
@@ -816,10 +804,10 @@ process multiqc_ctg {
 
   script:
   """
-    ##  cd ${outputdir}
-    ## multiqc -n ${projectid}_multiqc_report \\
-    ## --interactive \\
-    ## -o ${multiqcctgdir} .
+    cd ${outputdir}
+    multiqc -n ${projectid}_multiqc_report \\
+      --interactive \\
+      -o ${multiqcctgdir} .
   """
 
 }
