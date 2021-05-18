@@ -109,11 +109,11 @@ index_columns <- c('Index_Plate_Well',	'I7_Index_ID',	'index',	'I5_Index_ID', 'i
 
 # opt = list()
 # opt$project_id = '2021_20'
-# opt$sample_sheet= '~/tasks/rnaseq_test/dummyRundir/2021_21_IEM_SampleSheet.csv'
+# opt$sample_sheet= '~/ctg/ctg-projects/2021_044/2021_044_IEM_Sample_Sheet.csv'
 # opt$output_demux_sheet= '~/tasks/rnaseq_test/dummyRundir/sheet_demux_test.csv'
 # opt$output_ctg_sheet = '~/tasks/rnaseq_test/dummyRundir/sheet_nf_test.csv'
 # opt$force_lane = '0'
-# opt$bin_dir = '~/tasks/ctg-rnaseq/bin/'
+# opt$bin_dir = '~/scripts/ctg-rnaseq/workflow/bin/'
 # opt$output_demux_sheet <- '~/tasks/rnaseq_test/dummyRundir/samplesheet_demux.csv'
 # opt$output_ctg_sheet <- '~/tasks/rnaseq_test/dummyRundir/samplesheet_ctg.csv'
 
@@ -155,6 +155,7 @@ cat("\n ... Rscript: Processing sample sheet. \n\n")
 # Initial processing -  Check basic integriyty of IEM sample sheet
 # ================================================================
 all.lines <- scan(file = opt$sample_sheet, what = "character", sep="\n", nmax = 250)
+str(all.lines)
 
 # See if comma or tab separated
 if(!length(grep( '[,]' , all.lines[1]))) stop("Input 'sample_sheet' does not seem to be in correct csv format!")
@@ -208,12 +209,17 @@ header_cheklist = iem_df[iem_df$iem_section == '[Header]', ]
 # Instrument Type: e.g. 'NovaSeq'
 # Assay
 # Index Adapters
-header_df = read.delim(file=opt$sample_sheet, header = FALSE, sep = ",",
-                       skip = iem.index["Header"], nrows = iem.index["Reads"]-iem.index["Header"]-1)
+cat("reading header section")
+header_df <-  read.delim(file=opt$sample_sheet, as.is=T,
+                        header = FALSE, sep = ",",
+                        skip = iem.index["Header"], nrows = iem.index["Reads"]-iem.index["Header"]-1)
+
 if(any(duplicated(header_df$V1))) stop("IEM Sample sheet contains duplicated parameters")
-row_vec <- header_df$V1
-row_vec[row_vec==""] <- paste0("R",1:length(which(row_vec=="")))
-rownames(header_df) = row_vec
+cat("ok read file")
+row_vec <- as.character(header_df$V1)
+str(row_vec)
+row_vec[which(row_vec=="")] <- paste0("R",1:length(which(row_vec=="")))
+rownames(header_df) <-  row_vec
 
 
 
@@ -262,7 +268,7 @@ if('Index Adapters' %in% rownames(header_df)){
 #  [Reads] section: Extract read lenngths and if paired
 # ====================================================
 
-reads_df = read.delim(file=opt$sample_sheet, header = FALSE, sep = ",",
+reads_df = read.delim(file=opt$sample_sheet, header = FALSE, sep = ",", as.is=T,
                        skip = iem.index["Reads"], nrows = iem.index["Settings"]-iem.index["Reads"]-1)
 reads = as.numeric(reads_df$V1)
 reads = reads[!is.na(reads)]
@@ -283,11 +289,13 @@ if(length(reads)%in%c(1,2)){
 #  [Settings] section. Check conditional parameters
 # ====================================================
 ## use the iem_df (checklist-iem.csv) as template to check for Settings that are not as is required
-settings_df = read.delim(file=opt$sample_sheet, header = FALSE, sep = ",",
+settings_df = read.delim(file=opt$sample_sheet, header = FALSE, sep = ",", as.is=T,
                        skip = iem.index["Settings"], nrows = iem.index["Data"]-iem.index["Settings"]-1)
-row_vec <- settings_df$V1
-row_vec[row_vec==""] <- paste("R",1:length(which(row_vec=="")))
-rownames(settings_df) = row_vec
+str(settings_df)
+row_vec <- as.character(settings_df$V1)
+str(row_vec)
+row_vec[which(row_vec=="")] <- paste0("R",1:length(which(row_vec=="")))
+rownames(settings_df) <-row_vec
 
 
 # limit df to the conditions apllicable for this experiment
@@ -347,7 +355,7 @@ if(nrow(check_df)==1){
 ## Read the 'Data' Section as data frame
 ## ---------------------------------
 #  read data sheet as data frame (from below Data section header)
-data_df <- read.delim(file=opt$sample_sheet, header = TRUE, sep = ",",
+data_df <- read.delim(file=opt$sample_sheet, header = TRUE, sep = ",", as.is=T,
                            skip = iem.index["Data"])
 
 

@@ -43,7 +43,7 @@
 project_root        =  params.project_root
 delivery_root       =  params.delivery_root
 qc_root             =  params.qc_root
-log_root            =  params.log_root
+//log_root            =  params.log_root
 
 //  project  and run folders
 projectid           =  params.projectid
@@ -69,6 +69,7 @@ samplesheet_demux   =  params.samplesheet_demux
 runfolderdir        =  params.runfolderdir
 runfolder           =  params.runfolder
 fastqdir            =  params.fastqdir
+fastqdir_bcl2fastq  =  params.fastqdir_bcl2fastq
 //pooled              =  params.pooled
 
 
@@ -116,7 +117,10 @@ deliverydir = delivery_root + '/' + projectid
 //  create output and logdirs
 // -----------------------------
 file(outputdir).mkdir()
-file(fastqdir).mkdir()
+
+if ( run_demux ) file(fastqdir_bcl2fastq).mkdir()
+if ( run_demux ) file(fastqdir).mkdir()
+
 //file(qcdir).mkdir()
 file(fastqcdir).mkdir()
 if( run_align ) file(stardir).mkdir()
@@ -164,7 +168,7 @@ if (samplesheet    == '') {exit 1, "You must define a sample sheet path in the n
 // Check if these exist
 checkPathParamList = [
   project_root, delivery_root, qc_root,
-  log_root, projectdir, outputdir, bindir, samplesheet
+  logdir, projectdir, outputdir, bindir, samplesheet
 ]
 for (param in checkPathParamList) {
     if (param) {
@@ -321,7 +325,7 @@ process bcl2fastq {
             -r 1 \\
             -p ${task.cpus}  \\
             -w 1  \\
-            --output-dir ${fastqdir}
+            --output-dir ${fastqdir_bcl2fastq}
    """
 }
 
@@ -350,7 +354,6 @@ process checkfiles_fastq {
   set sid, read1, read2, species from fastq_ch
 
   output:
-  set
   val "x" into run_star_ch
   set sid, read1, read2, species into fastqc_ch
   set sid, read1, read2, species into star_ch
