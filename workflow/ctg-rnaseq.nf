@@ -84,7 +84,7 @@ run_bam_indexing      =  params.bam_indexing
 run_markdups          =  params.run_markdups
 run_rnaseqmetrics     =  params.run_rnaseqmetrics
 run_checkfiles        =  params.run_checkfiles
-
+run_featurecounts     =  params.run_featurecounts
 
 //  log files
 logdir               =  params.logdir
@@ -129,7 +129,7 @@ if( run_align ) file(stardir).mkdir()
 if( run_align ) file(markdupsdir).mkdir()
 if( run_align ) file(markdupsqcdir).mkdir()
 if( run_align ) file(rnaseqmetricsdir).mkdir()
-if( run_align && params.run_featurecounts ) file(featurecountsdir).mkdir()
+if( run_align && run_featurecounts ) file(featurecountsdir).mkdir()
 
 
 // featurecounts
@@ -272,8 +272,14 @@ Channel
   .splitCsv(header:true)
   .map { row -> tuple( row.Sample_ID, row.bam, row.Strandness, row.Species) }
   .tap { infobam }
-  .into { bam_checkbam_ch; bam_indexbam_ch; bam_rnaseqmetrics_ch; bam_markdups_ch; bam_featurecounts_ch }
+  .into { bam_checkbam_ch; bam_indexbam_ch; bam_rnaseqmetrics_ch; bam_markdups_ch }
 
+Channel
+    .fromPath(samplesheet)
+    .splitCsv(header:true)
+    .map { row -> tuple( row.bam) }
+    .tap{ infoallfcounts }
+    .set { bam_featurecounts_ch }
 
     // .set { fastq_ch }
   // println("running params.paired")
@@ -411,12 +417,12 @@ process checkfiles_fastq {
 
 
 
-// Set align chanel complete is !run_align
-if ( run_align == false ) {
-   Channel
-	 .from("x")
-   .set{ align_complete_ch }
-}
+// Set align chanel complete is !run_align. It is now possible to run processes  downstream star...
+//if ( run_align == false ) {
+//   Channel
+//	 .from("x")
+//   .set{ align_complete_ch }
+//}
 
 
 
@@ -427,7 +433,7 @@ process star  {
   memory '100 GB'
   time '36h'
   echo true
-  publishDir "${stardir}", mode: 'copy', overwrite: true
+  //publishDir "${stardir}", mode: 'copy', overwrite: true
 
   input:
   val x from run_star_ch.collect()
@@ -437,8 +443,8 @@ process star  {
   val "x" into checkbam_ch
   // file "${sid}_Aligned.sortedByCoord.out.bam" into bam_featurecounts_ch // channel defined start instead
 
-  when:
-  run_align
+  //when:
+  //run_align
 
   script:
   if ( species == "Homo sapiens" ){
@@ -449,14 +455,24 @@ process star  {
     genome = ""
     println( "Warning: Species not recognized." )}
 
+  if ( params.paired ){
+      starfiles = "${fastqdir}/${read1} ${fastqdir}/${read2}" }
+  else{
+      starfiles = "${fastqdir}/${read1}" }
+
+
+  if ( run_align )
   """
   STAR --genomeDir ${genome} \\
-    --readFilesIn ${fastqdir}/${read1} ${fastqdir}/${read2} \\
+    --readFilesIn ${starfiles} \\
     --runThreadN ${task.cpus}  \\
     --readFilesCommand zcat \\
     --outSAMtype BAM SortedByCoordinate \\
     --limitBAMsortRAM 10000000000 \\
-    --outFileNamePrefix ${sid}_
+    --outFileNamePrefix ${stardir}/${sid}_
+  """
+  else
+  """
   """
 
 }
@@ -492,7 +508,7 @@ process check_bam {
   if( run_checkfiles )
     """
       if [ ! -f ${stardir}/${bam} ]; then
-        echo "Warning: Cannot locate fastq_1 file ${stardir}/${bam}"
+        echo "Warning: Cannot locate bam file ${stardir}/${bam}"
         exit 2
       fi
     """
@@ -526,8 +542,8 @@ process index_bam {
   output:
   val "x" into indexbam_complete_ch
 
-  when:
-  run_align
+  // when:
+  // run_align
 
   script:
   if ( run_bam_indexing )
@@ -558,11 +574,11 @@ process markdups {
   val "x" into markdups_complete_ch
   // val "x" into move
 
-  when:
-  run_align
+  //when:
+  //run_align
 
   script:
-  if (run_markdups)
+  if ( run_markdups )
   """
   echo "bam: ${bam}"
   echo "markdupsdir: ${markdupsdir}/${bam}"
@@ -599,8 +615,8 @@ process rnaseqmetrics {
   output:
   val "x" into rnaseqmetrics_complete_ch
 
-  when:
-  run_align
+  //when:
+  //run_align
 
   script:
   // NONE, FIRST_READ_TRANSCRIPTION_STRAND, and SECOND_READ_TRANSCRIPTION_STRAND.
@@ -634,9 +650,9 @@ process rnaseqmetrics {
     java -jar /usr/local/bin/picard.jar CollectRnaSeqMetrics \\
       INPUT=${stardir}/${bam} \\
       OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
-      REF_FLAT=\${refflat} \\
+      REF_FLAT=${refflat} \\
       STRAND=${strand} \\
-      RIBOSOMAL_INTERVALS=\${rrna}
+      RIBOSOMAL_INTERVALS=${rrna}
     """
   else
     """
@@ -660,13 +676,13 @@ process featurecounts {
 
 	input:
   val x from featurecounts_ch.collect()
-	file bams from bam_featurecounts_ch.collect()
+	val bams from bam_featurecounts_ch.collect()
 
-	output:
+  output:
 	val "x" into featurecounts_complete_ch
 
-	when:
-	run_align
+	//when:
+	//run_align
 
   script:
   // Global settings - for ALL Samples
@@ -687,8 +703,12 @@ process featurecounts {
 
 
 
-  if( params.run_featurecounts )
+  if( run_featurecounts )
     """
+      cd ${stardir}
+      bamstring=\$(echo $bams | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
+      echo \$bamstring
+
       echo "gtf: ${gtf}"
       featureCounts -T ${task.cpus} \\
         -t ${params.fcounts_feature} \\
@@ -696,7 +716,7 @@ process featurecounts {
         -a ${gtf} -g gene_id  \\
         -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
         -p \\
-        -s ${strand_numeric} ${bams}
+        -s ${strand_numeric} \${bamstring}
 
     """
   else
@@ -735,6 +755,45 @@ process collect_align {
 
 
 
+/* ===============================================================
+  *      FASTQSCREEN
+  =============================================================== */
+
+// fastq_screen
+// process fastqScreen {
+//
+//     input:
+//     set sid, sname from fastqscreen_ch
+//
+//     output:
+//     val "x" into multiqc_fastqscreen
+//     val "x" into multiqc_fastqscreen_qconly
+//
+//
+//     """
+//
+//     mkdir -p ${FQSDIR}
+//     echo "HELLO COW"
+//     echo "${FQSDIR}"
+//
+//     read1=\$(echo ${FQDIR}/${sname}*_R1_*fastq.gz)
+//     read2=\$(echo ${FQDIR}/${sname}*_R2_*fastq.gz)
+//
+//
+//     echo "READ 1 : \${read1}"
+//     echo "READ 2 : \${read2}"
+//
+//
+//     /usr/local/bin/FastQ-Screen-0.14.1/fastq_screen \\
+//     --conf ${params.fastqScreen_config} \\
+//     --subset 500000 \\
+//     --outdir ${FQSDIR} \\
+//     \${read1} \${read2}
+//
+//     """
+//
+// }
+
 
 
 /* ===============================================================
@@ -761,21 +820,21 @@ process fastqc {
   output:
   val "x" into multiqc_ctg_ch
 
-  when:
-  run_fastqc
-
   //input:
   //  set file(samples_csv) from sheet_ctg_ch
   script:
-  if(params.paired)
+  if ( params.paired && run_fastqc)
     """
       echo "running fastqc in paired reads mode"
       fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
   """
-  else
+  else if ( !params.paired && run_fastqc)
     """
       echo "running fastqc in non paired reads mode "
       fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
+    """
+  else
+    """
     """
 
 }
