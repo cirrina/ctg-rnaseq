@@ -104,7 +104,7 @@ markdupsdir = outputdir+'/markdups_bam_tmp'
 fastqcdir = outputdir+'/fastqc'
 markdupsqcdir = outputdir+'/markdups'
 rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
-
+multiqcctgdir = outputdir+'/multiqc_ctg'
 
 
 // ctg qc storage  dir
@@ -123,6 +123,8 @@ if ( run_demux ) file(fastqdir).mkdir()
 
 //file(qcdir).mkdir()
 file(fastqcdir).mkdir()
+file(multiqcctgdir).mkdir()
+
 if( run_align ) file(stardir).mkdir()
 if( run_align ) file(markdupsdir).mkdir()
 if( run_align ) file(markdupsqcdir).mkdir()
@@ -798,6 +800,7 @@ process multiqc_ctg {
 
   input:
   val x from multiqc_ctg_ch.collect()
+  val x from align_complete_ch.collect()
 
   output:
   val "x" into multiqc_ctg_complete_ch
