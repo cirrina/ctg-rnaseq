@@ -14,22 +14,22 @@
   //    └──– [runfolder] = Illumina runfolder.
   //      |--- Data ....
   //      |
-  //      └──-  outputdir: shared/ctg-projects/ctg-rnaseq/nf-output
+  //      └──-  outputdir: shared/ctg-projects/rnaseq/nf-output
 
-  // [basedir]: ls4 ctg projets base directory, e.g. shared/ctg-projects/ctg-rnaseq
-  //   └──–– [projectdir] = workdir = nf execution dir = baseDir. e.g. shared/ctg-projects/ctg-rnaseq/<projectid>
+  // [basedir]: ls4 ctg projets base directory, e.g. shared/ctg-projects/rnaseq
+  //   └──–– [projectdir] = workdir = nf execution dir = baseDir. e.g. shared/ctg-projects/rnaseq/<projectid>
   //      |--- [fastq] (if demux)
   //      |      |- <project_id>
   //      |      |      └── fastq-files.fastq.gz
   //      |      |- Reports
   //      |      |- Stats
   //      |      └─ "Undetermined ... fastq.gz ". Remember to NOT COPY these if pooled sample
-  //      |---  [bindir]: /nf-output: shared/ctg-projects/ctg-rnaseq/bin
+  //      |---  [bindir]: /nf-output: shared/ctg-projects/rnaseq/bin
   //      |---  "nextflow.config"
   //      |---  "ctg-rnaesq.nf"
   //      |---  "sample sheet original IEM"
-  //      |---  [nfworkdir] = workDir: shared/ctg-projects/ctg-rnaseq/work; used by Nextflow
-  //      └──-  [outputdir]: shared/ctg-projects/ctg-rnaseq/nf-output
+  //      |---  [nfworkdir] = workDir: shared/ctg-projects/rnaseq/work; used by Nextflow
+  //      └──-  [outputdir]: shared/ctg-projects/rnaseq/nf-output
 
 
 
@@ -91,25 +91,18 @@ logfile              =  file( logdir + '/' + projectid + '.log.complete' )
 
 
 
-//  Other Parameters
+//  Other Fixed Directories
 // -----------------------------
 outputdir =  projectdir+'/nf-output' // main ooutput directory for files genetated with the Pipeline
 
 featurecountsdir = outputdir+'/featurecounts'
 stardir = outputdir+'/star'
 markdupsdir = outputdir+'/markdups_bam_tmp'
-// qcdir = outputdir+'/qc'
 fastqcdir = outputdir+'/fastqc'
 markdupsqcdir = outputdir+'/markdups'
 rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
 multiqcctgdir = outputdir+'/multiqc_ctg'
 fastqscreendir = outputdir+'/fastqscreen'
-
-// ctg qc storage  dir
-ctg_qc_dir      = qc_root+'/ctg-rnaseq'
-
-// delivery directory
-deliverydir = delivery_root + '/' + projectid
 
 
 //  create output and logdirs
@@ -407,7 +400,7 @@ process checkfiles_fastq {
   *      -- ALIGMENT SECTION --
   =============================================================== */
 
-  // Run STAR: ls4 ctg projets base directory, e.g. shared/ctg-projects/ctg-rnaseq
+  // Run STAR: ls4 ctg projets base directory, e.g. shared/ctg-projects/rnaseq
   //   └──–– check_bam: uses sample sheet to check if expected bams are generated
   //      |-  index_bam : optional
   //      |-  markdups  : optional
@@ -483,7 +476,7 @@ process star  {
 
 // Check STAR bam files against names in sample sheet
 // checkfiles_star
-process check_bam {
+process checkfiles_bam {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
   tag "$id"
   cpus 1
