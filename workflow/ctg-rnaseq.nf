@@ -77,8 +77,8 @@ run_align             =  params.run_align
 run_fastqc            =  params.run_fastqc
 run_multiqc           =  params.run_multiqc
 run_multiqc_ctg       =  params.run_multiqc_ctg
-run_fastqscreen      =  params.run_fastqscreen
-run_bam_indexing      =  params.bam_indexing
+run_fastqscreen       =  params.run_fastqscreen
+run_bam_indexing      =  params.run_bam_indexing
 run_markdups          =  params.run_markdups
 run_rnaseqmetrics     =  params.run_rnaseqmetrics
 run_checkfiles        =  params.run_checkfiles
@@ -355,7 +355,7 @@ process checkfiles_fastq {
   cpus 1
   memory '5 GB'
   time '3h'
-  echo true
+  echo debug_mode
 
   input:
   val x from fastq_check_ch.collect()
@@ -433,7 +433,7 @@ process star  {
   cpus 16
   memory '100 GB'
   time '36h'
-  echo true
+  echo debug_mode
   //publishDir "${stardir}", mode: 'copy', overwrite: true
 
   input:
@@ -489,7 +489,7 @@ process check_bam {
   cpus 1
   memory '1 GB'
   time '1h'
-  echo true
+  echo debug_mode
 
   input:
   val x from checkbam_ch.collect() // checkbam_ch - when star is completed
@@ -527,7 +527,7 @@ process rnaseqmetrics {
   cpus 4
   memory '32 GB'
   time '24h'
-  echo true
+  echo debug_mode
 
   input:
   val x from rnaseqmetrics_ch.collect()
@@ -593,7 +593,7 @@ process featurecounts {
   cpus 20
   memory '100 GB'
   time '24h'
-  echo true
+  echo debug_mode
 
 	input:
   //val x from featurecounts_ch.collect()
@@ -663,7 +663,7 @@ process index_bam {
   cpus 4
   memory '32 GB'
   time '3h'
-  echo true
+  echo debug_mode
   //publishDir "${stardir}", mode: 'copy', overwrite: 'true'
 
   input:
@@ -699,7 +699,7 @@ process markdups {
   cpus 4
   memory '32 GB'
   time '24h'
-  echo true
+  echo debug_mode
 
   input:
   //val x from markdups_ch.collect()
@@ -851,14 +851,14 @@ process fastqc {
 // This is not carried on to the customer.
 
 
-
+// run the inhouse multiqc analysis on entire nf-output dir as well as the runfolderdir (to get interop stats)
 process multiqc_ctg {
   //publishDir "${multiqcctgdir}", mode: 'copy', overwrite: 'true'
   tag "$id"
   cpus 6
   memory '32 GB'
   time '3h'
-  echo true
+  echo debug_mode
 
   input:
   val x from fastqc_complete_ch.collect()
@@ -876,7 +876,7 @@ process multiqc_ctg {
     cd ${outputdir}
     multiqc -n ${projectid}_multiqc_report \\
       --interactive \\
-      -o ${multiqcctgdir} .
+      -o ${multiqcctgdir} . ${runfolderdir}
   """
 
 }
