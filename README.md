@@ -304,3 +304,17 @@ singularity exec -bind /projects/fs1/ /projects/fs1/shared/ctg-containers/bulkRN
     -p 4  \
     -w 1  \
     --output-dir /projects/fs1/shared/ctg-projects/ctg-rnaseq/2021_044_test/fastq/2021_044_test
+
+
+
+    ## Check force_lane !! NOT WORKING (Rscript will test this. ..)
+    # allowed_lane=('0' '1' '2')
+    # if [[ " "${allowed_lane[@]}" " != *" "$force_lane" "* ]] ;then
+    #     #echo "$assay: ok"
+    # # else
+    #     echo ""
+    #     echo "Failed check for '-l' flag. "
+    #     echo "$force_lane: not recognized. Valid names are:"
+    #     echo "${allowed_lane[@]/%/,}"; echo ""; echo ""
+    #     exit 1
+    # fi

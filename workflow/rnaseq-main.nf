@@ -303,7 +303,7 @@ println " > Projects to process : "
 // Run bcl2fastq if run_demux
 process bcl2fastq {
   // -w must be lower than number of samples
-  publishDir "${fastqdir}", mode: 'copy', overwrite: 'true'
+  // publishDir "${fastqdir}", mode: 'copy', overwrite: 'true'
   cpus 4
   tag "$id"
   memory '110 GB'

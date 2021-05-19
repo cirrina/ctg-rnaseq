@@ -41,48 +41,82 @@ rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
 multiqcctgdir = outputdir+'/multiqc_ctg'
 fastqscreendir = outputdir+'/fastqscreen'
 
-ctg_qc_dir      = qc_root+'/rnaseq'
-deliverydir = delivery_root + '/' + projectid
+ctg_qc_dir      = qc_root+projectid
+deliverydir     = delivery_root + '/' + projectid
 
 
 
 // set up the ctg qc folder
-//
+// multiqc and fastqc files
 process setup_ctg_qc {
-
-  file().mkdir()
+  cpus 4
+  tag "$id"
+  memory '32 GB'
+  time '3h'
 
   script:
+  file(ctg_qc_dir).mkdir()
+  file(ctg_qc_dir+'multiqc').mkdir()
+  file(ctg_qc_dir+'fastqc').mkdir()
 
   """
-
+  cp -i ${multiqcctgdir}/* ${ctg_qc_dir}/multiqc
+  cp -i ${fastqcdir}/* ${ctg_qc_dir}/fastqc
   """
-
-
 }
 
 
 
 process setup_delivery {
+  cpus 8
+  tag "$id"
+  memory '64 GB'
+  time '3h'
 
+  script:
+  file(deliverydir).mkdir()
+
+  """
+    cp -i samplesheet ${deliverydir}/
+
+  """
 
 
 }
 
-process md5sum_delivery {
+process rsync_fastq {
 
+  when:
+  deliver_fastq
+
+  script:
+  """
+  """
+}
+
+process md5sum_delivery {
+  cpus 8
+  tag "$id"
+  memory '64 GB'
+  time '3h'
 }
 
 
 
 process multiqc_delivery {
-
+  cpus 8
+  tag "$id"
+  memory '64 GB'
+  time '3h'
 }
 
 
 
 
 process cleanup_projectdir {
-
+  cpus 8
+  tag "$id"
+  memory '64 GB'
+  time '3h'
 
 }
