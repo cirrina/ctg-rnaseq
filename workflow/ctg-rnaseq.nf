@@ -105,7 +105,7 @@ fastqcdir = outputdir+'/fastqc'
 markdupsqcdir = outputdir+'/markdups'
 rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
 multiqcctgdir = outputdir+'/multiqc_ctg'
-
+fastqscreendir = outputdir+'/fastqscreen'
 
 // ctg qc storage  dir
 ctg_qc_dir      = qc_root+'/ctg-rnaseq'
@@ -130,7 +130,7 @@ if( run_align ) file(markdupsdir).mkdir()
 if( run_align ) file(markdupsqcdir).mkdir()
 if( run_align ) file(rnaseqmetricsdir).mkdir()
 if( run_align && run_featurecounts ) file(featurecountsdir).mkdir()
-
+if( run_fastqscreen ) file(fastqscreendir).mkdir()
 
 // featurecounts
 fcounts_feature     =  params.fcounts_feature
@@ -365,6 +365,7 @@ process checkfiles_fastq {
   val "x" into run_star_ch
   set sid, read1, read2, species into fastqc_ch
   set sid, read1, read2, species into star_ch
+  set sid, read1, read2, species into fastqscreen_ch
 
   //input:
   //  set file(samples_csv) from sheet_ctg_ch
@@ -372,7 +373,7 @@ process checkfiles_fastq {
 
   if( params.paired && run_checkfiles )
     """
-      echo "running fastqc in paired reads "
+      echo "running fastqc with paired reads "
       if [ ! -f ${fastqdir}/${read1} ]; then
         echo "Warning: Cannot locate fastq_1 file ${fastqdir}/${read1}"
         exit 2
@@ -653,10 +654,10 @@ process rnaseqmetrics {
       REF_FLAT=${refflat} \\
       STRAND=${strand} \\
       RIBOSOMAL_INTERVALS=${rrna}
-    """
+  """
   else
-    """
-    """
+  """
+  """
 
 }
 
@@ -744,10 +745,12 @@ process collect_align {
   output:
   val "x" into align_complete_ch
 
-  when:
-  run_align
 
   script:
+  if ( run_align)
+  """
+  """
+  else
   """
   """
 
@@ -762,37 +765,33 @@ process collect_align {
 // fastq_screen
 // process fastqScreen {
 //
-//     input:
-//     set sid, sname from fastqscreen_ch
-//
-//     output:
-//     val "x" into multiqc_fastqscreen
-//     val "x" into multiqc_fastqscreen_qconly
-//
-//
-//     """
-//
-//     mkdir -p ${FQSDIR}
-//     echo "HELLO COW"
-//     echo "${FQSDIR}"
-//
-//     read1=\$(echo ${FQDIR}/${sname}*_R1_*fastq.gz)
-//     read2=\$(echo ${FQDIR}/${sname}*_R2_*fastq.gz)
-//
-//
-//     echo "READ 1 : \${read1}"
-//     echo "READ 2 : \${read2}"
-//
-//
-//     /usr/local/bin/FastQ-Screen-0.14.1/fastq_screen \\
-//     --conf ${params.fastqScreen_config} \\
-//     --subset 500000 \\
-//     --outdir ${FQSDIR} \\
-//     \${read1} \${read2}
-//
-//     """
-//
-// }
+    input:
+    set sid, read1, read2, species from fastqscreen_ch //
+
+    output:
+    val "x" into fastqscreen_complete_ch
+
+    script:
+    if ( params.paired ){
+        fqsfiles = "${fastqdir}/${read1} ${fastqdir}/${read2}" }
+    else{
+        fqsfiles = "${fastqdir}/${read1}" }
+
+
+    if ( params.run_fastqscreen)
+    """
+      /usr/local/bin/FastQ-Screen-0.14.1/fastq_screen \\
+        --conf ${params.fastqScreen_config} \\
+        --subset 500000 \\
+        --outdir ${fastqscreendir} \\
+        ${fqsfiles}
+    """
+    else
+    """
+    """
+
+
+}
 
 
 
@@ -818,7 +817,7 @@ process fastqc {
   set sid, read1, read2, species from fastqc_ch  // from check fastq
 
   output:
-  val "x" into multiqc_ctg_ch
+  val "x" into fastqc_complete_ch
 
   //input:
   //  set file(samples_csv) from sheet_ctg_ch
@@ -858,8 +857,9 @@ process multiqc_ctg {
   echo true
 
   input:
-  val x from multiqc_ctg_ch.collect()
+  val x from fastqc_complete_ch.collect()
   val x from align_complete_ch.collect()
+  val x from fastqscreen_complete_ch
 
   output:
   val "x" into multiqc_ctg_complete_ch
