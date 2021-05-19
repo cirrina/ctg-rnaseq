@@ -61,7 +61,9 @@ This script will prepare rnaseq analysis pipeline by:
   ii)  replace illegal characters (this section could be refined/expanded)
   iii) check indexes against a database of valid indexes. Sample sheet [Header] must specify 'Index Adapters' and 'Instrument Type', e.g. NovaSeq or NovaSeq1.0 to get the correct index pairs.
   iv)  check adapters and additional trimming. Sample sheet [Header] must specify 'Index Adapters' and 'Assay'
-  iv)  generate a bcl2fastq demux sample sheet (default name: 'SampleSheet-<project_id>-demux.csv').
+  v)   generate a bcl2fastq demux sample sheet (default name: 'SampleSheet-<project_id>-demux.csv').
+  vi)  generate plain sample sheet (default name: 'SampleSheet-<project_id>-ctg.csv').
+    This sample sheet carries information of the project, in paticular fastq and bam file names that are checked used in the downstream nextflow script.
   iv)
 
 

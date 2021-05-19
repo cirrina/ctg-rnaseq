@@ -34,8 +34,6 @@
 
 
 
-
-
 //  project specific config
 // -----------------------------
 
@@ -79,7 +77,7 @@ run_align             =  params.run_align
 run_fastqc            =  params.run_fastqc
 run_multiqc           =  params.run_multiqc
 run_multiqc_ctg       =  params.run_multiqc_ctg
-run_fastq_screen      =  params.run_fastq_screen
+run_fastqscreen      =  params.run_fastqscreen
 run_bam_indexing      =  params.bam_indexing
 run_markdups          =  params.run_markdups
 run_rnaseqmetrics     =  params.run_rnaseqmetrics
@@ -143,7 +141,9 @@ fcounts_feature     =  params.fcounts_feature
 
 // // Debug & test params
 // // -----------------------------
-// debug_mode = true
+debug_mode = false // will turn echo to true
+
+
 // if( debug_mode == true){
 //   run_demux             =  false
 //   run_fastqc            =  false
@@ -498,10 +498,10 @@ process check_bam {
   output:
   //set sid, bam into bam_markdups_ch
   //set sid, bam into bam_index_ch
-  val "x" into indexbam_ch
+  //val "x" into indexbam_ch
   val "x" into rnaseqmetrics_ch
-  val "x" into markdups_ch
-  val "x" into featurecounts_ch
+  //val "x" into markdups_ch
+  //val "x" into featurecounts_ch
 
   //input:
   //  set file(samples_csv) from sheet_ctg_ch
@@ -520,86 +520,6 @@ process check_bam {
 }
 
 
-// samtools index bamfile
-// ml Java; ml nextflow/19.04.1
-// ml Singularity
-// ml GCC/7.3.0-2.30
-// ml SAMtools/1.9
-// samtools index bamfile
-
-process index_bam {
-  tag "$id"
-  cpus 4
-  memory '32 GB'
-  time '3h'
-  echo true
-  publishDir "${stardir}", mode: 'copy', overwrite: 'true'
-
-  input:
-  val x from indexbam_ch.collect()
-  set sid, bam, strand, species from bam_indexbam_ch
-
-
-  output:
-  val "x" into indexbam_complete_ch
-
-  // when:
-  // run_align
-
-  script:
-  if ( run_bam_indexing )
-    """
-    echo "${stardir}/${bam}"
-    samtools index -bc ${stardir}/${bam}
-    """
-  else
-    """
-    """
-}
-
-
-// picard mark duplicates
-
-process markdups {
-  tag "$id"
-  cpus 4
-  memory '32 GB'
-  time '24h'
-  echo true
-
-  input:
-  val x from markdups_ch.collect()
-  set sid, bam, strand, species from bam_markdups_ch
-
-  output:
-  val "x" into markdups_complete_ch
-  // val "x" into move
-
-  //when:
-  //run_align
-
-  script:
-  if ( run_markdups )
-  """
-  echo "bam: ${bam}"
-  echo "markdupsdir: ${markdupsdir}/${bam}"
-    java -jar /usr/local/bin/picard.jar MarkDuplicates \\
-      INPUT=${stardir}/${bam} \\
-      OUTPUT=${markdupsdir}/${bam} \\
-      METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
-      TAGGING_POLICY=All \\
-      REMOVE_DUPLICATES=false \\
-      ASSUME_SORTED=true \\
-      MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=2000 \\
-      QUIET=true \\
-      VERBOSITY=WARNING
-
-    mv -f ${markdupsdir}/${bam} ${stardir}/${bam}
-  """
-  else
-  """
-  """
-}
 
 
 process rnaseqmetrics {
@@ -676,7 +596,8 @@ process featurecounts {
   echo true
 
 	input:
-  val x from featurecounts_ch.collect()
+  //val x from featurecounts_ch.collect()
+  val x from rnaseqmetrics_complete_ch.collect()
 	val bams from bam_featurecounts_ch.collect()
 
   output:
@@ -728,6 +649,95 @@ process featurecounts {
 }
 
 
+
+
+// samtools index bamfile
+// ml Java; ml nextflow/19.04.1
+// ml Singularity
+// ml GCC/7.3.0-2.30
+// ml SAMtools/1.9
+// samtools index bamfile
+
+process index_bam {
+  tag "$id"
+  cpus 4
+  memory '32 GB'
+  time '3h'
+  echo true
+  //publishDir "${stardir}", mode: 'copy', overwrite: 'true'
+
+  input:
+  //val x from align_complete_ch()
+  val x from featurecounts_complete_ch.collect()
+  set sid, bam, strand, species from bam_indexbam_ch
+
+
+  output:
+  val "x" into indexbam_complete_ch
+
+  // when:
+  // run_align
+
+  script:
+  if ( run_bam_indexing )
+    """
+    cd ${stardir}
+    echo "${stardir}/${bam}"
+    samtools index -bc ${stardir}/${bam}
+    """
+  else
+    """
+    """
+}
+
+
+
+// picard mark duplicates
+
+process markdups {
+  tag "$id"
+  cpus 4
+  memory '32 GB'
+  time '24h'
+  echo true
+
+  input:
+  //val x from markdups_ch.collect()
+  val x from indexbam_complete_ch.collect()
+  set sid, bam, strand, species from bam_markdups_ch
+
+  output:
+  val "x" into markdups_complete_ch
+  // val "x" into move
+
+  //when:
+  //run_align
+
+  script:
+  if ( run_markdups )
+  """
+  echo "bam: ${bam}"
+  echo "markdupsdir: ${markdupsdir}/${bam}"
+    java -jar /usr/local/bin/picard.jar MarkDuplicates \\
+      INPUT=${stardir}/${bam} \\
+      OUTPUT=${markdupsdir}/${bam} \\
+      METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
+      TAGGING_POLICY=All \\
+      REMOVE_DUPLICATES=false \\
+      ASSUME_SORTED=true \\
+      MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=2000 \\
+      QUIET=true \\
+      VERBOSITY=WARNING
+
+    mv -f ${markdupsdir}/${bam} ${stardir}/${bam}
+  """
+  else
+  """
+  """
+}
+
+
+
 // Collect processes and prepare for MultiQC
 process collect_align {
   tag "$id"
@@ -737,10 +747,7 @@ process collect_align {
   // echo true
 
   input:
-  val x from indexbam_complete_ch.collect()
   val x from markdups_complete_ch.collect()
-  val x from rnaseqmetrics_complete_ch.collect()
-  val x from featurecounts_complete_ch.collect()
 
   output:
   val "x" into align_complete_ch
@@ -756,15 +763,13 @@ process collect_align {
 
 }
 
-
-
 /* ===============================================================
   *      FASTQSCREEN
   =============================================================== */
 
 // fastq_screen
-// process fastqScreen {
-//
+process fastqScreen {
+
     input:
     set sid, read1, read2, species from fastqscreen_ch //
 
@@ -777,11 +782,10 @@ process collect_align {
     else{
         fqsfiles = "${fastqdir}/${read1}" }
 
-
-    if ( params.run_fastqscreen)
+    if ( run_fastqscreen)
     """
       /usr/local/bin/FastQ-Screen-0.14.1/fastq_screen \\
-        --conf ${params.fastqScreen_config} \\
+        --conf ${params.fastqscreen_config} \\
         --subset 500000 \\
         --outdir ${fastqscreendir} \\
         ${fqsfiles}
@@ -859,7 +863,7 @@ process multiqc_ctg {
   input:
   val x from fastqc_complete_ch.collect()
   val x from align_complete_ch.collect()
-  val x from fastqscreen_complete_ch
+  val x from fastqscreen_complete_ch.collect()
 
   output:
   val "x" into multiqc_ctg_complete_ch
