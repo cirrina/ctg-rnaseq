@@ -41,28 +41,38 @@ rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
 multiqcctgdir = outputdir+'/multiqc_ctg'
 fastqscreendir = outputdir+'/fastqscreen'
 
-ctg_qc_dir      = qc_root+projectid
+ctg_qc_dir      = qc_root + '/' + projectid
 deliverydir     = delivery_root + '/' + projectid
 
+// Illumina runfolder stats
+illumina_interopdir = runfolderdir + '/InterOp'
+
+// create project specific delivery dir and ctg qc dir
+// -----------------------------
+file(deliverydir).mkdir()
+file(ctg_qc_dir).mkdir()
 
 
-// set up the ctg qc folder
-// multiqc and fastqc files
+// set up the ctg-qc folder ( multiqc and fastqc files )
 process setup_ctg_qc {
   cpus 4
   tag "$id"
   memory '32 GB'
   time '3h'
 
+  output:
+  val "x" into ctg_qc_complete
+
   script:
-  file(ctg_qc_dir).mkdir()
-  file(ctg_qc_dir+'multiqc').mkdir()
-  file(ctg_qc_dir+'fastqc').mkdir()
+  //#mqdir = ctg_qc_dir+'multiqc'
+  //#fqdir  = ctg_qc_dir+'fastqc'
 
   """
-  cp -i ${multiqcctgdir}/* ${ctg_qc_dir}/multiqc
-  cp -i ${fastqcdir}/* ${ctg_qc_dir}/fastqc
+  mv ${multiqcctgdir} ${ctg_qc_dir}
+  cp -r ${fastqcdir} ${ctg_qc_dir}
   """
+
+
 }
 
 
@@ -73,50 +83,71 @@ process setup_delivery {
   memory '64 GB'
   time '3h'
 
-  script:
-  file(deliverydir).mkdir()
-
-  """
-    cp -i samplesheet ${deliverydir}/
-
-  """
-
-
-}
-
-process rsync_fastq {
-
-  when:
-  deliver_fastq
+  input:
+  val x from ctg_qc_complete.collect()
 
   script:
   """
+    cp ${samplesheet} ${deliverydir}
+    cp ${samplesheet_demux} ${deliverydir}
+
   """
-}
+  """
+    if [ -d ${stardir} ]; then; mv ${stardir} ${deliverydir}; fi
+    if [ -d ${fastqcdir} ]; then; mv ${fastqcdir} ${deliverydir}; fi
+    if [ -d ${featurecountsdir} ]; then; mv ${featurecountsdir} ${deliverydir}; fi
+  """
+  if ( params.deliver_fastq )
+  """
+  if [ -d ${fastqcdir} ]; then
+    mv ${fastqcdir} ${deliverydir}
+  fi
+  """
 
-process md5sum_delivery {
-  cpus 8
-  tag "$id"
-  memory '64 GB'
-  time '3h'
-}
 
-
-
-process multiqc_delivery {
-  cpus 8
-  tag "$id"
-  memory '64 GB'
-  time '3h'
 }
 
 
+// # if correct runfolder is specified then copy xml files
+// if [ -d ${illumina_interopdir} ]; then
+//   cp -r ${illumina_interopdir} ${ctg_qc_dir}/InterOp
+//   cp -r ${runfolderdir}/RunInfo.xml ${ctg_qc_dir}
+//   cp -r ${runfolderdir}/RunParameters.xml ${ctg_qc_dir}
+// fi
 
-
-process cleanup_projectdir {
-  cpus 8
-  tag "$id"
-  memory '64 GB'
-  time '3h'
-
-}
+// process rsync_fastq {
+//
+//   when:
+//   deliver_fastq
+//
+//   script:
+//   """
+//   """
+// }
+//
+// process md5sum_delivery {
+//   cpus 8
+//   tag "$id"
+//   memory '64 GB'
+//   time '3h'
+// }
+//
+//
+//
+// process multiqc_delivery {
+//   cpus 8
+//   tag "$id"
+//   memory '64 GB'
+//   time '3h'
+// }
+//
+//
+//
+//
+// process cleanup_projectdir {
+//   cpus 8
+//   tag "$id"
+//   memory '64 GB'
+//   time '3h'
+//
+// }
