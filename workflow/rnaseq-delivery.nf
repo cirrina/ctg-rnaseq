@@ -45,7 +45,8 @@ ctg_qc_dir      = qc_root + '/' + projectid
 deliverydir     = delivery_root + '/' + projectid
 
 // Illumina runfolder stats
-illumina_interopdir = runfolderdir + '/InterOp'
+interopdir_ilm = runfolderdir + '/InterOp'
+interopdir_ctg = runfolderdir + '/ctg-interop'
 
 // create project specific delivery dir and ctg qc dir
 // -----------------------------
@@ -61,7 +62,7 @@ process setup_ctg_qc {
   time '3h'
 
   output:
-  val "x" into ctg_qc_complete
+  val "x" into ctg_qc_complete_ch
 
   script:
   //#mqdir = ctg_qc_dir+'multiqc'
@@ -84,7 +85,10 @@ process setup_delivery {
   time '3h'
 
   input:
-  val x from ctg_qc_complete.collect()
+  val x from ctg_qc_complet_che.collect()
+
+  output:
+  val "x" into setup_delivery_complete_ch
 
   script:
   """
@@ -92,20 +96,73 @@ process setup_delivery {
     cp ${samplesheet_demux} ${deliverydir}
 
   """
+  // move fastqc, star and featurecounts dirs
   """
     if [ -d ${stardir} ]; then; mv ${stardir} ${deliverydir}; fi
     if [ -d ${fastqcdir} ]; then; mv ${fastqcdir} ${deliverydir}; fi
     if [ -d ${featurecountsdir} ]; then; mv ${featurecountsdir} ${deliverydir}; fi
   """
-  if ( params.deliver_fastq )
-  """
-  if [ -d ${fastqcdir} ]; then
-    mv ${fastqcdir} ${deliverydir}
-  fi
-  """
 
-
+// fastq file dilivery. if not pooled data, deliver the complete bcl2fastq directory including stats and undetermined fastq
+  if ( params.deliver_fastq ){
+    if ( params.pooled )
+      """
+        mv ${fastqdir} ${deliverydir}
+      """
+    else
+      """
+      if [ -d ${fastqdir_bcl2fastq} ]; then
+        mv ${fastqdir_bcl2fastq} ${deliverydir}
+      else
+        mv ${fastqdir} ${deliverydir}
+      fi
+      """
+  }
 }
+
+
+
+process multiqc_delivery {
+
+  tag "$id"
+  cpus 6
+  memory '32 GB'
+  time '3h'
+  echo debug_mode
+
+  input:
+  val x from setup_delivery_complete_ch.collect()
+
+  output:
+  val "x" into multiqc_complete_ch
+
+  script:
+  // if a pooled run do not add interop stats to multiqc
+  if ( !params.pooled)
+    """
+      if [ -d ${interopdir_ilm} ]; then
+        # cp -r ${interopdir_ilm} ${ctg_qc_dir}/InterOp
+        cp -r ${runfolderdir}/RunInfo.xml ${ctg_qc_dir}
+        cp -r ${runfolderdir}/RunParameters.xml ${ctg_qc_dir}
+      fi
+      if [ -d ${interopdir_ctg} ]; then
+        cp -r ${interopdir_ctg} ${ctg_qc_dir}/InterOp
+      fi
+    """
+    else
+    """
+      cd ${deliverydir}
+      multiqc -n ${projectid}_multiqc_report \\
+        --interactive \\
+        -o ${multiqcctgdir} .
+    """
+}
+
+
+
+// ADD TO INBOX
+
+
 
 
 // # if correct runfolder is specified then copy xml files
@@ -115,16 +172,9 @@ process setup_delivery {
 //   cp -r ${runfolderdir}/RunParameters.xml ${ctg_qc_dir}
 // fi
 
-// process rsync_fastq {
-//
-//   when:
-//   deliver_fastq
-//
-//   script:
-//   """
-//   """
-// }
-//
+
+
+
 // process md5sum_delivery {
 //   cpus 8
 //   tag "$id"
@@ -134,14 +184,9 @@ process setup_delivery {
 //
 //
 //
-// process multiqc_delivery {
-//   cpus 8
-//   tag "$id"
-//   memory '64 GB'
-//   time '3h'
-// }
-//
-//
+
+
+
 //
 //
 // process cleanup_projectdir {
