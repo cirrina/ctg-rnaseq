@@ -39,10 +39,12 @@ fastqcdir = outputdir+'/fastqc'
 markdupsqcdir = outputdir+'/markdups'
 rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
 multiqcctgdir = outputdir+'/multiqc_ctg'
+
 fastqscreendir = outputdir+'/fastqscreen'
 
 ctg_qc_dir      = qc_root + '/' + projectid
 deliverydir     = delivery_root + '/' + projectid
+multiqcdeliverydir   = deliverydir+'/multiqc'
 
 // Illumina runfolder stats
 interopdir_ilm = runfolderdir + '/InterOp'
@@ -70,10 +72,8 @@ process setup_ctg_qc {
 
   """
   mv ${multiqcctgdir} ${ctg_qc_dir}
-  cp -r ${fastqcdir} ${ctg_qc_dir}
+  cp ${fastqcdir} ${ctg_qc_dir}
   """
-
-
 }
 
 
@@ -96,25 +96,36 @@ process setup_delivery {
     cp ${samplesheet_demux} ${deliverydir}
 
   """
-  // move fastqc, star and featurecounts dirs
+  // move stardir if present
   """
-    if [ -d ${stardir} ]; then; mv ${stardir} ${deliverydir}; fi
-    if [ -d ${fastqcdir} ]; then; mv ${fastqcdir} ${deliverydir}; fi
+    if [ -d ${stardir} ]; then
+      mv ${stardir} ${deliverydir}
+    fi
+  """
+  // move featurecounts dir
+  """
     if [ -d ${featurecountsdir} ]; then; mv ${featurecountsdir} ${deliverydir}; fi
   """
+  // fastqc dir
+  """
+    if [ -d ${fastqcdir} ]; then; mv ${fastqcdir} ${deliverydir}; fi
+  """
 
-// fastq file dilivery. if not pooled data, deliver the complete bcl2fastq directory including stats and undetermined fastq
+  // fastq files.
+  // if not pooled deliver the complete bcl2fastq directory including stats and undetermined fastq
   if ( params.deliver_fastq ){
     if ( params.pooled )
       """
-        mv ${fastqdir} ${deliverydir}
+        mkdir ${deliverydir}/fastq
+        mv ${fastqdir} ${deliverydir}/fastq
       """
     else
       """
       if [ -d ${fastqdir_bcl2fastq} ]; then
         mv ${fastqdir_bcl2fastq} ${deliverydir}
       else
-        mv ${fastqdir} ${deliverydir}
+        mkdir ${deliverydir}/fastq
+        mv ${fastqdir} ${deliverydir}/fastq
       fi
       """
   }
@@ -134,33 +145,61 @@ process multiqc_delivery {
   val x from setup_delivery_complete_ch.collect()
 
   output:
-  val "x" into multiqc_complete_ch
+  val "x" into multiqc_complete_1_ch
+  val "x" into multiqc_complete_2_ch
 
   script:
-  // if a pooled run do not add interop stats to multiqc
-  if ( !params.pooled)
-    """
-      if [ -d ${interopdir_ilm} ]; then
-        # cp -r ${interopdir_ilm} ${ctg_qc_dir}/InterOp
-        cp -r ${runfolderdir}/RunInfo.xml ${ctg_qc_dir}
-        cp -r ${runfolderdir}/RunParameters.xml ${ctg_qc_dir}
-      fi
-      if [ -d ${interopdir_ctg} ]; then
-        cp -r ${interopdir_ctg} ${ctg_qc_dir}/InterOp
-      fi
-    """
-    else
     """
       cd ${deliverydir}
       multiqc -n ${projectid}_multiqc_report \\
         --interactive \\
-        -o ${multiqcctgdir} .
+        -o ${multiqcdeliverydir} .
     """
 }
 
 
 
-// ADD TO INBOX
+// ADD TO OUTBOX
+process add_outbox {
+  tag "$id"
+  cpus 6
+  memory '32 GB'
+  time '3h'
+  echo debug_mode
+
+  input:
+  val x from multiqc_complete_1_ch.collect()
+  when: deliver_outbox
+
+  """
+  mkdir ~/outbox/${projectid}
+  cp  ${multiqcdeliverydir} ~/outbox/${projectid}
+  cp  ${deliverydir}/fastqc ~/outbox/${projectid}
+  cp  ${ctg_qc_dir}/multiqc_ctg ~/outbox/${projectid}
+
+  """
+
+}
+
+process md5sum_delivery {
+  cpus 8
+  tag "$id"
+  memory '64 GB'
+  time '3h'
+
+  input:
+  val x from multiqc_complete_2_ch.collect()
+
+  script:
+  """
+  if [ -d ${fastqdir_bcl2fastq} ]; then
+    cd ${deliverydir}
+    find -type f -exec md5sum '{}' \; > md5sum.txt ; echo
+  fi
+  """
+}
+
+
 
 
 
@@ -175,15 +214,6 @@ process multiqc_delivery {
 
 
 
-// process md5sum_delivery {
-//   cpus 8
-//   tag "$id"
-//   memory '64 GB'
-//   time '3h'
-// }
-//
-//
-//
 
 
 
