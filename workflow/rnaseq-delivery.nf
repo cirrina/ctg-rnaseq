@@ -10,6 +10,7 @@
 project_root        =  params.project_root
 delivery_root       =  params.delivery_root
 qc_root             =  params.qc_root
+completed_root      =  params.completed_root
 //log_root            =  params.log_root
 
 //  project  and run folders
@@ -43,9 +44,10 @@ multiqcctgdir = outputdir+'/multiqc_ctg'
 
 fastqscreendir = outputdir+'/fastqscreen'
 
-ctg_qc_dir      = qc_root + '/' + projectid
-deliverydir     = delivery_root + '/' + projectid
-multiqcdeliverydir   = deliverydir+'/multiqc'
+ctg_qc_dir          =  qc_root + '/' + projectid
+deliverydir         =  delivery_root + '/' + projectid
+multiqcdeliverydir  =  deliverydir+'/multiqc'
+completeddir        =  completed_root + '/' + projectid
 
 // Illumina runfolder stats
 interopdir_ilm = runfolderdir + '/InterOp'
@@ -291,11 +293,15 @@ process add_outbox {
 
 // CLEANUP OF PROJECT DIR TO COMPLETED
 // everythiing must now have been copied or moved from the project dir
+// should include sample sheets, nextflow scripts,
+// rscirpt log from runFolder
+// .log.completed
+''
 process add_outbox {
   tag "$id"
-  cpus 6
-  memory '32 GB'
-  time '3h'
+  cpus 2
+  memory '16 GB'
+  time '1h'
   echo debug_mode
 
   input:
@@ -306,28 +312,14 @@ process add_outbox {
 
 
   script:
+  if ( params.run_cleanup )
+    """
+    mkdir -p ${completeddir}
 
-  if ( params.copy_to_outbox )
-  """
-  userid=$(whoami)
-  mkdir /box/outbox/\${userid}/${projectid}
-  if [ -d ${multiqcdeliverydir} ]; then
-    cp  -r ${multiqcdeliverydir} /box/outbox/\${userid}/${projectid}
-  fi
-  if [ -d ${deliverydir} ]; then
-    cp  -r ${deliverydir}/fastqc /box/outbox/\${userid}/${projectid}
-  fi
-  if [ -d ${ctg_qc_dir} ]; then
-    cp  -r ${ctg_qc_dir}/multiqc_ctg /box/outbox/\${userid}/${projectid}
-  fi
-
-  if [ -f ${readme} ]; then
-    cp  ${readme} /box/outbox/\${userid}/${projectid}
-  fi
-  """
+    """
   else
-  """
-  """
+    """
+    """
 
 }
 
