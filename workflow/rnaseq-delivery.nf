@@ -3,8 +3,8 @@
   =============================================================== */
 
 
-//  project specific config
-// -----------------------------
+// get and define all directory variablres from  project specific config
+// ----------------------------------------------------------------------
 
 // root directories
 project_root        =  params.project_root
@@ -21,9 +21,9 @@ samplesheet         =  params.samplesheet
 samplesheet_demux   =  params.samplesheet_demux
 
 //  demux specific
-pooled              =  params.pooled
 runfolderdir        =  params.runfolderdir
 fastqdir            =  params.fastqdir
+fastqdir_bcl2fastq  =  params.fastqdir_bcl2fastq
 deliver_raw         =  params.deliver_raw
 deliver_fastq       =  params.deliver_fastq
 
@@ -36,6 +36,7 @@ featurecountsdir = outputdir+'/featurecounts'
 stardir = outputdir+'/star'
 markdupsdir = outputdir+'/markdups_bam_tmp'
 fastqcdir = outputdir+'/fastqc'
+
 markdupsqcdir = outputdir+'/markdups'
 rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
 multiqcctgdir = outputdir+'/multiqc_ctg'
@@ -55,6 +56,22 @@ interopdir_ctg = runfolderdir + '/ctg-interop'
 file(deliverydir).mkdir()
 file(ctg_qc_dir).mkdir()
 
+// readme deliverydir
+readme = ${deliverydir} +'/README_ctg_delivery_' + ${projectid}
+
+
+
+//
+debug_mode = false // will turn echo to true if applicaple
+
+
+
+
+
+/* ===============================================================
+  *      -- START PROCESSES --
+  =============================================================== */
+
 
 // set up the ctg-qc folder ( multiqc and fastqc files )
 process setup_ctg_qc {
@@ -71,8 +88,14 @@ process setup_ctg_qc {
   //#fqdir  = ctg_qc_dir+'fastqc'
 
   """
-  mv ${multiqcctgdir} ${ctg_qc_dir}
-  cp ${fastqcdir} ${ctg_qc_dir}
+  if [ -d ${multiqcctgdir} ]
+    then
+    mv ${multiqcctgdir} ${ctg_qc_dir}
+  fi
+  if [ -d ${fastqcdir} ]
+    then
+    cp -r ${fastqcdir} ${ctg_qc_dir}
+  fi
   """
 }
 
@@ -85,7 +108,7 @@ process setup_delivery {
   time '3h'
 
   input:
-  val x from ctg_qc_complet_che.collect()
+  val x from ctg_qc_complete_ch.collect()
 
   output:
   val "x" into setup_delivery_complete_ch
@@ -93,38 +116,54 @@ process setup_delivery {
   script:
   """
     cp ${samplesheet} ${deliverydir}
-    cp ${samplesheet_demux} ${deliverydir}
+    if [ -f ${samplesheet_demux} ]; then
+     cp ${samplesheet_demux} ${deliverydir}
+    fi
 
-  """
-  // move stardir if present
-  """
     if [ -d ${stardir} ]; then
       mv ${stardir} ${deliverydir}
     fi
-  """
-  // move featurecounts dir
-  """
-    if [ -d ${featurecountsdir} ]; then; mv ${featurecountsdir} ${deliverydir}; fi
-  """
-  // fastqc dir
-  """
-    if [ -d ${fastqcdir} ]; then; mv ${fastqcdir} ${deliverydir}; fi
-  """
 
+    if [ -d ${featurecountsdir} ]; then
+      mv ${featurecountsdir} ${deliverydir}
+    fi
+
+    if [ -d ${fastqcdir} ]; then
+     mv ${fastqcdir} ${deliverydir}
+    fi
+  """
+}
+
+process move_fastq {
+
+  cpus 8
+  tag "$id"
+  memory '64 GB'
+  time '3h'
+
+  input:
+  val x from setup_delivery_complete_ch.collect()
+
+  output:
+  val "x" into move_fastq_complete_ch
   // fastq files.
   // if not pooled deliver the complete bcl2fastq directory including stats and undetermined fastq
+
+  script:
   if ( params.deliver_fastq ){
     if ( params.pooled )
       """
-        mkdir ${deliverydir}/fastq
-        mv ${fastqdir} ${deliverydir}/fastq
+        mkdir -p ${deliverydir}/fastq
+        if [ -d ${fastqdir} ]; then
+          mv ${fastqdir} ${deliverydir}/fastq
+        fi
       """
     else
       """
       if [ -d ${fastqdir_bcl2fastq} ]; then
         mv ${fastqdir_bcl2fastq} ${deliverydir}
-      else
-        mkdir ${deliverydir}/fastq
+      elif [ -d ${fastqdir} ]; then
+        mkdir -p ${deliverydir}/fastq
         mv ${fastqdir} ${deliverydir}/fastq
       fi
       """
@@ -142,7 +181,7 @@ process multiqc_delivery {
   echo debug_mode
 
   input:
-  val x from setup_delivery_complete_ch.collect()
+  val x from move_fastq_complete_ch.collect()
 
   output:
   val "x" into multiqc_complete_1_ch
@@ -159,27 +198,6 @@ process multiqc_delivery {
 
 
 
-// ADD TO OUTBOX
-process add_outbox {
-  tag "$id"
-  cpus 6
-  memory '32 GB'
-  time '3h'
-  echo debug_mode
-
-  input:
-  val x from multiqc_complete_1_ch.collect()
-  when: deliver_outbox
-
-  """
-  mkdir ~/outbox/${projectid}
-  cp  ${multiqcdeliverydir} ~/outbox/${projectid}
-  cp  ${deliverydir}/fastqc ~/outbox/${projectid}
-  cp  ${ctg_qc_dir}/multiqc_ctg ~/outbox/${projectid}
-
-  """
-
-}
 
 process md5sum_delivery {
   cpus 8
@@ -190,11 +208,15 @@ process md5sum_delivery {
   input:
   val x from multiqc_complete_2_ch.collect()
 
+  when:
+  params.run_md5sum
+
   script:
   """
-  if [ -d ${fastqdir_bcl2fastq} ]; then
+  if [ -d ${fastqdir_bcl2fastq} ]
+    then
     cd ${deliverydir}
-    find -type f -exec md5sum '{}' \; > md5sum.txt ; echo
+    find -type f -exec md5sum '{}' \\; > md5sum.txt ; echo
   fi
   """
 }
@@ -203,15 +225,146 @@ process md5sum_delivery {
 
 
 
+/// provess add README with dir size
+process genereate_readme {
+  cpus 2
+  tag "$id"
+  memory '16 GB'
+  time '3h'
 
-// # if correct runfolder is specified then copy xml files
-// if [ -d ${illumina_interopdir} ]; then
-//   cp -r ${illumina_interopdir} ${ctg_qc_dir}/InterOp
-//   cp -r ${runfolderdir}/RunInfo.xml ${ctg_qc_dir}
-//   cp -r ${runfolderdir}/RunParameters.xml ${ctg_qc_dir}
-// fi
+  input:
+  val x from multiqc_complete_1_ch.collect()
+
+  output:
+  val "x" into genereate_readme_complete_ch
+
+  script:
+
+  """
+  cd ${deliverydir}
+  echo "CTG Delivery"                        > $readme
+  echo "Projet:   ${projectid}"             >> $readme
+  echo du -ch -d 0 . | grep 'total'         >> $readme
+  """
+
+}
 
 
+// ADD TO OUTBOX
+process add_outbox {
+  tag "$id"
+  cpus 6
+  memory '32 GB'
+  time '3h'
+  echo debug_mode
+
+  input:
+  val x from genereate_readme_complete_1_ch.collect()
+  val x from genereate_readme_complete_2_ch.collect()
+
+  output:
+  val "x" into add_outbox_complete_ch
+
+
+  script:
+
+  if ( params.copy_to_outbox )
+  """
+  userid=$(whoami)
+  mkdir /box/outbox/\${userid}/${projectid}
+  if [ -d ${multiqcdeliverydir} ]; then
+    cp  -r ${multiqcdeliverydir} /box/outbox/\${userid}/${projectid}
+  fi
+  if [[ -d "${deliverydir}/fastqc" ]]; then
+    cp  -r ${deliverydir}/fastqc /box/outbox/\${userid}/${projectid}
+  fi
+  if [[ -d "${ctg_qc_dir}/multiqc_ctg" ]]; then
+    cp  -r ${ctg_qc_dir}/multiqc_ctg /box/outbox/\${userid}/${projectid}
+  fi
+  """
+  else
+  """
+  """
+
+}
+
+
+// CLEANUP OF PROJECT DIR TO COMPLETED
+// everythiing must now have been copied or moved from the project dir
+process add_outbox {
+  tag "$id"
+  cpus 6
+  memory '32 GB'
+  time '3h'
+  echo debug_mode
+
+  input:
+  val x from genereate_readme_complete_1_ch.collect()
+
+  output:
+  val "x" into cleanup_complete_ch
+
+
+  script:
+
+  if ( params.copy_to_outbox )
+  """
+  userid=$(whoami)
+  mkdir /box/outbox/\${userid}/${projectid}
+  if [ -d ${multiqcdeliverydir} ]; then
+    cp  -r ${multiqcdeliverydir} /box/outbox/\${userid}/${projectid}
+  fi
+  if [ -d ${deliverydir} ]; then
+    cp  -r ${deliverydir}/fastqc /box/outbox/\${userid}/${projectid}
+  fi
+  if [ -d ${ctg_qc_dir} ]; then
+    cp  -r ${ctg_qc_dir}/multiqc_ctg /box/outbox/\${userid}/${projectid}
+  fi
+
+  if [ -f ${readme} ]; then
+    cp  ${readme} /box/outbox/\${userid}/${projectid}
+  fi
+  """
+  else
+  """
+  """
+
+}
+
+
+
+
+// CLEANUP OF PROJECT FOLDER
+//  move all keeper-fiels into one single
+
+
+// final chmods
+process final_chmods {
+  tag "$id"
+  cpus 2
+  memory '16 GB'
+  time '3h'
+  echo debug_mode
+
+  input:
+  val x from genereate_readme_complete_2_ch.collect()
+
+  output:
+  val "x" into final_chmods_ch
+
+
+  script:
+
+  if ( params.copy_to_outbox )
+  """
+  chmod 770 -R ${deliverydir}
+  chmod 770 -R ${ctg-qc-dir}
+  """
+  else
+  """
+  """
+
+}
 
 
 
