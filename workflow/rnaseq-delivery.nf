@@ -59,7 +59,7 @@ file(deliverydir).mkdir()
 file(ctg_qc_dir).mkdir()
 
 // readme deliverydir
-readme = ${deliverydir} +'/README_ctg_delivery_' + ${projectid}
+readme = deliverydir +'/README_ctg_delivery_' + projectid
 
 
 
@@ -142,6 +142,7 @@ process move_fastq {
   tag "$id"
   memory '64 GB'
   time '3h'
+  echo debug_mode
 
   input:
   val x from setup_delivery_complete_ch.collect()
@@ -157,19 +158,25 @@ process move_fastq {
       """
         mkdir -p ${deliverydir}/fastq
         if [ -d ${fastqdir} ]; then
+          echo "pooled data. moving fastq foldler only."
           mv ${fastqdir} ${deliverydir}/fastq
         fi
       """
     else
       """
       if [ -d ${fastqdir_bcl2fastq} ]; then
+        echo "non pooled data. moving comlplete bcl2fastq output foldler."
         mv ${fastqdir_bcl2fastq} ${deliverydir}
       elif [ -d ${fastqdir} ]; then
+        echo "non pooled data. moving fastq foldler only."
         mkdir -p ${deliverydir}/fastq
         mv ${fastqdir} ${deliverydir}/fastq
       fi
       """
   }
+  else
+  """
+  """
 }
 
 
@@ -215,11 +222,7 @@ process md5sum_delivery {
 
   script:
   """
-  if [ -d ${fastqdir_bcl2fastq} ]
-    then
-    cd ${deliverydir}
-    find -type f -exec md5sum '{}' \\; > md5sum.txt ; echo
-  fi
+  find ${deliverydir} -type f -exec md5sum '{}' \\; > ${deliverydir}/md5sum.txt ; echo
   """
 }
 
@@ -245,8 +248,8 @@ process genereate_readme {
   """
   cd ${deliverydir}
   echo "CTG Delivery"                        > $readme
-  echo "Projet:   ${projectid}"             >> $readme
-  echo du -ch -d 0 . | grep 'total'         >> $readme
+  echo "Project:   ${projectid}"             >> $readme
+  du -ch -d 0 . | grep 'total' > $readme
   """
 
 }
@@ -261,8 +264,7 @@ process add_outbox {
   echo debug_mode
 
   input:
-  val x from genereate_readme_complete_1_ch.collect()
-  val x from genereate_readme_complete_2_ch.collect()
+  val x from genereate_readme_complete_ch.collect()
 
   output:
   val "x" into add_outbox_complete_ch
@@ -270,23 +272,19 @@ process add_outbox {
 
   script:
 
-  if ( params.copy_to_outbox )
-  """
-  userid=$(whoami)
-  mkdir /box/outbox/\${userid}/${projectid}
-  if [ -d ${multiqcdeliverydir} ]; then
-    cp  -r ${multiqcdeliverydir} /box/outbox/\${userid}/${projectid}
-  fi
-  if [[ -d "${deliverydir}/fastqc" ]]; then
-    cp  -r ${deliverydir}/fastqc /box/outbox/\${userid}/${projectid}
-  fi
-  if [[ -d "${ctg_qc_dir}/multiqc_ctg" ]]; then
-    cp  -r ${ctg_qc_dir}/multiqc_ctg /box/outbox/\${userid}/${projectid}
-  fi
-  """
-  else
-  """
-  """
+  if ( params.copy_to_outbox ){
+    """
+    # userid=\$(whoami)
+    userid="percebe"
+    boxdir=/box/outbox/percebe/${projectid}
+
+    mkdir -p \${boxdir}
+    cp  -r ${multiqcdeliverydir} \${boxdir}
+
+    """}
+  else{
+    """
+    """}
 
 }
 
@@ -296,8 +294,8 @@ process add_outbox {
 // should include sample sheets, nextflow scripts,
 // rscirpt log from runFolder
 // .log.completed
-''
-process add_outbox {
+
+process do_cleanup {
   tag "$id"
   cpus 2
   memory '16 GB'
@@ -305,7 +303,7 @@ process add_outbox {
   echo debug_mode
 
   input:
-  val x from genereate_readme_complete_1_ch.collect()
+  val x from add_outbox_complete_ch.collect()
 
   output:
   val "x" into cleanup_complete_ch
@@ -315,7 +313,30 @@ process add_outbox {
   if ( params.run_cleanup )
     """
     mkdir -p ${completeddir}
+    cd ${projectdir}
 
+    if [[ -f "${runfolderdir}/iem.rscript.log" ]]; then
+      cp ${samplesheet_original} ${completeddir}
+    fi
+    if [ -f ${} ]; then
+      cp ${samplesheet_original} ${completeddir}
+    fi
+
+    if [ -f ${samplesheet_demux} ]; then
+      mv ${samplesheet_demux} ${completeddir}
+    fi
+    if [ -f ${samplesheet_ctg} ]; then
+      mv ${samplesheet_ctg} ${completeddir}
+    fi
+    if [ -f ${samplesheet_ctg} ]; then
+      mv ${samplesheet_ctg} ${completeddir}
+    fi
+    mv ./rnaseq-delivery.nf ${completeddir}
+    mv ./rnaseq-main.nf ${completeddir}
+    mv ./nextflow.config ${completeddir}
+    mv ./${projectid}.2021_044.log.complete ${completeddir}
+    mv ./bin ${completeddir}
+    mv ./nextflow.params.${projectid} ${completeddir}
     """
   else
     """
@@ -330,33 +351,33 @@ process add_outbox {
 //  move all keeper-fiels into one single
 
 
-// final chmods
-process final_chmods {
-  tag "$id"
-  cpus 2
-  memory '16 GB'
-  time '3h'
-  echo debug_mode
-
-  input:
-  val x from genereate_readme_complete_2_ch.collect()
-
-  output:
-  val "x" into final_chmods_ch
-
-
-  script:
-
-  if ( params.copy_to_outbox )
-  """
-  chmod 770 -R ${deliverydir}
-  chmod 770 -R ${ctg-qc-dir}
-  """
-  else
-  """
-  """
-
-}
+// // final chmods
+// process final_chmods {
+//   tag "$id"
+//   cpus 2
+//   memory '16 GB'
+//   time '3h'
+//   echo debug_mode
+//
+//   input:
+//   val x from genereate_readme_complete_2_ch.collect()
+//
+//   output:
+//   val "x" into final_chmods_ch
+//
+//
+//   script:
+//
+//   if ( params.copy_to_outbox )
+//   """
+//   chmod 770 -R ${deliverydir}
+//   chmod 770 -R ${ctg-qc-dir}
+//   """
+//   else
+//   """
+//   """
+//
+// }
 
 
 

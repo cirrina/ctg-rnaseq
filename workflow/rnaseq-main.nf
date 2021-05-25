@@ -55,14 +55,6 @@ bindir              =  params.bindir
 samplesheet         =  params.samplesheet
 samplesheet_demux   =  params.samplesheet_demux
 
-
-//  assay specific
-// assay               =  params.assay
-// instrument_type     =  params.instrument_type
-// index_adapters      =  params.index_adapters
-//paired              =  params.paired
-// strandness          =  params.strandness
-
 //  demux specific
 runfolderdir        =  params.runfolderdir
 runfolder           =  params.runfolder
@@ -87,6 +79,7 @@ run_featurecounts     =  params.run_featurecounts
 //  log files
 logdir               =  params.logdir
 logfile              =  file( logdir + '/' + projectid + '.log.complete' )
+
 
 
 
@@ -130,23 +123,27 @@ fcounts_feature     =  params.fcounts_feature
 
 
 
+// Check if files and directories exist
+checkPathParamList = [
+  project_root, delivery_root, qc_root,
+  projectdir, bindir,
+  fastqdir, logdir, outputdir,
+  samplesheet
+]
+for (param in checkPathParamList) {
+    if (param) {
+	file(param, checkIfExists: true)
+    }
+}
+if ( run_demux ) {
+  file(fastqdir_bcl2fastq, checkIfExists: true)
+  file(samplesheet_demux, checkIfExists: true)
+}
 
 
 // // Debug & test params
 // // -----------------------------
 debug_mode = false // will turn echo to true
-
-
-// if( debug_mode == true){
-//   run_demux             =  false
-//   run_fastqc            =  false
-//   run_multiqc           =  false
-//   run_multiqc_ctg       =  false
-//   run_fastq_screen      =  false
-//   bam_indexing          =  false
-//   run_markdups          =  false
-//   run_rnaseqmetrics     =  false
-// }
 
 
 //  Check paramters
@@ -160,16 +157,6 @@ if (samplesheet    == '') {exit 1, "You must define a sample sheet path in the n
 //file(logdir).mkdir()
 
 
-// Check if these exist
-checkPathParamList = [
-  project_root, delivery_root, qc_root,
-  logdir, projectdir, outputdir, bindir, samplesheet
-]
-for (param in checkPathParamList) {
-    if (param) {
-	file(param, checkIfExists: true)
-    }
-}
 
 // Demux specific (bcl2fastq2 )
 // -----------------------------
@@ -191,8 +178,6 @@ def msg_startup = """\
     nextflow output dir     :  ${outputdir}
     nextflow work dir       :  ${workDir}
     nextflow log dir        :  ${logdir}
-    delivery dir            :  ${deliverydir}
-    ctg qc dir              :  ${ctg_qc_dir}
     sample sheet ctg        :  ${samplesheet}
     sample sheet demux      :  ${samplesheet_demux}
    """
@@ -871,6 +856,43 @@ process multiqc_ctg {
       --interactive \\
       -o ${multiqcctgdir} . ${runfolderdir}
   """
+
+}
+
+
+
+/* ===============================================================
+  *      ADD TO OUTBOX FOR CONVENIANT DOWNLOAD
+  =============================================================== */
+process add_outbox {
+  tag "$id"
+  cpus 6
+  memory '32 GB'
+  time '3h'
+  echo debug_mode
+
+  input:
+  val x from multiqc_ctg_complete_ch.collect()
+
+  output:
+  val "x" into add_outbox_complete_ch
+
+
+  script:
+
+  if ( params.copy_to_outbox ){
+    """
+    # userid=\$(whoami)
+    userid="percebe"
+    boxdir=/box/outbox/\${userid}/${projectid}
+
+    mkdir -p \${boxdir}
+    cp -r ${multiqcctgdir} \${boxdir}
+
+    """}
+  else{
+    """
+    """}
 
 }
 

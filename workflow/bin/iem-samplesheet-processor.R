@@ -505,7 +505,9 @@ for(i in 1:ncol(data_df.out)){
 special.flag <- if_else(special.flag, "File modified: some special characters have been replaced (see above)", "No replacements needed")
 checklist_flags$special_characters_replaced <- special.flag
 
-
+# double check if duplicated sample_ids
+u <- duplicated(data_df$Sample_ID)
+if(any(u)) stop("Warning: 'Sample_ID' contains duplicated ectries after string replacement")# stop("Duplicated Sample_ID present: ", data_df$Sample_ID[u])
 
 
 
