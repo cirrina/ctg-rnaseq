@@ -185,8 +185,6 @@ def msg_startup = """\
 println( msg_startup )
 
 
-//     nf baseDir   : ${workflow.baseDir}
-
 
 workflow.onComplete {
 
@@ -292,7 +290,7 @@ process bcl2fastq {
   cpus 4
   tag "$id"
   memory '110 GB'
-  time '3h'
+  time '24h'
 
   when:
   run_demux
@@ -502,8 +500,8 @@ process checkfiles_bam {
 
 process rnaseqmetrics {
   tag "$id"
-  cpus 4
-  memory '32 GB'
+  cpus 8
+  memory '48 GB'
   time '24h'
   echo debug_mode
 
@@ -747,6 +745,10 @@ process collect_align {
 
 // fastq_screen
 process fastqScreen {
+    tag "$id"
+    cpus 16
+    memory '32 GB'
+    time '24h'
 
     input:
     set sid, read1, read2, species from fastqscreen_ch //

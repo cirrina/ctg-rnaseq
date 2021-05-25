@@ -20,6 +20,7 @@ projectdir          =  params.projectdir
 //  samplesheets
 samplesheet         =  params.samplesheet
 samplesheet_demux   =  params.samplesheet_demux
+samplesheet_original =  params.samplesheet_original
 
 //  demux specific
 runfolderdir        =  params.runfolderdir
@@ -255,38 +256,38 @@ process genereate_readme {
 }
 
 
-// ADD TO OUTBOX
-process add_outbox {
-  tag "$id"
-  cpus 6
-  memory '32 GB'
-  time '3h'
-  echo debug_mode
-
-  input:
-  val x from genereate_readme_complete_ch.collect()
-
-  output:
-  val "x" into add_outbox_complete_ch
-
-
-  script:
-
-  if ( params.copy_to_outbox ){
-    """
-    # userid=\$(whoami)
-    userid="percebe"
-    boxdir=/box/outbox/percebe/${projectid}
-
-    mkdir -p \${boxdir}
-    cp  -r ${multiqcdeliverydir} \${boxdir}
-
-    """}
-  else{
-    """
-    """}
-
-}
+// // ADD TO OUTBOX
+// process add_outbox {
+//   tag "$id"
+//   cpus 6
+//   memory '32 GB'
+//   time '3h'
+//   echo debug_mode
+//
+//   input:
+//   val x from genereate_readme_complete_ch.collect()
+//
+//   output:
+//   val "x" into add_outbox_complete_ch
+//
+//
+//   script:
+//
+//   if ( params.copy_to_outbox ){
+//     """
+//     # userid=\$(whoami)
+//     userid="percebe"
+//     boxdir="/box/outbox/percebe/${projectid}"
+//
+//     mkdir -p \${boxdir}
+//     cp  -r ${multiqcdeliverydir} \${boxdir}
+//
+//     """}
+//   else{
+//     """
+//     """}
+//
+// }
 
 
 // CLEANUP OF PROJECT DIR TO COMPLETED
@@ -303,7 +304,7 @@ process do_cleanup {
   echo debug_mode
 
   input:
-  val x from add_outbox_complete_ch.collect()
+  val x from genereate_readme_complete_ch.collect()
 
   output:
   val "x" into cleanup_complete_ch
