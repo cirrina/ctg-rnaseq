@@ -29,6 +29,9 @@ fastqdir_bcl2fastq  =  params.fastqdir_bcl2fastq
 deliver_raw         =  params.deliver_raw
 deliver_fastq       =  params.deliver_fastq
 
+// extras
+outboxdir           =  params.outboxdir
+
 
 //  Other Fixed Directories (must be identical to dirnames in rnaseq.nf file)
 // -----------------------------
@@ -289,6 +292,37 @@ process genereate_readme {
 //
 // }
 
+/* ===============================================================
+  *      ADD TO OUTBOX FOR CONVENIANT DOWNLOAD
+  =============================================================== */
+process add_outbox {
+  tag "$id"
+  cpus 6
+  memory '32 GB'
+  time '3h'
+  echo debug_mode
+
+  input:
+  val x from genereate_readme_complete_ch.collect()
+
+  output:
+  val "x" into add_outbox_complete_ch
+
+
+  script:
+
+  if ( params.copy_to_outbox ){
+    """
+    mkdir -p ${outboxdir}
+    cp -r ${multiqcdeliverydir} ${outboxdir}
+
+    """}
+  else{
+    """
+    """}
+
+}
+
 
 // CLEANUP OF PROJECT DIR TO COMPLETED
 // everythiing must now have been copied or moved from the project dir
@@ -304,7 +338,7 @@ process do_cleanup {
   echo debug_mode
 
   input:
-  val x from genereate_readme_complete_ch.collect()
+  val x from add_outbox_complete_ch.collect()
 
   output:
   val "x" into cleanup_complete_ch
@@ -344,6 +378,8 @@ process do_cleanup {
     """
 
 }
+
+
 
 
 

@@ -62,6 +62,7 @@ fastqdir            =  params.fastqdir
 fastqdir_bcl2fastq  =  params.fastqdir_bcl2fastq
 //pooled              =  params.pooled
 
+outboxdir           = params.outboxdir
 
 //  module specific
 run_demux             =  params.run_demux
@@ -94,7 +95,7 @@ markdupsdir = outputdir+'/markdups_bam_tmp'
 fastqcdir = outputdir+'/fastqc'
 markdupsqcdir = outputdir+'/markdups'
 rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
-multiqcctgdir = outputdir+'/multiqc_ctg'
+multiqcctgdir = outputdir+'/multiqc-ctg'
 fastqscreendir = outputdir+'/fastqscreen'
 
 
@@ -115,6 +116,7 @@ if( run_align ) file(markdupsqcdir).mkdir()
 if( run_align ) file(rnaseqmetricsdir).mkdir()
 if( run_align && run_featurecounts ) file(featurecountsdir).mkdir()
 if( run_fastqscreen ) file(fastqscreendir).mkdir()
+if( copy_to_outbox ) file(outboxdir).mkdir()
 
 // featurecounts
 fcounts_feature     =  params.fcounts_feature
@@ -884,12 +886,8 @@ process add_outbox {
 
   if ( params.copy_to_outbox ){
     """
-    # userid=\$(whoami)
-    userid="percebe"
-    boxdir=/box/outbox/\${userid}/${projectid}
-
-    mkdir -p \${boxdir}
-    cp -r ${multiqcctgdir} \${boxdir}
+    cp -r ${multiqcctgdir} ${outboxdir}
+    cp -r ${fastqcdir} ${outboxdir}
 
     """}
   else{
