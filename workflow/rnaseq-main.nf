@@ -41,14 +41,15 @@
 project_root        =  params.project_root
 delivery_root       =  params.delivery_root
 qc_root             =  params.qc_root
+completed_root      =  params.completed_root
 //log_root            =  params.log_root
 
 //  project  and run folders
 projectid           =  params.projectid
-// n_samples           =  params.n_samples
 projectdir          =  params.projectdir
-//execdir             =  params.execdir
 bindir              =  params.bindir
+// n_samples           =  params.n_samples
+//execdir             =  params.execdir
 
 
 //  samplesheets
@@ -828,10 +829,10 @@ process fastqc {
 
 
 /* ===============================================================
-  *      MULTIQC CTG - ON NF DIRECTORY
+  *      CTG MULTIQC - MULTIQC ON ALL ANALYSES - runfolder included
   =============================================================== */
-// This is not carried on to the customer.
-
+// This multiQC is for CTG infouse and not to the customer.
+// The customer will obtain a lighter multiQC carried out below
 
 // run the inhouse multiqc analysis on entire nf-output dir as well as the runfolderdir (to get interop stats)
 process multiqc_ctg {
@@ -862,6 +863,10 @@ process multiqc_ctg {
   """
 
 }
+
+
+
+
 
 
 
