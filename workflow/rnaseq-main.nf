@@ -865,67 +865,33 @@ process multiqc_ctg {
 
 
 
-/* ===============================================================
-  *      ADD TO OUTBOX FOR CONVENIANT DOWNLOAD
-  =============================================================== */
-process add_outbox {
-  tag "$id"
-  cpus 6
-  memory '32 GB'
-  time '3h'
-  echo debug_mode
-
-  input:
-  val x from multiqc_ctg_complete_ch.collect()
-
-  output:
-  val "x" into add_outbox_complete_ch
-
-
-  script:
-
-  if ( params.copy_to_outbox ){
-    """
-    cp -r ${multiqcctgdir} ${outboxdir}
-    cp -r ${fastqcdir} ${outboxdir}
-
-    """}
-  else{
-    """
-    """}
-
-}
-
-
-// process move_files {
-//
+// /* ===============================================================
+//   *      ADD TO OUTBOX FOR CONVENIANT DOWNLOAD
+//   =============================================================== */
+// process add_outbox {
 //   tag "$id"
-//   cpus 1
-//   memory '5 GB'
+//   cpus 6
+//   memory '32 GB'
 //   time '3h'
-//   echo true
+//   echo debug_mode
 //
 //   input:
 //   val x from multiqc_ctg_complete_ch.collect()
 //
 //   output:
-//   val "x" into deliverydir_comple
+//   val "x" into add_outbox_complete_ch
 //
 //
 //   script:
 //
+//   if ( params.copy_to_outbox ){
+//     """
+//     cp -r ${multiqcctgdir} ${outboxdir}
+//     cp -r ${fastqcdir} ${outboxdir}
 //
-//
-//   """
-//
-//
-//   """
+//     """}
+//   else{
+//     """
+//     """}
 //
 // }
-
-
- // process multiqc_delivery {
- //
- //
- //
- // }

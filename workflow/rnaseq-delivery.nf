@@ -201,12 +201,19 @@ process multiqc_delivery {
   val "x" into multiqc_complete_2_ch
 
   script:
+  mqcreport = ${projectid} + '_multiqc_report'
+
+  if (! new File( mqcreport+'.html' ).exists() )
     """
       cd ${deliverydir}
-      multiqc -n ${projectid}_multiqc_report \\
+      multiqc -n ${mqcreport} \\
         --interactive \\
         -o ${multiqcdeliverydir} .
     """
+  else
+  """
+    echo "${mqcreport} already exists - skipping"
+  """
 }
 
 
@@ -225,8 +232,15 @@ process md5sum_delivery {
   params.run_md5sum
 
   script:
+  md5sumfile= ${deliverydir} + '/md5sum.txt'
+
+  if (! new File( md5sumfile ).exists() )
   """
-  find ${deliverydir} -type f -exec md5sum '{}' \\; > ${deliverydir}/md5sum.txt ; echo
+    find ${deliverydir} -type f -exec md5sum '{}' \\; > ${md5sumfile} ; echo
+  """
+  else
+  """
+    echo "${md5sumfile} already exists. skipping."
   """
 }
 
@@ -295,42 +309,46 @@ process genereate_readme {
 /* ===============================================================
   *      ADD TO OUTBOX FOR CONVENIANT DOWNLOAD
   =============================================================== */
-process add_outbox {
-  tag "$id"
-  cpus 6
-  memory '32 GB'
-  time '3h'
-  echo debug_mode
 
-  input:
-  val x from genereate_readme_complete_ch.collect()
+// I CAN NOT GET OUTBOX TO MOUNT PROPERLY TO SINGULARITY CONTAINER.
+// IF Copy stuff to outbox - then add this to shell script instead.
+// process add_outbox {
+//   tag "$id"
+//   cpus 6
+//   memory '32 GB'
+//   time '3h'
+//   echo debug_mode
+//
+//   input:
+//   val x from genereate_readme_complete_ch.collect()
+//
+//   output:
+//   val "x" into add_outbox_complete_ch
+//
+//
+//   script:
+//
+//   if ( params.copy_to_outbox ){
+//     """
+//     mkdir -p ${outboxdir}
+//     cp -r ${multiqcdeliverydir} ${outboxdir}
+//
+//     """}
+//   else{
+//     """
+//     """}
+//
+// }
 
-  output:
-  val "x" into add_outbox_complete_ch
 
-
-  script:
-
-  if ( params.copy_to_outbox ){
-    """
-    mkdir -p ${outboxdir}
-    cp -r ${multiqcdeliverydir} ${outboxdir}
-
-    """}
-  else{
-    """
-    """}
-
-}
-
-
-// CLEANUP OF PROJECT DIR TO COMPLETED
+// SETUP COMPLETED DIR
+// CLEANUP OF PROJECT DIR
 // everythiing must now have been copied or moved from the project dir
 // should include sample sheets, nextflow scripts,
 // rscirpt log from runFolder
 // .log.completed
 
-process do_cleanup {
+process setup_completed {
   tag "$id"
   cpus 2
   memory '16 GB'
@@ -338,7 +356,7 @@ process do_cleanup {
   echo debug_mode
 
   input:
-  val x from add_outbox_complete_ch.collect()
+  val x from genereate_readme_complete_ch.collect()
 
   output:
   val "x" into cleanup_complete_ch
@@ -360,16 +378,16 @@ process do_cleanup {
     if [ -f ${samplesheet_demux} ]; then
       mv ${samplesheet_demux} ${completeddir}
     fi
-    if [ -f ${samplesheet_ctg} ]; then
-      mv ${samplesheet_ctg} ${completeddir}
+    if [ -f ${samplesheet} ]; then
+      mv ${samplesheet} ${completeddir}
     fi
-    if [ -f ${samplesheet_ctg} ]; then
-      mv ${samplesheet_ctg} ${completeddir}
+    if [ -f ${samplesheet} ]; then
+      mv ${samplesheet} ${completeddir}
     fi
     mv ./rnaseq-delivery.nf ${completeddir}
     mv ./rnaseq-main.nf ${completeddir}
     mv ./nextflow.config ${completeddir}
-    mv ./${projectid}.2021_044.log.complete ${completeddir}
+    mv ./${projectid}.log.complete ${completeddir}
     mv ./bin ${completeddir}
     mv ./nextflow.params.${projectid} ${completeddir}
     """

@@ -1,3 +1,29 @@
+
+## Known issues
+
+- Should add checks for multiple prpcesses that they do not run if expected files are present. This featuer should not clash with the resume of nextflow. i.e. if resume is true, folders/.files may exist but not comlpete. this check must therefore be done on complete expected output. May be lesss of a problem with running e.g. multiqc etc
+Possible sollution is resume mode that would turn all initial flags to true.
+One other solutione is to add "start_from" flags. to use when -resume is needed  but not working.
+- nf run flags. as of now fiddeling with true & false parameters can be done. nf should log all paramaters somehow.
+
+
+- 1. -resume flag.
+- 2. -if no resume set to FALSE if dir/file does not exist
+- 3. optional flags. module process flags. Could be set by modes. (mode full, mode algn, mode mininal)
+
+Delivery mode:
+alignment or NOT aligned data.
+
+
+deliverydir
+
+/data
+/qc
+perform only md5sum on the data folder
+
+
+
+
 # ctg-rnaseq
 
 This pipeline will process RNA seq sequencing data from Illumina raw data runfolders.
