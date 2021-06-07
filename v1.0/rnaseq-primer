@@ -1,8 +1,9 @@
 #!/bin/bash
 
 scriptsdir='/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/dev/ctg-rnaseq-v0.99v2/workflow' # "/Users/david/scripts/ctg-rnaseq/workflow/"
-nf_pipe='ctg-rnaseq.nf'
+singularity_container='/projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif'
 
+singcmd="singularity exec --bind /projects/fs1/ ${singularity_container}"
 
 ## Develiopment possibilities / known issues
 # - since the create samples sheet Rscripts are run in the driver, not in the nf workflow, strandness is not yet included in the ctg samplesheet
@@ -215,7 +216,6 @@ cp -r ${scriptsdir}/* ${projectdir}/ # rsync nextflow foles. Will overwrite conf
 #######################################################
 # Generate sample sheets using Rscripts
 #######################################################
-singcmd="singularity exec --bind /projects/fs1/ /projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif"
 
 
 $singcmd ${projectdir}/bin/iem-samplesheet-processor.R \
@@ -256,6 +256,8 @@ echo "//  project specific parameters"            >> $nf_conf
 echo "//  adds to - and overrides - parameters in 'nextflow.config' " >> $nf_conf
 echo "//  scripts copied from:"                           >> $nf_conf
 echo "//    : ${scriptsdir}"                              >> $nf_conf
+echo "//  singularity container:"                           >> $nf_conf
+echo "//    : ${singularity_container}"                              >> $nf_conf
 echo "params {                                                      " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  // root directories                                         " >> $nf_conf
@@ -323,7 +325,14 @@ echo "  run_cleanup         =  true                                 " >> $nf_con
 echo ""   >> $nf_conf
 echo "}"  >> $nf_conf
 echo ""   >> $nf_conf
-
+echo " // Define SLURM specs                               " >> $nf_conf
+echo "process {                                           " >> $nf_conf
+echo "  executor='slurm'                                  " >> $nf_conf
+echo "  container = params.singularity_container                               " >> $nf_conf
+echo "  time='36h'                                          " >> $nf_conf
+echo "  cpus='16'                                       " >> $nf_conf
+echo "  memory='100 GB'                               " >> $nf_conf
+echo " }
 
 #######################################################################
 #  Final chmods
