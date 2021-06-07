@@ -150,7 +150,7 @@ if( run_align ) file(markdupsqcdir).mkdir()
 if( run_align ) file(rnaseqmetricsdir).mkdir()
 if( run_align && run_featurecounts ) file(featurecountsdir).mkdir()
 if( run_fastqscreen ) file(fastqscreendir).mkdir()
-if( sync_with_outbox ) file(outboxdir).mkdir()
+if( params.sync_outbox ) file(outboxsyncdir).mkdir()
 
 
 // create project specific delivery dir and ctg qc dir
@@ -281,9 +281,6 @@ println( msg_modules )
 
 
 
-
-
-v
 
 // all samplesheet info
 // if ( params.paired == true ) {
@@ -1129,30 +1126,43 @@ process genereate_readme {
 // /* ===============================================================
 //   *      ADD TO OUTBOX FOR CONVENIANT DOWNLOAD
 //   =============================================================== */
-// process add_outbox {
-//   tag "$id"
-//   cpus 6
-//   memory '32 GB'
-//   time '3h'
-//   echo debug_mode
-//
-//   input:
-//   val x from multiqc_ctg_complete_ch.collect()
-//
-//   output:
-//   val "x" into add_outbox_complete_ch
-//
-//
-//   script:
-//
-//   if ( params.sync_with_outbox ){
-//     """
-//     cp -r ${multiqcctgdir} ${outboxdir}
-//     cp -r ${fastqcdir} ${outboxdir}
-//
-//     """}
-//   else{
-//     """
-//     """}
-//
-// }
+// the outbox syn option is for easier download of output result files, e.g. multiqc and samplesheet etc
+// /box/outbox/ is not mounted on nodes - so copy all relevent fils to a temporary outbox sync dir - located in user's private folder.
+// This sync folder can then be mirrored to outbox using cron job
+process outbox_sync {
+  tag "$id"
+  cpus 6
+  memory '32 GB'
+  time '3h'
+  echo debug_mode
+
+  input:
+  val x from genereate_readme_complete_ch.collect()
+
+  output:
+  val "x" into add_outbox_complete_ch
+
+
+  script:
+
+  if ( params.sync_outbox ){
+    """
+    cp -r ${multiqcctgdir} ${outboxsyncdir}
+    cp -r ${fastqcdir} ${outboxsyncdir}
+    if [[ -f ${samplesheet_demux} ]]; then
+      cp ${samplesheet_demux} ${outboxsyncdir}
+    fi
+    if [ -f ${samplesheet} ]; then
+      cp ${samplesheet} ${outboxsyncdir}
+    fi
+    if [[ -f "${runfolderdir}/iem.rscript.log" ]]; then
+      cp ${samplesheet_original} ${outboxsyncdir}
+    fi
+    cp ./nextflow.params.${projectid} ${outboxsyncdir}
+
+    """}
+  else{
+    """
+    """}
+
+}
