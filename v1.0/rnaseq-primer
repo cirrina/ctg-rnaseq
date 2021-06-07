@@ -69,7 +69,7 @@ done
 # nextflow scripts.
 # Folder where nextflow script, nextflow configs and supplementary scripts are found
 # Must contains /bin/ in which rscripts are found
-nfdir='/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/dev/ctg-rnaseq-v0.99v2/workflow' # "/Users/david/scripts/ctg-rnaseq/workflow/"
+scriptsdir='/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/dev/ctg-rnaseq-v0.99v2/workflow' # "/Users/david/scripts/ctg-rnaseq/workflow/"
 nf_pipe='ctg-rnaseq.nf'
 
 
@@ -204,7 +204,7 @@ echo ""
 echo ""
 
 mkdir -p $projectdir
-cp -r ${nfdir}/* ${projectdir}/ # rsync nextflow foles. Will overwrite configs
+cp -r ${scriptsdir}/* ${projectdir}/ # rsync nextflow foles. Will overwrite configs
 
 
 
