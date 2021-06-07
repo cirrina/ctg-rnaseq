@@ -99,10 +99,7 @@ outboxsyncdir="${outboxsync_root}/${projectid}"
 logdir=${projectdir} ## "${log_root}/${projectid}"
 logfile="${logdir}/${projectid}.rnaseq.log"
 
-
-
-# Sampleshee output from rscripts
-
+# Samplesheet names - outputed from samplesheet rscript
 samplesheet_demux="${projectdir}/SampleSheet-${projectid}-demux.csv"
 samplesheet_ctg="${projectdir}/SampleSheet-${projectid}-ctg.csv"
 
@@ -161,7 +158,7 @@ echo "";
 # Prompt user to approve running in current directory and input
 read -p "
 
-  this primer should be run from within:
+  this primer script should be run from within:
 
   i ) illumina runfolder (if priming nextflow analysis for demux)
   ii) project folder (if not priming for demux)
@@ -179,6 +176,7 @@ then
 fi
 echo ""
 echo ""
+
 
 #################################################
 # Set up Project directory & nextflow scripts
@@ -210,11 +208,8 @@ cp -r ${scriptsdir}/* ${projectdir}/ # rsync nextflow foles. Will overwrite conf
 
 
 
-
-
-
 #######################################################
-# Generate sample sheets using Rscripts
+# parse and generate sample sheets using Rscript
 #######################################################
 
 
@@ -229,10 +224,9 @@ $singcmd ${projectdir}/bin/iem-samplesheet-processor.R \
 
 
 #################################################################
-# Retrieve info extracted by Rscript  (pass to nf config)
+# Retrieve info extracted by Rscript in 'iem.rscript.log'
 #################################################################
 
-# echo "$samplesheet_ctg"
 logfile_iem="${execdir}/iem.rscript.log" ## path and file suffix 'iem.rscript.log' is dedfined within 'iem-samplesheet-processor.R'.
 assay=$(cat ${logfile_iem} | grep 'Assay' |  cut -f2 -d",")
 instrument_type=$(cat ${logfile_iem} | grep 'Instrument_type' |  cut -f2 -d",")
@@ -242,22 +236,26 @@ strandness=$(cat ${logfile_iem} | grep 'Strandness' |  cut -f2 -d",")
 n_samples=$(cat ${logfile_iem} | grep 'number_samples' |  cut -f2 -d",")
 species=$(cat ${logfile_iem} | grep 'Species' |  cut -f2 -d",")
 
+
 #######################################################################
 # Prime nextflow configuration file -- nextflow.params_${projectid} --
 #######################################################################
 
-# Edit config file
+# project specific config file
 nf_conf="${projectdir}/nextflow.params.${projectid}"
 
+## Write to file
 echo ""                                    > $nf_conf
-echo "// ${projectid}"                           >> $nf_conf
+echo "//  ${projectid}"                           >> $nf_conf
 echo "//  nextflow configuration file"           >> $nf_conf
 echo "//  project specific parameters"            >> $nf_conf
 echo "//  adds to - and overrides - parameters in 'nextflow.config' " >> $nf_conf
+echo "//"                                                               >> $nf_conf
 echo "//  scripts copied from:"                           >> $nf_conf
 echo "//    : ${scriptsdir}"                              >> $nf_conf
 echo "//  singularity container:"                           >> $nf_conf
 echo "//    : ${singularity_container}"                              >> $nf_conf
+echo ""                                                               >> $nf_conf
 echo "params {                                                      " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  // root directories                                         " >> $nf_conf
@@ -319,7 +317,7 @@ echo "  //  delivery params                                         " >> $nf_con
 echo "  pooled              =  false                                " >> $nf_conf
 echo "  deliver_raw         =  false                                " >> $nf_conf
 echo "  deliver_fastq       =  true                                 " >> $nf_conf
-echo "  sync_outbox    =  true                                      " >> $nf_conf
+echo "  sync_outbox         =  true                                 " >> $nf_conf
 echo "  run_md5sum          =  true                                 " >> $nf_conf
 echo "  run_cleanup         =  true                                 " >> $nf_conf
 echo ""   >> $nf_conf
@@ -334,9 +332,6 @@ echo "  cpus='16'                                                   " >> $nf_con
 echo "  memory='100 GB'                                             " >> $nf_conf
 echo " }
 
-#######################################################################
-#  Final chmods
-#######################################################################
 
 
 #######################################################################
