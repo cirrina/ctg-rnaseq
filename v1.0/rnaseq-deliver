@@ -1,0 +1,130 @@
+#!/bin/bash
+
+#######################################
+# set up ctg rnaseq pipeline for delivery
+#######################################
+
+### This script will
+## copy files into their correct ls4 structure set for delivery
+## run md5sum check
+## generate files that descrive delivery sizes and file structure
+
+execdir=$(pwd)
+# usage message
+usage() {
+    echo ""
+    echo ""
+    echo "usage: rnaseq-deliver [ -i projectid ] [ -h help ] "  1>&2
+    echo ""
+    echo "------------------- "
+    echo " arguments : "
+    echo "------------------- "
+    echo " project_id         -i : Define 'project id'. Typically 202X-XXX. This MUST MATCH the project folder that you are in. The script use the projectid to check the integrity of files - and that the project specific nf params file is present "
+    echo ""
+    echo ""
+}
+
+exit_abnormal() {
+    usage
+    exit 1
+}
+
+# Read and control input arguments
+while getopts ":i:h" opt; do
+    case $opt in
+      i) id=$OPTARG
+	     ;;
+      h) exit_abnormal
+        ;;
+      \?) echo echo ""; echo "Error:";"Invalid option -$OPTARG" >&2
+        exit_abnormal ;;
+      :) echo ""; echo "Error:"; echo " -${OPTARG} requires an argument!"
+	     exit_abnormal ;;
+    esac
+done
+
+## check  projct id input
+if [ -z $id ]; then
+  echo ""; echo "Error: "
+  echo "Specify Project id ('-i' flag)"; echo""
+  exit_abnormal
+fi
+
+################################################
+# Define variables based on input arguments
+################################################
+
+projectdir=${execdir}
+# logfile="${logfolder}/$id.log"
+projectfolder=$(basename ${execdir})
+nf_conf="${projectdir}/nextflow.params.${id}"
+nf_pipe="rnaseq-delivery.nf"
+if [ ${id} != ${projectfolder} ]; then
+  echo "Error: Project id (flag '-i') must be same as execution dir. the script must be initiated within the proect folder "
+  echo""; exit_abnormal
+fi
+
+## Check arguments
+shift "$(( OPTIND -1 ))"
+
+
+## Check if project (folder) exists from before. If so overwrite has to be set true with -x flag
+if [ ! -f ${nf_conf} ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
+  echo ""; echo "Error:"
+  echo "'${nf_conf}' does not exist in current dir. Run 'rnaseq-primer' or crete file."; echo ""; echo ""
+  exit_abnormal
+  # echo "'${projectdir}' already exists. Overwriting this folder."
+fi
+
+
+
+#
+##############
+# Print info #
+##############
+echo ""
+echo "Delivery execution parameters "
+echo "----------------------------"
+echo " project id                : $id";
+echo " execution / project dir   : $execdir";
+
+echo "";
+echo "";
+
+echo "'${nf_conf}' project specific configuration file: "
+echo "--------------------------------------------------"
+# cat ${nf_conf}
+echo "--------------------------------------------------"
+# Prompt user to approve running in current directory and input
+echo "";
+read -p "Warning:
+
+  This will mark completion of the rnaseq pipeline.
+  Fiiles and folders will now be moved and copied and set up for delivery.
+
+  Are you sure?
+
+  (y/n)  ... " prompt
+if [[ $prompt != "y" ]]
+then
+    echo ""; echo "Exiting!! "
+    exit 0
+fi
+echo "";echo ""
+
+
+
+
+
+# #############################
+#  Initiate Nextflow delivery Pipeline
+# #############################
+    nohup nextflow run $nf_pipe -c $nf_conf > nf.log.delivery &
+    # nextflow run $nf_pipe -c $nf_conf
+    echo "nextflow run $nf_pipe -c $nf_conf"
+
+echo ""; echo ""
+echo "#################################"
+echo "# rnaseq delivery pipeline submitted #"
+echo "#################################"
+echo ""; echo "";

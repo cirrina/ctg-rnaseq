@@ -1,0 +1,379 @@
+#!/bin/bash
+
+
+
+## Develiopment possibilities / known issues
+# - since the create samples sheet Rscripts are run in the driver, not in the nf workflow, strandness is not yet included in the ctg samplesheet
+# Chmods of generated files and fodlers !! should be full access by all within the lsens4 group. Add chmods to script? What about executables...
+
+## One nmore rscript to check if no deux samplesheet is supplied
+
+#######################################
+# Initiation - Prime the ctg rnaseq pipeline
+#######################################
+force_lane='0'
+force_replace_index='false'
+# usage message
+usage() {
+    echo ""
+    echo ""
+    echo "usage: prime-ctg-rnaseq [ -i projectid ] [ -s samplesheet ] [ -l force_lane ] [ -l force_replace_index ] [ -h help ] "  1>&2
+    echo ""
+    echo "------------------- "
+    echo " arguments : "
+    echo "------------------- "
+    echo " project_id         -i : Define 'project id'. Typically 202X-XXX. This will define the runfolder, but also define some output folders, such as blc2fastq2 output folders."
+    echo " samplesheet        -s : IEM style laboratory samplesheet for this run. Within runfolder. (Default: CTG_SampleSheet.csv) "
+    echo ""
+    echo "------------------- "
+    echo " optional : "
+    echo "------------------- "
+    echo " force_lane             -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will overrid the Lane column in sample sheet"
+    echo " force_replace_index:   -f : Set this flag if to force iem samplesheet Rscript to overwrite index id and sequence informations based on index well id. "
+    echo " help                   -h : print help message"
+    echo "------------------- "
+    echo ""
+    echo ""
+}
+
+exit_abnormal() {
+    usage
+    exit 1
+}
+
+# Read and control input arguments
+while getopts ":i:s:l:fh" opt; do
+    case $opt in
+      i) projectid=$OPTARG
+	     ;;
+      s) samplesheet=$OPTARG
+	     ;;
+      l) force_lane=$OPTARG
+        ;;
+      f) force_replace_index=true
+          ;;
+      h) exit_abnormal
+        ;;
+      \?) echo echo ""; echo "Error:";"Invalid option -$OPTARG" >&2
+        exit_abnormal ;;
+      :) echo ""; echo "Error:"; echo " -${OPTARG} requires an argument!"
+	     exit_abnormal ;;
+    esac
+done
+
+
+
+################################################
+# Define variables
+################################################
+# nextflow scripts.
+# Folder where nextflow script, nextflow configs and supplementary scripts are found
+# Must contains /bin/ in which rscripts are found
+nfdir='/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/dev/ctg-rnaseq-v0.99v2/workflow' # "/Users/david/scripts/ctg-rnaseq/workflow/"
+nf_pipe='ctg-rnaseq.nf'
+
+
+## Root directories (based on ourr set folder naming conventions on lsens)
+project_root='/projects/fs1/shared/ctg-projects/rnaseq' ## '/Users/david/tasks/rnaseq_test/ctg-projects' ## root_rootdir for ctg-projects (not same as delivery dir) /projects/fs1/shared/ctg-projects/ctg-rnaesq
+delivery_root='/projects/fs1/nas-sync/ctg-delivery/rnaseq' ## '/Users/david/tasks/rnaseq_test/nftest/ctg-delivery' # root dir for where files are copied upon COMPLETION of the flow. Only files to be delivered to customer are copied here
+qc_root='/projects/fs1/shared/ctg-qc/rnaseq' # '/Users/david/tasks/rnaseq_test/nftest/ctg-qc' # ctg qc root_root directory. folder where qc stats shpuld be copied to
+runfolder_root='/projects/fs1/nas-sync/upload'
+completed_root='/projects/fs1/shared/ctg-completed/rnaseq'
+## outbox delivery on ls4
+userid=$(whoami)
+outboxsync_root="/projects/fs1/${userid}/outboxsync"
+
+
+## project specific directories
+execdir=$(pwd) # execution dir. Should be either illumina runfolder dir or within the project dir where the pipe is run
+projectdir=${project_root}/${projectid}
+runfolderdir=$execdir # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
+runfolder=$(basename $runfolderdir) #
+fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output
+fastqdir="${fastqdir_bcl2fastq}/${projectid}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
+outboxsyncdir="${outboxsync_root}/${projectid}"
+
+## logs
+# logfile="${logfolder}/$id.log"
+logdir=${projectdir} ## "${log_root}/${projectid}"
+logfile="${logdir}/${projectid}.rnaseq.log"
+
+
+
+# Sampleshee output from rscripts
+
+samplesheet_demux="${projectdir}/SampleSheet-${projectid}-demux.csv"
+samplesheet_ctg="${projectdir}/SampleSheet-${projectid}-ctg.csv"
+
+
+
+
+################################################
+# Check arguments and variables
+################################################
+shift "$(( OPTIND -1 ))"
+
+## check  projct id input
+if [ -z $projectid ]; then
+  echo ""; echo "Error: "
+  echo "Specify project id: '-i' flag"; echo""; echo ""
+  exit_abnormal
+fi
+
+
+## Check Sample Sheet. if file is present in work directory.
+if [ -z $samplesheet ]; then
+  echo ""; echo "Error:"
+  echo "Specify sample sheet (in current dir): '-s' flag. "; echo ""
+  exit_abnormal
+  # sheet="CTG_SampleSheet.csv"
+  # echo "- Using 'CTG_SampleSheet.csv'"
+fi
+if [ ! -f $samplesheet ]; then
+  echo ""; echo "Error:"
+  echo "Sample Sheet does not exist (in current dir)"
+  #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
+  exit_abnormal
+fi
+
+
+#
+##############
+# Print info #
+##############
+echo ""
+echo "ctg-rnaseq priming parameters       "
+echo "----------------------------------  "
+echo "project id            : $projectid"          ;
+echo "primer execution dir  : $execdir"     ;
+echo "runfolder dir         : $runfolderdir"     ;
+echo "project dir           : $projectdir"     ;
+echo "";
+echo "samplesheet           : $samplesheet"         ;
+echo "samplesheet-ctg       : $samplesheet_ctg" ;
+echo "samplesheet-demux     : $samplesheet_demux"         ;
+echo "";
+echo "force_lane            : $force_lane";
+echo "force_replace_index   : $force_replace_index";
+echo "";
+
+# Prompt user to approve running in current directory and input
+read -p "
+
+  this primer should be run from within:
+
+  i ) illumina runfolder (if priming nextflow analysis for demux)
+  ii) project folder (if not priming for demux)
+
+  current directory is:
+  '${execdir}'
+
+  Are input execution parameters correct?
+
+  (y/n)  ... " prompt
+if [[ $prompt != "y" ]]
+then
+    echo ""; echo "Exiting!! "
+    exit 0
+fi
+echo ""
+echo ""
+
+#################################################
+# Set up Project directory & nextflow scripts
+#################################################
+
+if [[ -d ${projectdir} ]]; then
+  read -p "Warning:
+
+  project folder already exists:
+  '${projectdir}'
+
+  sample sheets and scripts may be overwritten. Are you sure?
+
+  (y/n)  ...
+
+  " prompt
+  if [[ $prompt != "y" ]]
+  then
+      echo ""; echo "Exiting!! "
+      exit 0
+  fi
+fi
+echo ""
+echo ""
+
+mkdir -p $projectdir
+cp -r ${nfdir}/* ${projectdir}/ # rsync nextflow foles. Will overwrite configs
+
+
+
+
+
+
+
+#######################################################
+# Generate sample sheets using Rscripts
+#######################################################
+singcmd="singularity exec --bind /projects/fs1/ /projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif"
+
+
+$singcmd ${projectdir}/bin/iem-samplesheet-processor.R \
+      --project_id ${projectid} \
+      --sample_sheet ${samplesheet} \
+      --output_demux_sheet ${samplesheet_demux}  \
+      --output_ctg_sheet ${samplesheet_ctg} \
+      --bin_dir "${projectdir}/bin/" \
+      --force_lane ${force_lane} \
+      --force_replace_index ${force_replace_index}
+
+
+#################################################################
+# Retrieve info extracted by Rscript  (pass to nf config)
+#################################################################
+
+# echo "$samplesheet_ctg"
+logfile_iem="${execdir}/iem.rscript.log" ## path and file suffix 'iem.rscript.log' is dedfined within 'iem-samplesheet-processor.R'.
+assay=$(cat ${logfile_iem} | grep 'Assay' |  cut -f2 -d",")
+instrument_type=$(cat ${logfile_iem} | grep 'Instrument_type' |  cut -f2 -d",")
+index_adapters=$(cat ${logfile_iem} | grep 'Index_Adapters' |  cut -f2 -d",")
+paired=$(cat ${logfile_iem} | grep 'Paired' |  cut -f2 -d",")
+strandness=$(cat ${logfile_iem} | grep 'Strandness' |  cut -f2 -d",")
+n_samples=$(cat ${logfile_iem} | grep 'number_samples' |  cut -f2 -d",")
+species=$(cat ${logfile_iem} | grep 'Species' |  cut -f2 -d",")
+
+#######################################################################
+# Prime nextflow configuration file -- nextflow.params_${projectid} --
+#######################################################################
+
+# Edit config file
+nf_conf="${projectdir}/nextflow.params.${projectid}"
+
+echo ""                                    > $nf_conf
+echo "// ${projectid}"                           >> $nf_conf
+echo "//  nextflow configuration file"           >> $nf_conf
+echo "//  project specific parameters"            >> $nf_conf
+echo "//  adds to - and overrides - parameters in 'nextflow.config' " >> $nf_conf
+echo "params {                                                      " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  // root directories                                         " >> $nf_conf
+echo "  project_root        =  '${project_root}'                    " >> $nf_conf
+echo "  delivery_root       =  '${delivery_root}'                   " >> $nf_conf
+echo "  qc_root             =  '${qc_root}'                         " >> $nf_conf
+echo "  completed_root      =  '${completed_root}'                  " >> $nf_conf
+echo "  outboxsync_root     =  '${outboxsync_root}'                 " >> $nf_conf
+
+echo ""                                                               >> $nf_conf
+echo "  //  project and workfolders                                 " >> $nf_conf
+echo "  projectid           =  '${projectid}'                              " >> $nf_conf
+echo "  species_global      =  '${species}'                         " >> $nf_conf
+echo "  n_samples           =  '${n_samples}'                       " >> $nf_conf
+echo "  projectdir          =  '${projectdir}'                      " >> $nf_conf
+echo "  bindir              =  '${projectdir}/bin/'                 " >> $nf_conf
+echo "  fastqdir            =  '${fastqdir}'                        " >> $nf_conf
+echo "  outboxsyncdir       =  '${outboxsyncdir}'                        " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  samplesheets and files                                  " >> $nf_conf
+echo "  samplesheet           =  '${samplesheet_ctg}'                 " >> $nf_conf
+echo "  samplesheet_demux     =  '${samplesheet_demux}'               " >> $nf_conf
+echo "  samplesheet_original  =  '${samplesheet}'                     " >> $nf_conf
+
+echo ""                                                               >> $nf_conf
+echo "  //  assay specific                                          " >> $nf_conf
+echo "  assay               =  '${assay}'                           " >> $nf_conf
+echo "  instrument_type     =  '${instrument_type}'                 " >> $nf_conf
+echo "  index_adapters      =  '${index_adapters}'                  " >> $nf_conf
+echo "  paired              =   ${paired}                           " >> $nf_conf
+echo "  strandness          =  '${strandness}'                      " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  runfolder and demux                                     " >> $nf_conf
+echo "  runfolderdir        =  '${runfolderdir}'                    " >> $nf_conf
+echo "  fastqdir_bcl2fastq  =  '${fastqdir_bcl2fastq}'              " >> $nf_conf
+echo "  runfolder           =  '${runfolder}'                       " >> $nf_conf
+echo "  pooled              =  false                                " >> $nf_conf
+echo "  deliver_raw         =  false                                " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  major modes                                             " >> $nf_conf
+echo "  run_demux             =  true                               " >> $nf_conf
+echo "  run_align             =  true                               " >> $nf_conf
+echo "  run_fastqc            =  true                               " >> $nf_conf
+echo "  run_multiqc           =  true                               " >> $nf_conf
+echo "  run_multiqc_ctg       =  true                               " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  non essentials                                          " >> $nf_conf
+echo "  run_fastqscreen       =  true                               " >> $nf_conf
+echo "  run_bam_indexing      =  true                               " >> $nf_conf
+echo "  run_markdups          =  true                               " >> $nf_conf
+echo "  run_rnaseqmetrics     =  true                               " >> $nf_conf
+echo "  run_featurecounts     =  true                               " >> $nf_conf
+echo "  run_checkfiles        =  true                               " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  log files                                               " >> $nf_conf
+echo "  logdir                =  '$logdir'                          " >> $nf_conf
+echo ""                                                               >> $nf_conf
+echo "  //  delivery params                                         " >> $nf_conf
+echo "  pooled              =  false                                " >> $nf_conf
+echo "  deliver_raw         =  false                                " >> $nf_conf
+echo "  deliver_fastq       =  true                                 " >> $nf_conf
+echo "  sync_outbox    =  true                                 " >> $nf_conf
+echo "  run_md5sum          =  true                                 " >> $nf_conf
+echo "  run_cleanup         =  true                                 " >> $nf_conf
+echo ""   >> $nf_conf
+echo "}"  >> $nf_conf
+echo ""   >> $nf_conf
+
+
+#######################################################################
+#  Final chmods
+#######################################################################
+
+
+#######################################################################
+#  Script complete
+#######################################################################
+
+
+echo ""; echo ""
+echo "#####################################"
+echo "  ctg-rnaseq project primed"
+echo "#####################################"
+echo ""
+echo "primed project directory for '${projectid}'"
+echo "${projectdir}"
+echo ""
+echo "generated demux and ctg sample sheets: "
+echo "${samplesheet_ctg}"
+echo "${samplesheet_demux}"
+echo ""
+echo "copied ctg-rnaseq nextflow files into projectdir and generated project-specific parameter config file: "
+echo "${nf_conf}"
+echo ""
+echo "check iem logfile to see if original sample sheet need to be modified (and primer script re-run):"
+echo "${logfile_iem} "
+echo ""
+echo "when sample sheets are ok, move to project dir and check the project specific nextflow config':"
+echo "'${nf_conf}'"
+echo "before running 'driver-ctg-rnaseq' while in project dir"
+echo ""; echo "";
+#
+
+
+# ################################################
+#  run  ctg-interop-qc  - if not run before
+# ################################################
+# # Will do interop analysis on runfolder, and compile multiqc report.
+# # This is written to
+# # 1. runfolder/ctg-interop
+# # 2. ctg-qc/interop
+
+if [[ ${execdir} == "${runfolder_root}/${runfolder}" ]]
+  then
+    echo ""
+    echo "running ctg-interop-qc script"
+    /projects/fs1/shared/ctg-tools/bin/ctg-interop-qc
+fi
+
+# ################################################
+#  final chmods
+# ################################################
+chmod 770 ${projectdir}
