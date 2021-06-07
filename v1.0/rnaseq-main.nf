@@ -1049,7 +1049,7 @@ process multiqc_delivery {
   val "x" into multiqc_complete_ch
 
   script:
-  mqcreport = ${projectid} + '_multiqc_report'
+  mqcreport = multiqcdeliverydir + '/' + projectid + '_multiqc_report'
 
   if (! new File( mqcreport+'.html' ).exists() )
     """
