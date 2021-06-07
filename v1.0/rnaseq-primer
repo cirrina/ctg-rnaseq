@@ -1,5 +1,7 @@
 #!/bin/bash
 
+scriptsdir='/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/dev/ctg-rnaseq-v0.99v2/workflow' # "/Users/david/scripts/ctg-rnaseq/workflow/"
+nf_pipe='ctg-rnaseq.nf'
 
 
 ## Develiopment possibilities / known issues
@@ -69,8 +71,6 @@ done
 # nextflow scripts.
 # Folder where nextflow script, nextflow configs and supplementary scripts are found
 # Must contains /bin/ in which rscripts are found
-scriptsdir='/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/dev/ctg-rnaseq-v0.99v2/workflow' # "/Users/david/scripts/ctg-rnaseq/workflow/"
-nf_pipe='ctg-rnaseq.nf'
 
 
 ## Root directories (based on ourr set folder naming conventions on lsens)
@@ -254,6 +254,8 @@ echo "// ${projectid}"                           >> $nf_conf
 echo "//  nextflow configuration file"           >> $nf_conf
 echo "//  project specific parameters"            >> $nf_conf
 echo "//  adds to - and overrides - parameters in 'nextflow.config' " >> $nf_conf
+echo "//  scripts copied from:"                           >> $nf_conf
+echo "//    : ${scriptsdir}"                              >> $nf_conf
 echo "params {                                                      " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  // root directories                                         " >> $nf_conf
