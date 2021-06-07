@@ -24,6 +24,10 @@ perform only md5sum on the data folder
 
 
 
+OTHER stuff
+´´delivery on lfs. deliver per PROJECT rather than customer/user
+
+
 # ctg-rnaseq
 
 This pipeline will process RNA seq sequencing data from Illumina raw data runfolders.
