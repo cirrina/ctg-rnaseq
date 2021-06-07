@@ -269,18 +269,18 @@ echo "  outboxsync_root     =  '${outboxsync_root}'                 " >> $nf_con
 
 echo ""                                                               >> $nf_conf
 echo "  //  project and workfolders                                 " >> $nf_conf
-echo "  projectid           =  '${projectid}'                              " >> $nf_conf
+echo "  projectid           =  '${projectid}'                       " >> $nf_conf
 echo "  species_global      =  '${species}'                         " >> $nf_conf
 echo "  n_samples           =  '${n_samples}'                       " >> $nf_conf
 echo "  projectdir          =  '${projectdir}'                      " >> $nf_conf
 echo "  bindir              =  '${projectdir}/bin/'                 " >> $nf_conf
 echo "  fastqdir            =  '${fastqdir}'                        " >> $nf_conf
-echo "  outboxsyncdir       =  '${outboxsyncdir}'                        " >> $nf_conf
+echo "  outboxsyncdir       =  '${outboxsyncdir}'                   " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  samplesheets and files                                  " >> $nf_conf
-echo "  samplesheet           =  '${samplesheet_ctg}'                 " >> $nf_conf
-echo "  samplesheet_demux     =  '${samplesheet_demux}'               " >> $nf_conf
-echo "  samplesheet_original  =  '${samplesheet}'                     " >> $nf_conf
+echo "  samplesheet           =  '${samplesheet_ctg}'               " >> $nf_conf
+echo "  samplesheet_demux     =  '${samplesheet_demux}'             " >> $nf_conf
+echo "  samplesheet_original  =  '${samplesheet}'                   " >> $nf_conf
 
 echo ""                                                               >> $nf_conf
 echo "  //  assay specific                                          " >> $nf_conf
@@ -319,19 +319,19 @@ echo "  //  delivery params                                         " >> $nf_con
 echo "  pooled              =  false                                " >> $nf_conf
 echo "  deliver_raw         =  false                                " >> $nf_conf
 echo "  deliver_fastq       =  true                                 " >> $nf_conf
-echo "  sync_outbox    =  true                                 " >> $nf_conf
+echo "  sync_outbox    =  true                                      " >> $nf_conf
 echo "  run_md5sum          =  true                                 " >> $nf_conf
 echo "  run_cleanup         =  true                                 " >> $nf_conf
 echo ""   >> $nf_conf
 echo "}"  >> $nf_conf
 echo ""   >> $nf_conf
-echo " // Define SLURM specs                               " >> $nf_conf
-echo "process {                                           " >> $nf_conf
-echo "  executor='slurm'                                  " >> $nf_conf
-echo "  container = params.singularity_container                               " >> $nf_conf
-echo "  time='36h'                                          " >> $nf_conf
-echo "  cpus='16'                                       " >> $nf_conf
-echo "  memory='100 GB'                               " >> $nf_conf
+echo " // Define SLURM specs                                        " >> $nf_conf
+echo "process {                                                     " >> $nf_conf
+echo "  executor='slurm'                                            " >> $nf_conf
+echo "  container = '${singularity_container}'                      " >> $nf_conf
+echo "  time='36h'                                                  " >> $nf_conf
+echo "  cpus='16'                                                   " >> $nf_conf
+echo "  memory='100 GB'                                             " >> $nf_conf
 echo " }
 
 #######################################################################
@@ -369,20 +369,6 @@ echo ""; echo "";
 #
 
 
-# ################################################
-#  run  ctg-interop-qc  - if not run before
-# ################################################
-# # Will do interop analysis on runfolder, and compile multiqc report.
-# # This is written to
-# # 1. runfolder/ctg-interop
-# # 2. ctg-qc/interop
-
-if [[ ${execdir} == "${runfolder_root}/${runfolder}" ]]
-  then
-    echo ""
-    echo "running ctg-interop-qc script"
-    /projects/fs1/shared/ctg-tools/bin/ctg-interop-qc
-fi
 
 # ################################################
 #  final chmods
