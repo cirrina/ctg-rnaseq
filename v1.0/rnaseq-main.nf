@@ -1086,7 +1086,8 @@ process md5sum_delivery {
 
   if (! new File( md5sumfile ).exists() )
     """
-      find ${deliverytemp} -type f -exec md5sum '{}' \\; > ${md5sumfile} ; echo
+     cd ${deliverytemp}
+     find . -type f -exec md5sum {} \\; > ${md5sumfile} ; echo
     """
   else
     """
