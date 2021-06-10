@@ -45,7 +45,7 @@
 // root directories
 project_root        =  params.project_root
 delivery_root       =  params.delivery_root
-qc_root             =  params.qc_root
+ctg_save_root             =  params.ctg_save_root
 completed_root      =  params.completed_root
 //log_root            =  params.log_root
 
@@ -93,7 +93,7 @@ run_checkfiles        =  params.run_checkfiles
 run_featurecounts     =  params.run_featurecounts
 
 //  log files
-logdir               =  params.logdir
+
 
 
 
@@ -117,11 +117,10 @@ fastqscreendir = outputdir+'/fastqscreen'
 
 
 // delivery
-ctg_qc_dir          =   qc_root + '/' + projectid
+ctg_save_dir        =  ctg_save_root + '/' + projectid
 deliverytemp        =  outputdir+'/delivery'
 multiqcdeliverydir  =  deliverytemp+'/multiqc'
 deliverydir         =  delivery_root + '/' + projectid  // final delivery dir (on ... /nas-sync/. Note that delivery is prepared in "deliverytemp" is used in projectfolder)
-completeddir        =  completed_root + '/' + projectid
 
 
 // Illumina runfolder stats
@@ -156,12 +155,12 @@ if( params.sync_outbox ) file(outboxsyncdir).mkdir()
 // create project specific delivery dir and ctg qc dir
 // -----------------------------
 file(deliverydir).mkdir()
-file(ctg_qc_dir).mkdir()
+file(ctg_save_dir).mkdir()
 // readme deliverydir
 readme = deliverydir +'/README_ctg_delivery_' + projectid
 
-// log
-logfile              =  file( logdir + '/' + projectid + '.log.complete' )
+// log file for nextflow .onComplete
+logfile              =  file( ctg_save_dir + '/logs/' + projectid + '.log.complete' )
 
 
 
@@ -172,7 +171,7 @@ logfile              =  file( logdir + '/' + projectid + '.log.complete' )
 
 // Check if files and directories exist
 checkPathParamList = [
-  project_root, delivery_root, qc_root,
+  project_root, delivery_root, ctg_save_root,
   projectdir, bindir,
   fastqdir, logdir, outputdir,
   samplesheet
@@ -893,6 +892,7 @@ process multiqc_ctg {
 
   output:
   val "x" into multiqc_ctg_complete_ch
+  val "x" into multiqc_ctg_complete_2_ch
 
   when:
   run_multiqc_ctg
@@ -930,7 +930,7 @@ process setup_deliverytemp {
   time '3h'
 
   input:
-  val x from ctg_qc_complete_ch.collect()
+  val x from into multiqc_ctg_complete_2.collect()
 
   output:
   val "x" into setup_deliverytemp_complete_ch
@@ -1102,7 +1102,7 @@ process genereate_readme {
 // as of this version files are copied to ctg-qc dir. could change to the folder that also keep scripts and configs and sample sheets
 
 
-process setup_ctg_qc {
+process setup_ctg_save {
   cpus 4
   tag "$id"
   memory '32 GB'
@@ -1114,18 +1114,43 @@ process setup_ctg_qc {
 
 
   output:
-  val "x" into ctg_qc_complete_ch
+  val "x" into setup_ctg_save_complete_ch
 
   script:
   """
-  if [ -d ${multiqcctgdir} ]
-    then
-    mv ${multiqcctgdir} ${ctg_qc_dir}
+  mkdir -p ${ctg_save_dir}/samplesheets
+  mkdir -p ${ctg_save_dir}/logs
+  mkdir -p ${ctg_save_dir}/scripts
+
+  cd ${projectdir}
+
+  if [ -d ${multiqcctgdir} ]; then
+    cp -r ${multiqcctgdir} ${ctg_save_dir}
   fi
-  if [ -d ${fastqcdir} ]
-    then
-    cp -r ${fastqcdir} ${ctg_qc_dir}
+  if [ -d ${fastqcdir} ]; then
+    cp -r ${fastqcdir} ${ctg_save_dir}
   fi
+
+  if [ -f ${samplesheet} ]; then
+    cp ${samplesheet} ${ctg_save_dir}/samplesheets
+  fi
+  if [[ -f ${samplesheet_demux} ]]; then
+    cp ${samplesheet_demux} ${ctg_save_dir}/samplesheets
+  fi
+  if [ -f ${samplesheet_original} ]; then
+    cp ${samplesheet} ${ctg_save_dir}/samplesheets
+  fi
+
+
+  if [[ -f "${runfolderdir}/iem.rscript.log" ]]; then
+    cp ${samplesheet_original} ${ctg_save_dir}/logs
+  fi
+  if [[ -f "${projectdir}/nextflow.params.${projectid}" ]]; then
+    cp ${projectdir}/nextflow.params.${projectid} ${ctg_save_dir}/scripts
+  fi
+  cp ${projectdir}/rnaseq-main.nf ${ctg_save_dir}/scripts
+  cp ${projectdir}/nextflow.config ${ctg_save_dir}/scripts
+
   """
 }
 
@@ -1145,7 +1170,7 @@ process outbox_sync {
   echo debug_mode
 
   input:
-  val x from genereate_readme_complete_ch.collect()
+  val x from setup_ctg_save_complete_ch.collect()
 
   output:
   val "x" into add_outbox_complete_ch
@@ -1166,7 +1191,7 @@ process outbox_sync {
     if [[ -f "${runfolderdir}/iem.rscript.log" ]]; then
       cp ${samplesheet_original} ${outboxsyncdir}
     fi
-    if [[ -f "./nextflow.params.${projectid}" ]]; then
+    if [[ -f "nextflow.params.${projectid}" ]]; then
       cp ./nextflow.params.${projectid} ${outboxsyncdir}
     fi
 

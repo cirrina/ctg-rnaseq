@@ -102,8 +102,6 @@ outboxsyncdir="${outboxsync_root}/${projectid}"
 
 ## logs
 # logfile="${logfolder}/$id.log"
-logdir=${projectdir} ## "${log_root}/${projectid}"
-logfile="${logdir}/${projectid}.rnaseq.log"
 
 # Samplesheet names - outputed from samplesheet rscript
 samplesheet_demux="${projectdir}/SampleSheet-${projectid}-demux.csv"
@@ -314,9 +312,6 @@ echo "  run_markdups          =  true                               " >> $nf_con
 echo "  run_rnaseqmetrics     =  true                               " >> $nf_conf
 echo "  run_featurecounts     =  true                               " >> $nf_conf
 echo "  run_checkfiles        =  true                               " >> $nf_conf
-echo ""                                                               >> $nf_conf
-echo "  //  log files                                               " >> $nf_conf
-echo "  logdir                =  '$logdir'                          " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  delivery params                                         " >> $nf_conf
 echo "  pooled              =  false                                " >> $nf_conf
