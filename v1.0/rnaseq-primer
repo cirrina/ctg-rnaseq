@@ -88,8 +88,15 @@ outboxsync_root="/projects/fs1/${userid}/outboxsync"
 ## project specific directories
 execdir=$(pwd) # execution dir. Should be either illumina runfolder dir or within the project dir where the pipe is run
 projectdir=${project_root}/${projectid}
-runfolderdir=$execdir # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
-runfolder=$(basename $runfolderdir) #
+## check if executed in rundfolder
+if [[ -d "${execdir}/Data/Intensities/BaseCalls" ]]; then
+  runfolderdir=$execdir # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
+  runfolder=$(basename $runfolderdir) #
+else
+  runfolderdir='none' # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
+  runfolder='none' #
+fi
+
 fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output
 fastqdir="${fastqdir_bcl2fastq}/${projectid}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
 outboxsyncdir="${outboxsync_root}/${projectid}"
