@@ -908,41 +908,21 @@ process multiqc_ctg {
 }
 
 
+
+
 /* ===============================================================
-  *     ctg qc for keeping -  in ctg-cq or in completed
+  *     Genaerate Delivery folder (temp folder within project dir)
   =============================================================== */
-// CTG should store multiQC (ctg-multiqc) and fastqc for all samples
-// as of this version files are copied to ctg-qc dir. could change to the folder that also keep scripts and configs and sample sheets
-
-
-process setup_ctg_qc {
-  cpus 4
-  tag "$id"
-  memory '32 GB'
-  time '3h'
-
-  input:
-  val x from multiqc_ctg_complete_ch.collect()
-
-  output:
-  val "x" into ctg_qc_complete_ch
-
-  script:
-  """
-  if [ -d ${multiqcctgdir} ]
-    then
-    mv ${multiqcctgdir} ${ctg_qc_dir}
-  fi
-  if [ -d ${fastqcdir} ]
-    then
-    cp -r ${fastqcdir} ${ctg_qc_dir}
-  fi
-  """
-}
-
+// generate a delivery folder and collect all files n folders to deliver
+// run additional multiqc and md5 summ
+// This temp delivery folder can be moved to delivery site on ls4 (nas sync) after nextflow sctipt completion.
+// this delivery in additional shell script.
+// move fastq files to delivery folder
+// if not pooled, deliver the complete bcl2fastq directory including stats and undetermined fastq
 
 // setup a deliveryfolder in nextflow dir.
 // This will later be moved to /nas-sync/ctg-delivery
+
 process setup_deliverytemp {
   cpus 8
   tag "$id"
@@ -979,16 +959,6 @@ process setup_deliverytemp {
   """
 }
 
-
-/* ===============================================================
-  *     Genaerate Delivery folder (temp folder within project dir)
-  =============================================================== */
-// generate a delivery folder and collect all files n folders to deliver
-// run additional multiqc and md5 summ
-// This temp delivery folder can be moved to delivery site on ls4 (nas sync) after nextflow sctipt completion.
-// this delivery in additional shell script.
-// move fastq files to delivery folder
-// if not pooled, deliver the complete bcl2fastq directory including stats and undetermined fastq
 process move_fastq {
 
   cpus 8
@@ -1002,6 +972,7 @@ process move_fastq {
 
   output:
   val "x" into move_fastq_complete_ch
+  val "x" into move_fastq_complete_2_ch
 
   script:
   if ( params.deliver_fastq ){
@@ -1124,6 +1095,42 @@ process genereate_readme {
 
 
 
+/* ===============================================================
+  *     FINALIZE -  setup ctg qc directory - save qc files and scripts
+  =============================================================== */
+// CTG should store multiQC (ctg-multiqc) and fastqc for all samples
+// as of this version files are copied to ctg-qc dir. could change to the folder that also keep scripts and configs and sample sheets
+
+
+process setup_ctg_qc {
+  cpus 4
+  tag "$id"
+  memory '32 GB'
+  time '3h'
+
+  input:
+  val x from multiqc_ctg_complete_ch.collect()
+  val x from move_fastq_complete_2_ch.collect()
+
+
+  output:
+  val "x" into ctg_qc_complete_ch
+
+  script:
+  """
+  if [ -d ${multiqcctgdir} ]
+    then
+    mv ${multiqcctgdir} ${ctg_qc_dir}
+  fi
+  if [ -d ${fastqcdir} ]
+    then
+    cp -r ${fastqcdir} ${ctg_qc_dir}
+  fi
+  """
+}
+
+
+
 // /* ===============================================================
 //   *      ADD TO OUTBOX FOR CONVENIANT DOWNLOAD
 //   =============================================================== */
@@ -1159,7 +1166,10 @@ process outbox_sync {
     if [[ -f "${runfolderdir}/iem.rscript.log" ]]; then
       cp ${samplesheet_original} ${outboxsyncdir}
     fi
-    cp ./nextflow.params.${projectid} ${outboxsyncdir}
+    if [[ -f "./nextflow.params.${projectid}" ]]; then
+      cp ./nextflow.params.${projectid} ${outboxsyncdir}
+    fi
+
 
     """}
   else{

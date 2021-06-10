@@ -77,9 +77,8 @@ done
 ## Root directories (based on ourr set folder naming conventions on lsens)
 project_root='/projects/fs1/shared/ctg-projects/rnaseq' ## '/Users/david/tasks/rnaseq_test/ctg-projects' ## root_rootdir for ctg-projects (not same as delivery dir) /projects/fs1/shared/ctg-projects/ctg-rnaesq
 delivery_root='/projects/fs1/nas-sync/ctg-delivery/rnaseq' ## '/Users/david/tasks/rnaseq_test/nftest/ctg-delivery' # root dir for where files are copied upon COMPLETION of the flow. Only files to be delivered to customer are copied here
-qc_root='/projects/fs1/shared/ctg-qc/rnaseq' # '/Users/david/tasks/rnaseq_test/nftest/ctg-qc' # ctg qc root_root directory. folder where qc stats shpuld be copied to
-runfolder_root='/projects/fs1/nas-sync/upload'
-completed_root='/projects/fs1/shared/ctg-completed/rnaseq'
+ctg_save_root='/projects/fs1/shared/ctg-qc/rnaseq' # '/Users/david/tasks/rnaseq_test/nftest/ctg-qc' # ctg qc root_root directory. folder where qc stats shpuld be copied to
+
 ## outbox delivery on ls4
 userid=$(whoami)
 outboxsync_root="/projects/fs1/${userid}/outboxsync"
@@ -268,8 +267,7 @@ echo ""                                                               >> $nf_con
 echo "  // root directories                                         " >> $nf_conf
 echo "  project_root        =  '${project_root}'                    " >> $nf_conf
 echo "  delivery_root       =  '${delivery_root}'                   " >> $nf_conf
-echo "  qc_root             =  '${qc_root}'                         " >> $nf_conf
-echo "  completed_root      =  '${completed_root}'                  " >> $nf_conf
+echo "  ctg_save_root       =  '${ctg_save_root}'                         " >> $nf_conf
 echo "  outboxsync_root     =  '${outboxsync_root}'                 " >> $nf_conf
 
 echo ""                                                               >> $nf_conf
