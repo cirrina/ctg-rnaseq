@@ -45,8 +45,7 @@
 // root directories
 project_root        =  params.project_root
 delivery_root       =  params.delivery_root
-ctg_save_root             =  params.ctg_save_root
-completed_root      =  params.completed_root
+ctg_save_root       =  params.ctg_save_root
 //log_root            =  params.log_root
 
 //  project and run folders
