@@ -91,9 +91,11 @@ projectdir=${project_root}/${projectid}
 if [[ -d "${execdir}/Data/Intensities/BaseCalls" ]]; then
   runfolderdir=$execdir # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
   runfolder=$(basename $runfolderdir) #
+  runfolder_mode=true
 else
   runfolderdir='none' # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
   runfolder='none' #
+  runfolder_mode=false
 fi
 
 fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output
@@ -212,9 +214,9 @@ cp -r ${scriptsdir}/* ${projectdir}/ # rsync nextflow foles. Will overwrite conf
 
 
 
-#######################################################
-# parse and generate sample sheets using Rscript
-#######################################################
+#########################################################################
+# parse and generate sample sheets using Rscript in singularity container
+#########################################################################
 
 
 $singcmd ${projectdir}/bin/iem-samplesheet-processor.R \
@@ -230,7 +232,10 @@ $singcmd ${projectdir}/bin/iem-samplesheet-processor.R \
 #################################################################
 # Retrieve info extracted by Rscript in 'iem.rscript.log'
 #################################################################
-
+## if this script is executed in runfolder, then the rscript log will be placed there. Move this to project dir.
+if [[ $runfolder_mode != "true" ]]; then
+  mv ${execdir}/iem.rscript.log ${projectdir}
+fi
 logfile_iem="${execdir}/iem.rscript.log" ## path and file suffix 'iem.rscript.log' is dedfined within 'iem-samplesheet-processor.R'.
 assay=$(cat ${logfile_iem} | grep 'Assay' |  cut -f2 -d",")
 instrument_type=$(cat ${logfile_iem} | grep 'Instrument_type' |  cut -f2 -d",")
@@ -292,6 +297,7 @@ echo "  paired              =   ${paired}                           " >> $nf_con
 echo "  strandness          =  '${strandness}'                      " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  runfolder and demux                                     " >> $nf_conf
+echo "  runfolder_mode      =  '${runfolder_mode}'                  " >> $nf_conf
 echo "  runfolderdir        =  '${runfolderdir}'                    " >> $nf_conf
 echo "  fastqdir_bcl2fastq  =  '${fastqdir_bcl2fastq}'              " >> $nf_conf
 echo "  runfolder           =  '${runfolder}'                       " >> $nf_conf

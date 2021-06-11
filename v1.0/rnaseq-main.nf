@@ -92,12 +92,6 @@ run_rnaseqmetrics     =  params.run_rnaseqmetrics
 run_checkfiles        =  params.run_checkfiles
 run_featurecounts     =  params.run_featurecounts
 
-//  log files
-
-
-
-
-
 
 
 /* ===============================================================
@@ -160,9 +154,8 @@ file(ctg_save_dir).mkdir()
 readme = deliverydir +'/README_ctg_delivery_' + projectid
 
 // log file for nextflow .onComplete
-logfile              =  file( ctg_save_dir + '/logs/' + projectid + '.log.complete' )
-
-
+logfile              =  file( projectdir + '/' + projectid + '.nextflow.log.complete' )
+logfile_sav          =  file( ctg_save_dir + '/' + projectid + '.nextflow.log.complete' )
 
 
 /* ===============================================================
@@ -260,6 +253,8 @@ workflow.onComplete {
   logfile.text = msg_startup.stripIndent()
   logfile.append( msg_completed.stripIndent() )
   logfile.append( error )
+
+  if ( new File( logfile ).exists() && ! new File( logfile_sav ).exists())  { new File( logfile_sav ) << new File( logfile ).text }
 
   println( msg_completed )
 }
@@ -1100,7 +1095,15 @@ process genereate_readme {
   =============================================================== */
 // CTG should store multiQC (ctg-multiqc) and fastqc for all samples
 // as of this version files are copied to ctg-qc dir. could change to the folder that also keep scripts and configs and sample sheets
+// save
 
+//  - multiQC (ctg_multiqc)
+//  - fastQC
+//
+//  - Sample Sheets in ./samplesheets/
+//  - Nextflow scripts, nextflow.params., rnaseq-main, nextflow.config, drivers, ./bin files etc (./scripts)
+
+//  - logs,  (the final nextflow genereated onComplee is copied in that segion)
 
 process setup_ctg_save {
   cpus 4
@@ -1143,13 +1146,31 @@ process setup_ctg_save {
 
 
   if [[ -f "${runfolderdir}/iem.rscript.log" ]]; then
-    cp ${samplesheet_original} ${ctg_save_dir}/logs
+    cp ${runfolderdir}/iem.rscript.log ${ctg_save_dir}/logs
   fi
+
+
   if [[ -f "${projectdir}/nextflow.params.${projectid}" ]]; then
     cp ${projectdir}/nextflow.params.${projectid} ${ctg_save_dir}/scripts
   fi
-  cp ${projectdir}/rnaseq-main.nf ${ctg_save_dir}/scripts
-  cp ${projectdir}/nextflow.config ${ctg_save_dir}/scripts
+  if [[ -f "${projectdir}/rnaseq-main.nf" ]]; then
+    cp ${projectdir}/rnaseq-main.nf ${ctg_save_dir}/scripts
+  fi
+  if [[ -f "${projectdir}/nextflow.config" ]]; then
+    cp ${projectdir}/nextflow.config ${ctg_save_dir}/scripts
+  fi
+  if [[ -f "${projectdir}/rnaseq-driver" ]]; then
+    cp ${projectdir}/rnaseq-driver ${ctg_save_dir}/scripts
+  fi
+  if [[ -f "${projectdir}/rnaseq-primer" ]]; then
+    cp ${projectdir}/rnaseq-primer ${ctg_save_dir}/scripts
+  fi
+
+  if [[ -d "${projectdir}/bin" ]]; then
+    cp -r ${projectdir}/bin ${ctg_save_dir}/scripts
+  fi
+
+
 
   """
 }
