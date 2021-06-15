@@ -2,11 +2,8 @@
 + Add 'Rattus norvegicus' references to ls4
 + Add 'Rattus norvegicus' species file paths in nextflow.config
 
-temp
 
 
-
-file(deliverydir).mkdir()
 file(ctg_save_dir).mkdir()
 
 

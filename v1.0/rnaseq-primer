@@ -91,7 +91,8 @@ ctg_save_root='/projects/fs1/shared/ctg-qc/rnaseq' # '/Users/david/tasks/rnaseq_
 ## project specific directories
 execdir=$(pwd) # execution dir. Should be either illumina runfolder dir or within the project dir where the pipe is run
 projectdir=${project_root}/${projectid}
-## check if executed in rundfolder
+
+## check if executed in rundfolder - if so set runfolder specific paths
 if [[ -d "${execdir}/Data/Intensities/BaseCalls" ]]; then
   runfolderdir=$execdir # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
   runfolder=$(basename $runfolderdir) #
@@ -102,7 +103,8 @@ else
   runfolder_mode=false
 fi
 
-fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output
+## Fastq paths should be defined even if demux is not run
+fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output. includes the fastq directory as well as 
 fastqdir="${fastqdir_bcl2fastq}/${projectid}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
 outboxsyncdir="${outboxsync_root}/${projectid}"
 

@@ -951,8 +951,7 @@ process move_fastq {
   val "x" into move_fastq_complete_2_ch
 
   script:
-  if ( params.deliver_fastq ){
-    if ( params.pooled_run )
+    if ( params.pooled_run &&  params.deliver_fastq)
       """
         mkdir -p ${deliverytemp}/fastq
         if [ -d ${fastqdir} ]; then
@@ -960,7 +959,7 @@ process move_fastq {
           mv ${fastqdir} ${deliverytemp}/fastq
         fi
       """
-    else
+    else if ( !params.pooled_run &&  params.deliver_fastq )
       """
       if [ -d ${fastqdir_bcl2fastq} ]; then
         echo "non pooled data. moving comlplete bcl2fastq output foldler."
@@ -971,10 +970,9 @@ process move_fastq {
         mv ${fastqdir} ${deliverytemp}/fastq
       fi
       """
-  }
-  else
-  """
-  """
+    else
+     """
+     """
 }
 
 
