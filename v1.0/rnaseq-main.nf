@@ -46,14 +46,12 @@
 project_root        =  params.project_root
 delivery_root       =  params.delivery_root
 ctg_save_root       =  params.ctg_save_root
-//log_root            =  params.log_root
 
 //  project and run folders
 projectid           =  params.projectid
 projectdir          =  params.projectdir
 bindir              =  params.bindir
 // n_samples           =  params.n_samples
-//execdir             =  params.execdir
 
 
 //  samplesheets

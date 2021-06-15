@@ -1,6 +1,10 @@
 #!/bin/bash
 
-scriptsdir='/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/dev/ctg-rnaseq-v0.99v2/workflow' # "/Users/david/scripts/ctg-rnaseq/workflow/"
+#######################################
+# ctg primer for ctg-rnaeseq v1.0 
+#######################################
+
+scriptsdir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/"
 singularity_container='/projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif'
 
 singcmd="singularity exec --bind /projects/fs1/ ${singularity_container}"
