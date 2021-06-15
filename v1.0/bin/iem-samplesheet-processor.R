@@ -191,6 +191,10 @@ checklist_flags$input_samplesheet <- opt$sample_sheet
 checklist_flags$output_demux_sheet <- opt$output_demux_sheet
 checklist_flags$output_ctg_sheet <- opt$output_ctg_sheet
 
+checklist_flags$samplesheet_accepted <- TRUE
+
+
+
 # ================
 #  ASCII check
 # ================
@@ -401,6 +405,7 @@ if('Species' %in% rownames(header_df)){
         }
       }else{
       checklist_flags$Species <- "Warning: 'Species' is not defined. Must be included as a column in [Data] OR as parameter 'Species' in [Header] section. The latter will overwrite column (if present) in [Data] section. "
+      checklist_flags$samplesheet_accepted <- FALSE
       }
 }
 
@@ -416,14 +421,18 @@ pooled_values <- iem_df[iem_df$parameter == 'Pooled',]$value
 
 # str(data_df)
 if('Pooled' %in% rownames(header_df)){
-  pooled <- header_df['Species','V2']
-  if(is.na(pooled))  checklist_flags$Pooled <- "Warning: 'Pooled' in [Header] section is not available. Set to approriate species or remove."
+  pooled <- header_df['Pooled','V2']
+  if(is.na(pooled))  checklist_flags$Pooled <- "Warning: 'Pooled' in [Header] section is NA. Set to approriate flag (true / false)."
   if(!all(species %in% pooled_values)){
     checklist_flags$Pooled <- paste("Warning: 'Pooled' value in [Header] section is not among allowed values:  ", paste(pooled_values, collapse = ", "))
   }else{
     data_df$Pooled <- pooled # Create 'Species' column. Force/overwrite if already present
     checklist_flags$Pooled <- pooled
   }
+}else{
+  checklist_flags$Pooled <- "Warning: 'Pooled' is not defined. You must indicate if this is a pooled run or not using 'Polled' in [Header] section."
+  checklist_flags$samplesheet_accepted <- FALSE
+
 }
 
 
