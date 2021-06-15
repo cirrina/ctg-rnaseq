@@ -33,3 +33,4 @@ iem_section,parameter,conditional_parameter,conditional_value,value,Comment
 [Data],Strandness,Assay,SMART-Seq v4 Ultra Low Input RNA Kit,forward,
 [Data],Species,,,Homo sapiens,
 [Data],Species,,,Mus musculus,
+[Data],Species,,,Rattus norvegicus,
