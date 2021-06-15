@@ -34,3 +34,5 @@ iem_section,parameter,conditional_parameter,conditional_value,value,Comment
 [Data],Species,,,Homo sapiens,
 [Data],Species,,,Mus musculus,
 [Data],Species,,,Rattus norvegicus,
+[Data],Pooled,,,true,
+[Data],Pooled,,,false,
