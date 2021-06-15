@@ -104,7 +104,7 @@ else
 fi
 
 ## Fastq paths should be defined even if demux is not run
-fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output. includes the fastq directory as well as 
+fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output. includes the fastq directory as well as
 fastqdir="${fastqdir_bcl2fastq}/${projectid}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
 outboxsyncdir="${outboxsync_root}/${projectid}"
 
@@ -345,7 +345,7 @@ echo "  container = '${singularity_container}'                      " >> $nf_con
 echo "  time='36h'                                                  " >> $nf_conf
 echo "  cpus='16'                                                   " >> $nf_conf
 echo "  memory='100 GB'                                             " >> $nf_conf
-echo " }
+echo " }"
 
 
 
@@ -354,10 +354,11 @@ echo " }
 #######################################################################
 
 
-echo ""; echo ""
-echo "#####################################"
+echo ""
+echo ""
+echo "##################################### "
 echo "  ctg-rnaseq project primed"
-echo "#####################################"
+echo " #####################################"
 echo ""
 echo "primed project directory for '${projectid}'"
 echo "${projectdir}"
