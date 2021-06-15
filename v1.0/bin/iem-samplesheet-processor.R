@@ -235,9 +235,11 @@ if('Instrument Type' %in% rownames(header_df)){
     checklist_flags$Instrument_type = instrument_type
     }else{
     checklist_flags$Instrument_type = paste0("Warning! Parameter 'Instrument Type'. Allowed values are : ", paste(header_cheklist$value[header_cheklist$parameter=='Instrument Type'], collapse = ", "))
-     }
+    checklist_flags$samplesheet_accepted <- FALSE
+    }
 }else{
    checklist_flags$Instrument_type = paste0("Warning! Parameter 'Instrument Type' is not present in [Header] section. Allowed values are: ", paste(header_cheklist$value[header_cheklist$parameter=='Instrument Type'], collapse = ", "))
+   checklist_flags$samplesheet_accepted <- FALSE
 }
 
 # check if 'Assay' is present and if alllowed value
@@ -248,9 +250,11 @@ if('Assay' %in% rownames(header_df)){
     checklist_flags$Assay = assay
   }else{
     checklist_flags$Assay = paste0("Warning! Parameter 'Assay'. Allowed values are: ", paste(header_cheklist$value[header_cheklist$parameter=='Assay'], collapse = ", " ))
+    checklist_flags$samplesheet_accepted <- FALSE
   }
 }else{
   checklist_flags$Assay = paste0("Warning! Parameter 'Assay' is not present in [Header] section. Allowed values are: ", paste(header_cheklist$value[header_cheklist$parameter=='Assay'], collapse = ", " ) )
+  checklist_flags$samplesheet_accepted <- FALSE
 }
 
 
@@ -262,9 +266,11 @@ if('Index Adapters' %in% rownames(header_df)){
     checklist_flags$Index_Adapters = index_adapters
   }else{
     checklist_flags$Index_Adapters = paste0("Warning! Parameter 'Index Adapters'. Allowed values are: ", paste(header_cheklist$value[header_cheklist$parameter=='Index Adapters'], collapse = ", " ) )
+    checklist_flags$samplesheet_accepted <- FALSE
   }
 }else{
   checklist_flags$Index_Adapters = paste0("Warning! Parameter 'Index Adapters' is not present in [Header] section. Allowed values are: ", paste(header_cheklist$value[header_cheklist$parameter=='Index Adapters'], collapse = ", " ))
+  checklist_flags$samplesheet_accepted <- FALSE
 }
 
 
@@ -284,6 +290,7 @@ if(length(reads)%in%c(1,2)){
   checklist_flags$Paired <- "Warning: Error setting paired TRUE/FALSE. Check [Reads] section."
   checklist_flags$Reads <- "Warning: Error setting reads. Check [Reads] section."
   paired <- FALSE
+  checklist_flags$samplesheet_accepted <- FALSE
   }
 
 
@@ -321,13 +328,16 @@ for(i in unique(check_df$conditional_parameter)){
               checklist_flags[[j]] = settings_df[j,'V2']
             }else{
               checklist_flags[[j]] = paste0("Warning! [Settings] setction parameter '", j ,"' does not match required value: ", req_value)
+              checklist_flags$samplesheet_accepted <- FALSE
             }
           }else{
             checklist_flags[[j]] = paste0("Warning! Value for [Settings] setction parameter '", j ,"' is missing ('NA'). Suggested value is: ", req_value)
+            checklist_flags$samplesheet_accepted <- FALSE
             }
 
         }else{
           checklist_flags[[j]] = paste0("Warning! Required [Settings] setction parameter '", j ,"' is missing from sample sheet. Suggested value is: ", req_value)
+          checklist_flags$samplesheet_accepted <- FALSE
         }
     }
   }else{
@@ -349,6 +359,7 @@ if(nrow(check_df)==1){
 }else{
   checklist_flags$Strandness <- "Warning: Error setting 'Strandness' flag. Check that current 'Assay' is present (once) in checkist-iem.csv"
   strandness <- NA
+  checklist_flags$samplesheet_accepted <- FALSE
 }
 
 
@@ -392,6 +403,7 @@ if('Species' %in% rownames(header_df)){
   if(is.na(species))  checklist_flags$Species <- "Warning: 'Species' in [Header] section is 'NA'. Set to approriate species or remove."
   if(!all(species %in% species_values)){
     checklist_flags$Species <- paste("Warning: 'Species' value in [Header] section is not among allowed values:  ", paste(species_values, collapse = ", "))
+    checklist_flags$samplesheet_accepted <- FALSE
   }else{
     data_df$Species <- species # Create 'Species' column. Force/overwrite if already present
     checklist_flags$Species <- species}
@@ -399,7 +411,9 @@ if('Species' %in% rownames(header_df)){
     if("Species" %in% colnames(data_df)){
       species <- unique(data_df$Species)
 
-      if(!all(species %in% species_values)){ checklist_flags$Species <- paste("Warning: Unexpected 'Species' value(s) in 'Species' column [Data]. ", paste(species[!(species %in% species_values)], collapse = ', '), " are not allowed")
+      if(!all(species %in% species_values)){
+        checklist_flags$Species <- paste("Warning: Unexpected 'Species' value(s) in 'Species' column [Data]. ", paste(species[!(species %in% species_values)], collapse = ', '), " are not allowed")
+        checklist_flags$samplesheet_accepted <- FALSE
       }else{
         checklist_flags$Species <- paste(species, collapse = '|')
         }
@@ -430,7 +444,7 @@ if('Pooled' %in% rownames(header_df)){
     checklist_flags$Pooled <- pooled
   }
 }else{
-  checklist_flags$Pooled <- "Warning: 'Pooled' is not defined. You must indicate if this is a pooled run or not using 'Polled' in [Header] section."
+  checklist_flags$Pooled <- "Warning: 'Pooled' is not defined. You must indicate if this is a pooled run or not using 'Pooled' in [Header] section."
   checklist_flags$samplesheet_accepted <- FALSE
 
 }
@@ -460,6 +474,7 @@ data_df$Sample_Name <- data_df$Sample_ID
 required.columns <- c("Sample_ID","Sample_Project", "Sample_Name", "Index_Plate_Well", 	'I7_Index_ID',	'index',	'I5_Index_ID',	'index2')
 if(!all (required.columns %in% colnames(data_df))){
   checklist_flags$required_columns <- paste("Warning: required [Data] section columns not found. Required are: ", paste(required.columns, collapse =", "))
+  checklist_flags$samplesheet_accepted <- FALSE
 }
 
 
@@ -467,7 +482,10 @@ if(!all (required.columns %in% colnames(data_df))){
 #  Check if Sample_ID contain duplicates
 # ========================================================
 u <- duplicated(data_df$Sample_ID)
-if(any(u)) checklist_flags$duplicated.Sample_ID <- paste("Warning: 'Sample_Name' contains duplicated ectries: ", paste( data_df$Sample_ID[u], collapse = "|"))# stop("Duplicated Sample_ID present: ", data_df$Sample_ID[u])
+if(any(u)){
+  checklist_flags$duplicated.Sample_ID <- paste("Warning: 'Sample_Name' contains duplicated ectries: ", paste( data_df$Sample_ID[u], collapse = "|"))# stop("Duplicated Sample_ID present: ", data_df$Sample_ID[u])
+  checklist_flags$samplesheet_accepted <- FALSE
+  }
 # cat("\n\n ... OK, no duplicate Sample_IDs found.")
 
 # ========================================================
