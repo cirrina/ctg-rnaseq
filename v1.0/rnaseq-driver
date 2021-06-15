@@ -69,6 +69,7 @@ fi
 ################################################
 
 projectdir=${execdir}
+
 # logfile="${logfolder}/$id.log"
 projectfolder=$(basename ${execdir})
 nf_conf="${projectdir}/nextflow.params.${id}"
@@ -82,8 +83,6 @@ fi
 shift "$(( OPTIND -1 ))"
 
 
-
-## Check if project (folder) exists from before. If so overwrite has to be set true with -x flag
 if [ ! -f ${nf_conf} ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
   echo ""; echo "Error:"
   echo "'${nf_conf}' does not exist in current dir. Run 'primer-rnaseq' or crete file."; echo ""; echo ""

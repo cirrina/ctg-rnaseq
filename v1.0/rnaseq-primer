@@ -84,8 +84,8 @@ delivery_root='/projects/fs1/nas-sync/ctg-delivery/rnaseq' ## '/Users/david/task
 ctg_save_root='/projects/fs1/shared/ctg-qc/rnaseq' # '/Users/david/tasks/rnaseq_test/nftest/ctg-qc' # ctg qc root_root directory. folder where qc stats shpuld be copied to
 
 ## outbox delivery on ls4
-userid=$(whoami)
-outboxsync_root="/projects/fs1/${userid}/outboxsync"
+# userid=$(whoami)
+# outboxsync_root="/projects/fs1/${userid}/outboxsync"
 
 
 ## project specific directories
