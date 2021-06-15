@@ -906,7 +906,7 @@ process setup_deliverytemp {
   time '3h'
 
   input:
-  val x from into multiqc_ctg_complete_2.collect()
+  val x from multiqc_ctg_complete_2.collect()
 
   output:
   val "x" into setup_deliverytemp_complete_ch

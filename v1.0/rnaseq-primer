@@ -347,7 +347,7 @@ echo "  container = '${singularity_container}'                      " >> $nf_con
 echo "  time='36h'                                                  " >> $nf_conf
 echo "  cpus='16'                                                   " >> $nf_conf
 echo "  memory='100 GB'                                             " >> $nf_conf
-echo " }"
+echo " } " >> $nf_conf
 
 
 #######################################################################
