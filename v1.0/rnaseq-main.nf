@@ -80,6 +80,7 @@ outboxsyncdir             = params.outboxsyncdir     // folder in ls4 private fo
   =============================================================== */
 
 outputdir =  projectdir+'/nf-output' // main ooutput directory for files genetated with the Pipeline
+file(outputdir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
 
 featurecountsdir = outputdir+'/featurecounts'
 stardir = outputdir+'/star'
@@ -108,15 +109,8 @@ interopdir_ctg = runfolderdir + '/ctg-interop'
   *       create output and logdirs
   =============================================================== */
 
-// file(outputdir).mkdir()
-// file(completeddir).mkdir()
-//
-// if ( params.run_demux ) file(fastqdir_bcl2fastq).mkdir()
-// if ( params.run_demux ) file(fastqdir).mkdir()
-//
-// //file(qcdir).mkdir()
-// file(fastqcdir).mkdir()
-// file(multiqcctgdir).mkdir()
+
+
 
 // if( params.run_align ) file(stardir).mkdir()
 /// if( params.run_align ) file(markdupsdir).mkdir()
@@ -142,6 +136,13 @@ logfile_sav          =  file( ctg_save_dir + '/' + projectid + '.nextflow.log.co
   *       CHECKS FILES AND PARAMS
   =============================================================== */
 
+
+//  Check paramters
+// -----------------------------
+if (projectid         == '') {exit 1, "You must define a project_id in the nextflow.config"}
+if (samplesheet_ctg   == '') {exit 1, "You must define a sample sheet path in the nextflow.config"}
+
+
 // Check if files and directories exist
 checkPathParamList = [
   project_root, delivery_root, ctg_save_root,
@@ -154,8 +155,12 @@ for (param in checkPathParamList) {
 	file(param, checkIfExists: true)
     }
 }
-if ( params.run_demux ) {
-  file(fastqdir_bcl2fastq, checkIfExists: true)
+
+// Demux specific (bcl2fastq2 )
+// -----------------------------
+// Check if runfolder is defined. If not set demux to false and assume that a custom fastq dir is supplied
+if ( params.run_demux == true ) {
+  file(runfolderdir, checkIfExists: true)
   file(samplesheet_demux, checkIfExists: true)
 }
 
@@ -163,25 +168,6 @@ if ( params.run_demux ) {
 // // Debug & test params
 // // -----------------------------
 debug_mode = false // will turn echo to true
-
-
-//  Check paramters
-// -----------------------------
-if (projectid         == '') {exit 1, "You must define a project_id in the nextflow.config"}
-if (samplesheet_ctg   == '') {exit 1, "You must define a sample sheet path in the nextflow.config"}
-
-
-// if not pooled - copy runfolder io-stats to project folder
-
-
-// Demux specific (bcl2fastq2 )
-// -----------------------------
-// Check if runfolder is defined. If not set demux to false and assume that a custom fastq dir is supplied
-if ( params.run_demux == true ){
-  file(runfolderdir, checkIfExists: true)
-  file(samplesheet_demux, checkIfExists: true)
-}
-
 
 
 
@@ -316,7 +302,9 @@ process bcl2fastq {
 
   script:
   """
-   bcl2fastq -R ${runfolderdir} \\
+  mkdir -p ${fastqdir_bcl2fastq}
+
+  bcl2fastq -R ${runfolderdir} \\
             --sample-sheet ${samplesheet_demux} \\
             --no-lane-splitting  \\
             -r 1 \\
@@ -821,11 +809,13 @@ process fastqc {
   script:
   if ( params.paired && params.run_fastqc)
     """
+      mkdir -p ${fastqcdir}
       echo "running fastqc in paired reads mode"
       fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
   """
   else if ( !params.paired && params.run_fastqc)
     """
+      mkdir -p ${fastqcdir}
       echo "running fastqc in non paired reads mode "
       fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
     """
@@ -872,6 +862,7 @@ process multiqc_ctg {
 
   script:
   """
+    mkdir -p ${multiqcctgdir}
     cd ${outputdir}
     multiqc -n ${projectid}_multiqc_report \\
       --interactive \\
@@ -997,6 +988,7 @@ process multiqc_delivery {
 
   if (! new File( mqcreport+'.html' ).exists() )
     """
+      mkdir -p ${multiqcdeliverydir}
       cd ${deliverytemp}
       multiqc -n ${mqcreport} \\
         --interactive \\
@@ -1041,6 +1033,9 @@ process md5sum_delivery {
 
 
 
+
+
+
 /// provess add README with dir size
 process genereate_readme {
   cpus 2
@@ -1057,6 +1052,7 @@ process genereate_readme {
   script:
 
   """
+  mkdir -p ${deliverydir}
   cd ${deliverydir}
   echo "ctg delivery complete"               > $readme
   echo "Project:   ${projectid}"             >> $readme
