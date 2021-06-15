@@ -271,6 +271,8 @@ echo "//  singularity container:"                                   >> $nf_conf
 echo "//    : ${singularity_container}"                              >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "params {"                                                      >> $nf_conf
+echo "  // root directories                                         " >> $nf_conf
+echo "  scriptsdir        =  '${scriptsdir}'                    " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  // root directories                                         " >> $nf_conf
 echo "  project_root        =  '${project_root}'                    " >> $nf_conf

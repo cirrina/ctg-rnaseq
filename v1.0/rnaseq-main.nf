@@ -108,29 +108,28 @@ interopdir_ctg = runfolderdir + '/ctg-interop'
   *       create output and logdirs
   =============================================================== */
 
-file(outputdir).mkdir()
-file(completeddir).mkdir()
+// file(outputdir).mkdir()
+// file(completeddir).mkdir()
+//
+// if ( params.run_demux ) file(fastqdir_bcl2fastq).mkdir()
+// if ( params.run_demux ) file(fastqdir).mkdir()
+//
+// //file(qcdir).mkdir()
+// file(fastqcdir).mkdir()
+// file(multiqcctgdir).mkdir()
 
-if ( params.run_demux ) file(fastqdir_bcl2fastq).mkdir()
-if ( params.run_demux ) file(fastqdir).mkdir()
-
-//file(qcdir).mkdir()
-file(fastqcdir).mkdir()
-file(multiqcctgdir).mkdir()
-
-if( params.run_align ) file(stardir).mkdir()
-if( params.run_align ) file(markdupsdir).mkdir()
-if( params.run_align ) file(markdupsqcdir).mkdir()
-if( params.run_align ) file(rnaseqmetricsdir).mkdir()
-if( params.run_align && params.run_featurecounts ) file(featurecountsdir).mkdir()
-if( params.run_fastqscreen ) file(fastqscreendir).mkdir()
-if( params.sync_outbox ) file(outboxsyncdir).mkdir()
+// if( params.run_align ) file(stardir).mkdir()
+/// if( params.run_align ) file(markdupsdir).mkdir()
+// if( params.run_align ) file(rnaseqmetricsdir).mkdir()
+//if( params.run_align && params.run_featurecounts ) file(featurecountsdir).mkdir()
+// if( params.run_fastqscreen ) file(fastqscreendir).mkdir()
+// if( params.sync_outbox ) file(outboxsyncdir).mkdir()
 
 
 // create project specific delivery dir and ctg qc dir
 // -----------------------------
-file(deliverydir).mkdir()
-file(ctg_save_dir).mkdir()
+//file(deliverydir).mkdir()
+//file(ctg_save_dir).mkdir()
 // readme deliverydir
 readme = deliverydir +'/README_ctg_delivery_' + projectid
 
@@ -147,7 +146,7 @@ logfile_sav          =  file( ctg_save_dir + '/' + projectid + '.nextflow.log.co
 checkPathParamList = [
   project_root, delivery_root, ctg_save_root,
   projectdir, bindir,
-  fastqdir, logdir, outputdir,
+  outputdir,
   samplesheet_ctg
 ]
 for (param in checkPathParamList) {
@@ -200,7 +199,6 @@ def msg_startup = """\
     nextflow execution dir  :  ${baseDir}
     nextflow output dir     :  ${outputdir}
     nextflow work dir       :  ${workDir}
-    nextflow log dir        :  ${logdir}
     sample sheet ctg        :  ${samplesheet_ctg}
     sample sheet demux      :  ${samplesheet_demux}
    """
@@ -1133,24 +1131,11 @@ process setup_ctg_save {
   if [[ -f "${projectdir}/nextflow.params.${projectid}" ]]; then
     cp ${projectdir}/nextflow.params.${projectid} ${ctg_save_dir}/scripts
   fi
-  if [[ -f "${projectdir}/rnaseq-main.nf" ]]; then
-    cp ${projectdir}/rnaseq-main.nf ${ctg_save_dir}/scripts
-  fi
-  if [[ -f "${projectdir}/nextflow.config" ]]; then
-    cp ${projectdir}/nextflow.config ${ctg_save_dir}/scripts
-  fi
-  if [[ -f "${projectdir}/rnaseq-driver" ]]; then
-    cp ${projectdir}/rnaseq-driver ${ctg_save_dir}/scripts
-  fi
-  if [[ -f "${projectdir}/rnaseq-primer" ]]; then
-    cp ${projectdir}/rnaseq-primer ${ctg_save_dir}/scripts
-  fi
-
-  if [[ -d "${projectdir}/bin" ]]; then
-    cp -r ${projectdir}/bin ${ctg_save_dir}/scripts
-  fi
 
 
+  if [[ -d "${params.scriptsdir}/rnaseq-main.nf" ]]; then
+    cp -r ${params.scriptsdir} ${ctg_save_dir}/scripts
+  fi
 
   """
 }
