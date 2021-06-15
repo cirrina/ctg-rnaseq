@@ -1034,10 +1034,8 @@ process md5sum_delivery {
 
 
 
-
-
 /// provess add README with dir size
-process genereate_readme {
+process finalize_delivery {
   cpus 2
   tag "$id"
   memory '16 GB'
@@ -1047,18 +1045,20 @@ process genereate_readme {
   val x from md5sum_complete_ch.collect()
 
   output:
-  val "x" into genereate_readme_complete_ch
+  val "x" into finalize_delivery_ch
 
   script:
 
   """
-  mkdir -p ${deliverydir}
+  mv ${deliverytemp} ${deliverydir}
   cd ${deliverydir}
   echo "ctg delivery complete"               > $readme
   echo "Project:   ${projectid}"             >> $readme
   du -ch -d 0 . | grep 'total'               >> $readme
   """
 }
+
+
 
 
 
@@ -1096,11 +1096,11 @@ process setup_ctg_save {
   script:
   """
   mkdir -p ${ctg_save_dir}/samplesheets
-  mkdir -p ${ctg_save_dir}/logs
   mkdir -p ${ctg_save_dir}/scripts
 
   cd ${projectdir}
 
+  ## ctg specific multiQC and fastQCs
   if [ -d ${multiqcctgdir} ]; then
     cp -r ${multiqcctgdir} ${ctg_save_dir}
   fi
@@ -1108,6 +1108,7 @@ process setup_ctg_save {
     cp -r ${fastqcdir} ${ctg_save_dir}
   fi
 
+  ## all sample sheets
   if [ -f ${samplesheet_ctg} ]; then
     cp ${samplesheet_ctg} ${ctg_save_dir}/samplesheets
   fi
@@ -1118,17 +1119,17 @@ process setup_ctg_save {
     cp ${samplesheet} ${ctg_save_dir}/samplesheets
   fi
 
-
+  ## rhe samplesheet check rscript output
   if [[ -f "${runfolderdir}/iem.rscript.log" ]]; then
-    cp ${runfolderdir}/iem.rscript.log ${ctg_save_dir}/logs
+    cp ${runfolderdir}/iem.rscript.log ${ctg_save_dir}
   fi
 
-
+  ## project specic parameters file
   if [[ -f "${projectdir}/nextflow.params.${projectid}" ]]; then
     cp ${projectdir}/nextflow.params.${projectid} ${ctg_save_dir}/scripts
   fi
 
-
+  ## copy the entire scripts dir into the ctg save dir
   if [[ -d "${params.scriptsdir}/rnaseq-main.nf" ]]; then
     cp -r ${params.scriptsdir} ${ctg_save_dir}/scripts
   fi
