@@ -252,6 +252,8 @@ n_samples=$(cat ${logfile_iem} | grep 'number_samples' |  cut -f2 -d",")
 species=$(cat ${logfile_iem} | grep 'Species' |  cut -f2 -d",")
 pooled_run=$(cat ${logfile_iem} | grep 'Pooled' |  cut -f2 -d",")
 
+samplesheet_accepted=$(cat ${logfile_iem} | grep 'samplesheet_accepted' |  cut -f2 -d",")
+
 
 #######################################################################
 # Prime nextflow configuration file -- nextflow.params_${projectid} --
@@ -348,6 +350,19 @@ echo "  memory='100 GB'                                             " >> $nf_con
 echo " }"
 
 
+#######################################################################
+#  End with Warning if samplesheet was not accepted
+#######################################################################
+
+
+if [ $samplesheet_accepted == "FALSE" ]; then
+  echo ""; echo "Error:"
+  echo "IEM Sample Sheet was not accepted"
+  echo "Please check the logfile_iem for details:"
+  echo "${logfile_iem}"
+  #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
+  exit_abnormal
+fi
 
 #######################################################################
 #  Script complete
