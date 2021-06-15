@@ -1,3 +1,8 @@
+## v1.0 to-do
++ Add 'Rattus norvegicus' references to ls4
++ Add 'Rattus norvegicus' species file paths in nextflow.config
+
+
 
 ## Known issues
 

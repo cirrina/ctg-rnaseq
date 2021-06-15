@@ -955,7 +955,7 @@ process move_fastq {
       """
         mkdir -p ${deliverytemp}/fastq
         if [ -d ${fastqdir} ]; then
-          echo "pooled data. moving fastq foldler only."
+          echo "pooled run. moving fastq foldler only."
           mv ${fastqdir} ${deliverytemp}/fastq
         fi
       """
@@ -965,7 +965,7 @@ process move_fastq {
         echo "non pooled data. moving comlplete bcl2fastq output foldler."
         mv ${fastqdir_bcl2fastq} ${deliverytemp}
       elif [ -d ${fastqdir} ]; then
-        echo "non pooled data. moving fastq foldler only."
+        echo "non pooled run. moving fastq foldler only."
         mkdir -p ${deliverytemp}/fastq
         mv ${fastqdir} ${deliverytemp}/fastq
       fi

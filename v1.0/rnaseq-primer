@@ -264,18 +264,18 @@ echo "//  ${projectid}"                           >> $nf_conf
 echo "//  nextflow configuration file"           >> $nf_conf
 echo "//  project specific parameters"            >> $nf_conf
 echo "//  adds to - and overrides - parameters in 'nextflow.config' " >> $nf_conf
-echo "//"                                                               >> $nf_conf
-echo "//  scripts copied from:"                           >> $nf_conf
-echo "//    : ${scriptsdir}"                              >> $nf_conf
-echo "//  singularity container:"                           >> $nf_conf
+echo "//"                                                           >> $nf_conf
+echo "//  scripts copied from:"                                     >> $nf_conf
+echo "//    : ${scriptsdir}"                                        >> $nf_conf
+echo "//  singularity container:"                                   >> $nf_conf
 echo "//    : ${singularity_container}"                              >> $nf_conf
 echo ""                                                               >> $nf_conf
-echo "params {                                                      " >> $nf_conf
+echo "params {"                                                      >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  // root directories                                         " >> $nf_conf
 echo "  project_root        =  '${project_root}'                    " >> $nf_conf
 echo "  delivery_root       =  '${delivery_root}'                   " >> $nf_conf
-echo "  ctg_save_root       =  '${ctg_save_root}'                         " >> $nf_conf
+echo "  ctg_save_root       =  '${ctg_save_root}'                   " >> $nf_conf
 echo "  outboxsync_root     =  '${outboxsync_root}'                 " >> $nf_conf
 
 echo ""                                                               >> $nf_conf
@@ -305,9 +305,9 @@ echo "  //  runfolder and demux                                     " >> $nf_con
 echo "  runfolder_mode      =  '${runfolder_mode}'                  " >> $nf_conf
 echo "  runfolderdir        =  '${runfolderdir}'                    " >> $nf_conf
 echo "  fastqdir_bcl2fastq  =  '${fastqdir_bcl2fastq}'              " >> $nf_conf
-echo "  runfolder           =  '${runfolder}'                       " >> $nf_conf
-echo "  pooled_run          =  '${pooled_run}'                      " >> $nf_conf
-echo "  deliver_raw         =  false                                " >> $nf_conf
+echo "  runfolder           =  '${runfolder}'                             " >> $nf_conf
+echo "  pooled_run          =  '${pooled_run}'          // defined by 'Pooled' Header in Sample sheet  " >> $nf_conf
+echo "  deliver_raw         =  false                    // not implemeted     " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  major modes                                             " >> $nf_conf
 echo "  run_demux             =  true                               " >> $nf_conf
