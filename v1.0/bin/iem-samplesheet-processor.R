@@ -406,6 +406,27 @@ if('Species' %in% rownames(header_df)){
 
 
 
+# ====================================================
+#  Check and set 'Pooled'
+# ====================================================
+  # If exists and if in correct format
+  # Shall define if project is pooled with other, unrelated projects, on the flowcell
+
+pooled_values <- iem_df[iem_df$parameter == 'Pooled',]$value
+
+# str(data_df)
+if('Pooled' %in% rownames(header_df)){
+  pooled <- header_df['Species','V2']
+  if(is.na(pooled))  checklist_flags$Pooled <- "Warning: 'Pooled' in [Header] section is not available. Set to approriate species or remove."
+  if(!all(species %in% pooled_values)){
+    checklist_flags$Pooled <- paste("Warning: 'Pooled' value in [Header] section is not among allowed values:  ", paste(pooled_values, collapse = ", "))
+  }else{
+    data_df$Pooled <- pooled # Create 'Species' column. Force/overwrite if already present
+    checklist_flags$Pooled <- pooled
+  }
+}
+
+
 
 
 
