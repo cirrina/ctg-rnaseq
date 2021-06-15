@@ -82,10 +82,15 @@ outboxsyncdir             = params.outboxsyncdir     // folder in ls4 private fo
 outputdir =  projectdir+'/nf-output' // main ooutput directory for files genetated with the Pipeline
 file(outputdir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
 
+// the deliverytemp will be used to save analyses that are bound for delivery t ocustomer
+deliverytemp        =  outputdir+'/delivery' // this temp deliverydir is used within the nf workfolder/outputdir to store files that are comitted for delivery. A customer multiqc will be run only on this dir. Upon completion of all analyses this will be moved to delivery dir
+
 featurecountsdir = outputdir+'/featurecounts'
-stardir = outputdir+'/star'
+
+stardir = deliverytemp+'/star'
+fastqcdir = deliverytemp+'/fastqc'
+
 markdupsdir = outputdir+'/markdups_bam_tmp'
-fastqcdir = outputdir+'/fastqc'
 markdupsqcdir = outputdir+'/markdups'
 rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
 multiqcctgdir = outputdir+'/multiqc-ctg'
@@ -94,7 +99,6 @@ fastqscreendir = outputdir+'/fastqscreen'
 
 // delivery
 ctg_save_dir        =  ctg_save_root + '/' + projectid
-deliverytemp        =  outputdir+'/delivery'
 multiqcdeliverydir  =  deliverytemp+'/multiqc'
 deliverydir         =  delivery_root + '/' + projectid  // final delivery dir (on ... /nas-sync/. Note that delivery is prepared in "deliverytemp" is used in projectfolder)
 
@@ -441,6 +445,7 @@ process star  {
 
   if ( params.run_align )
   """
+  mkdir -p ${stardir}
   STAR --genomeDir ${genome} \\
     --readFilesIn ${starfiles} \\
     --runThreadN ${task.cpus}  \\
@@ -544,6 +549,7 @@ process rnaseqmetrics {
     echo "strand: ${strand}"
     echo "rrna file: ${rrna}"
     echo "refflat file: ${refflat}"
+    mkdir -p ${rnaseqmetricsdir}
 
     java -jar /usr/local/bin/picard.jar CollectRnaSeqMetrics \\
       INPUT=${stardir}/${bam} \\
@@ -604,6 +610,7 @@ process featurecounts {
 
   if( params.run_featurecounts )
     """
+      mkdir -p ${featurecountsdir}
       cd ${stardir}
       bamstring=\$(echo $bams | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
       echo \$bamstring
@@ -694,6 +701,9 @@ process markdups {
   if ( params.run_markdups )
   """
   echo "bam: ${bam}"
+  mkdir -p ${markdupsdir}
+  mkdir -p ${markdupsqcdir}
+
   echo "markdupsdir: ${markdupsdir}/${bam}"
     java -jar /usr/local/bin/picard.jar MarkDuplicates \\
       INPUT=${stardir}/${bam} \\
@@ -765,6 +775,8 @@ process fastqScreen {
 
     if ( params.run_fastqscreen)
     """
+    mkdir ${fastqscreendir}
+
       /usr/local/bin/FastQ-Screen-0.14.1/fastq_screen \\
         --conf ${params.fastqscreen_config} \\
         --subset 500000 \\
@@ -1065,7 +1077,7 @@ process finalize_delivery {
 
 
 /* ===============================================================
-  *     FINALIZE -  setup ctg qc directory - save qc files and scripts
+  *     FINALIZE CTG SAVE - save qc files and scripts
   =============================================================== */
 // CTG should store multiQC (ctg-multiqc) and fastqc for all samples
 // as of this version files are copied to ctg-qc dir. could change to the folder that also keep scripts and configs and sample sheets

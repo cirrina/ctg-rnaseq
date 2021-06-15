@@ -4,21 +4,11 @@
 
 temp
 
-if ( params.run_demux ) file(fastqdir).mkdir()
 
-file(fastqcdir).mkdir()
-file(multiqcctgdir).mkdir()
 
 file(deliverydir).mkdir()
 file(ctg_save_dir).mkdir()
 
-file(stardir).mkdir()
-file(markdupsdir).mkdir()
-file(markdupsqcdir).mkdir()
-file(rnaseqmetricsdir).mkdir()
-file(featurecountsdir).mkdir()
-file(fastqscreendir).mkdir()
-file(outboxsyncdir).mkdir()
 
 
 
