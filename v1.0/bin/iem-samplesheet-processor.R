@@ -437,8 +437,9 @@ pooled_values <- iem_df[iem_df$parameter == 'Pooled',]$value
 if('Pooled' %in% rownames(header_df)){
   pooled <- header_df['Pooled','V2']
   if(is.na(pooled))  checklist_flags$Pooled <- "Warning: 'Pooled' in [Header] section is NA. Set to approriate flag (true / false)."
-  if(!all(species %in% pooled_values)){
+  if(!all(pooled %in% pooled_values)){
     checklist_flags$Pooled <- paste("Warning: 'Pooled' value in [Header] section is not among allowed values:  ", paste(pooled_values, collapse = ", "))
+    checklist_flags$samplesheet_accepted <- FALSE
   }else{
     data_df$Pooled <- pooled # Create 'Species' column. Force/overwrite if already present
     checklist_flags$Pooled <- pooled
