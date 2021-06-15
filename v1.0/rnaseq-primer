@@ -306,7 +306,7 @@ echo "  runfolder_mode      =  '${runfolder_mode}'                  " >> $nf_con
 echo "  runfolderdir        =  '${runfolderdir}'                    " >> $nf_conf
 echo "  fastqdir_bcl2fastq  =  '${fastqdir_bcl2fastq}'              " >> $nf_conf
 echo "  runfolder           =  '${runfolder}'                       " >> $nf_conf
-echo "  pooled_run          =  '${pooled_run}'                          " >> $nf_conf
+echo "  pooled_run          =  '${pooled_run}'                      " >> $nf_conf
 echo "  deliver_raw         =  false                                " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  major modes                                             " >> $nf_conf
