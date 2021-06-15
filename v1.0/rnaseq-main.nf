@@ -951,7 +951,7 @@ process move_fastq {
 
   script:
   if ( params.deliver_fastq ){
-    if ( params.pooled )
+    if ( params.pooled_run )
       """
         mkdir -p ${deliverytemp}/fastq
         if [ -d ${fastqdir} ]; then
