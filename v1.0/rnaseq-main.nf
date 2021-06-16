@@ -85,10 +85,9 @@ file(outputdir).mkdir() // main nexttlow work dir for output of analyses. Subdir
 // the deliverytemp will be used to save analyses that are bound for delivery t ocustomer
 deliverytemp        =  outputdir+'/delivery' // this temp deliverydir is used within the nf workfolder/outputdir to store files that are comitted for delivery. A customer multiqc will be run only on this dir. Upon completion of all analyses this will be moved to delivery dir
 
-featurecountsdir = outputdir+'/featurecounts'
-
 stardir = deliverytemp+'/star'
 fastqcdir = deliverytemp+'/fastqc'
+featurecountsdir = deliverytemp+'/featurecounts'
 
 markdupsdir = outputdir+'/markdups_bam_tmp'
 markdupsqcdir = outputdir+'/markdups'
@@ -919,18 +918,6 @@ process setup_deliverytemp {
     cp ${samplesheet_ctg} ${deliverytemp}
     if [ -f ${samplesheet_demux} ]; then
      cp ${samplesheet_demux} ${deliverytemp}
-    fi
-    ## deliver star folder if exists
-    if [ -d ${stardir} ]; then
-      mv ${stardir} ${deliverytemp}
-    fi
-    ## deliver featurecounts folder if exists
-    if [ -d ${featurecountsdir} ]; then
-      mv ${featurecountsdir} ${deliverytemp}
-    fi
-    ## deliver fastqc folder if exists
-    if [ -d ${fastqcdir} ]; then
-     mv ${fastqcdir} ${deliverytemp}
     fi
   """
 }
