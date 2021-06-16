@@ -775,7 +775,7 @@ process fastqScreen {
 
     if ( params.run_fastqscreen)
     """
-    mkdir ${fastqscreendir}
+    mkdir -p ${fastqscreendir}
 
       /usr/local/bin/FastQ-Screen-0.14.1/fastq_screen \\
         --conf ${params.fastqscreen_config} \\
