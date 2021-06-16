@@ -7,6 +7,12 @@
 file(ctg_save_dir).mkdir()
 
 
+## Knowm Bugs  v1.0
+Project id cannot have dots '.'. For example, Bcl2fastq removes dot i project folder and pipe will crash.
+    - Include a exit abnormal if $projectid includes a dot.
+
+
+
 
 
 
