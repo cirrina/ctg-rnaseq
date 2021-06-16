@@ -169,6 +169,8 @@ echo "primer execution dir  : $execdir"     ;
 echo "runfolder dir         : $runfolderdir"     ;
 echo "project dir           : $projectdir"     ;
 echo "";
+echo "scripts dir           : $scriptsdir"     ;
+echo "";
 echo "samplesheet           : $samplesheet"         ;
 echo "samplesheet-ctg       : $samplesheet_ctg" ;
 echo "samplesheet-demux     : $samplesheet_demux"         ;
