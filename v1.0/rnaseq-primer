@@ -161,6 +161,7 @@ fi
 ##############
 # Print info #
 ##############
+
 echo ""
 echo "ctg-rnaseq priming parameters       "
 echo "----------------------------------  "
@@ -205,7 +206,7 @@ echo ""
 #################################################
 # Set up Project directory & nextflow scripts
 #################################################
-
+echo "setup project dir"
 if [[ -d ${projectdir} ]]; then
   read -p "Warning:
 
@@ -236,7 +237,7 @@ cp -r ${scriptsdir}/* ${projectdir}/ # rsync nextflow foles. Will overwrite conf
 # parse and generate sample sheets using Rscript in singularity container
 #########################################################################
 
-
+echo "run rscript"
 $singcmd ${projectdir}/bin/iem-samplesheet-processor.R \
       --project_id ${projectid} \
       --sample_sheet ${samplesheet} \
@@ -246,14 +247,19 @@ $singcmd ${projectdir}/bin/iem-samplesheet-processor.R \
       --force_lane ${force_lane} \
       --force_replace_index ${force_replace_index}
 
+echo "copy rlog script"
+if [[ $runfolder_mode == "true" ]]; then
+  chmod 770 ${execdir}/iem.rscript.log
+  cp ${execdir}/iem.rscript.log ${projectdir}
+fi
 
 #################################################################
 # Retrieve info extracted by Rscript in 'iem.rscript.log'
 #################################################################
 ## if this script is executed in runfolder, then the rscript log will be placed there. Move this to project dir.
-if [[ $runfolder_mode != "true" ]]; then
-  mv ${execdir}/iem.rscript.log ${projectdir}
-fi
+
+
+echo "extract info from rlog"
 logfile_iem="${execdir}/iem.rscript.log" ## path and file suffix 'iem.rscript.log' is dedfined within 'iem-samplesheet-processor.R'.
 assay=$(cat ${logfile_iem} | grep 'Assay' |  cut -f2 -d",")
 instrument_type=$(cat ${logfile_iem} | grep 'Instrument_type' |  cut -f2 -d",")
@@ -270,7 +276,7 @@ samplesheet_accepted=$(cat ${logfile_iem} | grep 'samplesheet_accepted' |  cut -
 #######################################################################
 # Prime nextflow configuration file -- nextflow.params_${projectid} --
 #######################################################################
-
+echo "genrate nextflow params"
 # project specific config file
 nf_conf="${projectdir}/nextflow.params.${projectid}"
 
@@ -365,7 +371,7 @@ echo " } " >> $nf_conf
 #######################################################################
 #  End with Warning if samplesheet was not accepted
 #######################################################################
-
+echo "check validity of samplesheet"
 
 if [ $samplesheet_accepted == "FALSE" ]; then
   echo ""; echo "Error:"
@@ -379,7 +385,7 @@ fi
 #######################################################################
 #  Script complete
 #######################################################################
-
+echo "final info dump"
 
 echo ""
 echo ""
