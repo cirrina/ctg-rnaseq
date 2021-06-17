@@ -432,6 +432,8 @@ process star  {
     genome=params.star_genome_hs }
   else if ( species == "Mus musculus" ){
     genome=params.star_genome_mm }
+  else if ( species == "Rattus norvegicus" ){
+      genome=params.star_genome_rn }
   else{
     genome = ""
     println( "Warning: Species not recognized." )}
@@ -536,6 +538,9 @@ process rnaseqmetrics {
   else if ( species == "Mus musculus" ){
     refflat = params.picard_refflat_mm
     rrna = params.picard_rrna_mm}
+  else if ( species == "Rattus norvegicus" ){
+      refflat = params.picard_refflat_rn
+      rrna = params.picard_rrna_rn}
   else{
     refflat = ""
     rrna = ""
@@ -602,6 +607,8 @@ process featurecounts {
     gtf = params.gtf_hs}
   else if  ( params.species_global == "Mus musculus" ){
     gtf = params.gtf_mm}
+  else if  ( params.species_global == "Rattus norvegicus" ){
+      gtf = params.gtf_rn}
   else{
     gtf=""}
 

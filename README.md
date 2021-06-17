@@ -13,6 +13,11 @@ Project id cannot have dots '.'. For example, Bcl2fastq removes dot i project fo
 
 
 
+## Add new species
+should be added nto multiple locations
+checklist-iem.csv
+nextflow.config. Reference file paths.
+main script processes: STAR, featurecounts (gtf) and rnaseqmetrics (refflat and )
 
 
 
