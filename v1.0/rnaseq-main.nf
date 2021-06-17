@@ -1031,38 +1031,9 @@ process md5sum_delivery {
 
 
 
-/// provess add README with dir size
-process finalize_delivery {
-  cpus 2
-  tag "$id"
-  memory '16 GB'
-  time '3h'
-
-  input:
-  val x from md5sum_complete_ch.collect()
-
-  output:
-  val "x" into finalize_delivery_ch
-
-  script:
-
-  """
-  mv ${deliverytemp} ${deliverydir}
-  cd ${deliverydir}
-  echo "ctg delivery complete"               > $readme
-  echo "Project:   ${projectid}"             >> $readme
-  du -ch -d 0 . | grep 'total'               >> $readme
-  """
-}
-
-
-
-
-
-
 
 /* ===============================================================
-  *     FINALIZE CTG SAVE - save qc files and scripts
+  *     FINALIZE CTG SAVE & MOVE DELIVERY - save qc files and scripts
   =============================================================== */
 // CTG should store multiQC (ctg-multiqc) and fastqc for all samples
 // as of this version files are copied to ctg-qc dir. could change to the folder that also keep scripts and configs and sample sheets
@@ -1113,7 +1084,7 @@ process setup_ctg_save {
     cp ${samplesheet_demux} ${ctg_save_dir}/samplesheets
   fi
   if [ -f ${samplesheet_original} ]; then
-    cp ${samplesheet} ${ctg_save_dir}/samplesheets
+    cp ${samplesheet_original} ${ctg_save_dir}/samplesheets
   fi
 
   ## rhe samplesheet check rscript output
@@ -1131,5 +1102,32 @@ process setup_ctg_save {
     cp -r ${params.scriptsdir} ${ctg_save_dir}/scripts
   fi
 
+  """
+}
+
+
+
+/// provess add README with dir size
+process finalize_delivery {
+  cpus 2
+  tag "$id"
+  memory '16 GB'
+  time '3h'
+
+  input:
+  val x from md5sum_complete_ch.collect()
+  val x from setup_ctg_save_complete_ch.collect()
+
+  output:
+  val "x" into finalize_delivery_ch
+
+  script:
+
+  """
+  mv ${deliverytemp} ${deliverydir}
+  cd ${deliverydir}
+  echo "ctg delivery complete"               > $readme
+  echo "Project:   ${projectid}"             >> $readme
+  du -ch -d 0 . | grep 'total'               >> $readme
   """
 }
