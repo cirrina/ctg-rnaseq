@@ -189,7 +189,7 @@ def msg_deliverymail = """\
 
   Hi,
 
-The sequencing, QC and alignment for project project $peojectid is now complete. Please find attached multiQC report and CTG delivery report.
+The sequencing, QC and alignment for project project $projectid is now complete. Please find attached multiQC report and CTG delivery report.
 
 The data can be downloaded from our delivery server lfs603.
 
@@ -1173,15 +1173,10 @@ process finalize_delivery {
   """
   mv ${deliverytemp} ${deliverydir}
   cd ${deliverydir}
-  ## dirsize=$(du -ch -d 0 .| grep 'total')
 
   echo "ctg delivery complete"               > $readme
   echo "Project:   ${projectid}"             >> $readme
-  ## echo "Total size:   /${dirsize}"             >> $readme
   du -ch -d 0 . | grep 'total'               >> $readme
-
-
-
 
   """
 }
