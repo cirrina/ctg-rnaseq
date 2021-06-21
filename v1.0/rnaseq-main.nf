@@ -184,38 +184,38 @@ debug_mode = false // will turn echo to true
 
 def msg_deliverymail = """\
 
-    CTG Delivery ${projectid}
-    --------------------------
+  CTG Delivery ${projectid}
+  --------------------------
 
-    Hi Ganna,
+  Hi,
 
-    The sequencing, QC and alignment for project ${projectid} is now complete. Please find attached multiQC report and CTG delivery report.
+The sequencing, QC and alignment for project project $peojectid is now complete. Please find attached multiQC report and CTG delivery report.
 
+The data can be downloaded from our delivery server lfs603.
 
-    The data can now be downloaded from our delivery server lfs603. Detailed instructions on how to download data, and how to obtain your computer IP adress is depicted in the 'CTG Data Delivery Guide' attached to this mail.
+  Userid:
+  Password:
 
-    Userid:
-    Total file size:
-
-    We avoid sending passwords through mail. Also, we need to activate for your IP address. So please reply to this mail with a phone number to which I can sms text the password amd the IP adress of the computer that you will download the data from.
-
-    Data is downloaded from our server using SCP (Secure Copy Protocol) protocol. This can be performed either using terminal or using a file transfer software that support SCP file transfers, e.g. FileZilla.
+  Total file size:
 
 
+We avoid sending passwords through mail. Also, we need to activate for your IP address. So please reply to this mail with a phone number to which I can sms text the password and the IP adress of the computer that you will download the data from.
 
+Data is downloaded from our server using SCP (Secure Copy Protocol) protocol. This can be performed either using terminal or using a file transfer software that support SCP file transfers, e.g. FileZilla. Detailed instructions on how to download data, and how to obtain your computer IP adress is depicted in the 'CTG Data Delivery Guide' attached to this mail.
 
-    After download, we recommend you to check data integrity using the md5sum.txt file provided.
+After sequencing delivery, data will be kept by us for a maximum of 3 months and subsequently deleted. After download, we recommend you to check data integrity using the md5sum-files provided. We strongly recommend you to backup your data, i.e.that have at least two copies. CTG can not help you if your data gets corrupt or lost!
 
-    Please note that your data will be available for a maximum of 3 months after sequencing delivery. We strongly recommend you to backup your data - CTG will not be able to help you if your data is damaged or lost!
-
-    Please do not hesitate to get back to us if you have any questions. Also, please let us know when the data is successfully downloaded.
-
-
-    Kind regards
+Please do not hesitate to get back to us if you have any questions. Also, please let us know when the data is successfully downloaded.
 
 
 
-   """
+Kind regards
+
+David Lindgren
+
+
+
+ """
 
 
 // Define messages to print and for logfiles
@@ -1173,13 +1173,12 @@ process finalize_delivery {
   """
   mv ${deliverytemp} ${deliverydir}
   cd ${deliverydir}
-  dirsize=$(du -ch -d 0 .| grep 'total')
-
+  ## dirsize=$(du -ch -d 0 .| grep 'total')
 
   echo "ctg delivery complete"               > $readme
   echo "Project:   ${projectid}"             >> $readme
-  echo "Total size:   /${dirsize}"             >> $readme
-
+  ## echo "Total size:   /${dirsize}"             >> $readme
+  du -ch -d 0 . | grep 'total'               >> $readme
 
 
 
