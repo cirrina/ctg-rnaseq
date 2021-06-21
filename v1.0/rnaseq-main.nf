@@ -35,6 +35,8 @@
 
 
 
+
+
 /* ===============================================================
   *      PARAMS FROM CONFIGS
   =============================================================== */
@@ -178,6 +180,44 @@ debug_mode = false // will turn echo to true
   *       MESSAGES
   =============================================================== */
 
+
+
+def msg_deliverymail = """\
+
+    CTG Delivery ${projectid}
+    --------------------------
+
+    Hi Ganna,
+
+    The sequencing, QC and alignment for project ${projectid} is now complete. Please find attached multiQC report and CTG delivery report.
+
+
+    The data can now be downloaded from our delivery server lfs603. Detailed instructions on how to download data, and how to obtain your computer IP adress is depicted in the 'CTG Data Delivery Guide' attached to this mail.
+
+    Userid:
+    Total file size:
+
+    We avoid sending passwords through mail. Also, we need to activate for your IP address. So please reply to this mail with a phone number to which I can sms text the password amd the IP adress of the computer that you will download the data from.
+
+    Data is downloaded from our server using SCP (Secure Copy Protocol) protocol. This can be performed either using terminal or using a file transfer software that support SCP file transfers, e.g. FileZilla.
+
+
+
+
+    After download, we recommend you to check data integrity using the md5sum.txt file provided.
+
+    Please note that your data will be available for a maximum of 3 months after sequencing delivery. We strongly recommend you to backup your data - CTG will not be able to help you if your data is damaged or lost!
+
+    Please do not hesitate to get back to us if you have any questions. Also, please let us know when the data is successfully downloaded.
+
+
+    Kind regards
+
+
+
+   """
+
+
 // Define messages to print and for logfiles
 def msg_startup = """\
 
@@ -221,7 +261,7 @@ workflow.onComplete {
   logfile.append( msg_completed.stripIndent() )
   logfile.append( error )
 
-  if ( new File( logfile ).exists() && ! new File( logfile_sav ).exists())  { new File( logfile_sav ) << new File( logfile ).text }
+  // if ( new File( logfile ).exists() && ! new File( logfile_sav ).exists())  { new File( logfile_sav ) << new File( logfile ).text }
 
   println( msg_completed )
 }
@@ -1094,7 +1134,7 @@ process setup_ctg_save {
     cp ${samplesheet_original} ${ctg_save_dir}/samplesheets
   fi
 
-  ## rhe samplesheet check rscript output
+  ##  samplesheet check rscript output
   if [[ -f "${runfolderdir}/iem.rscript.log" ]]; then
     cp ${runfolderdir}/iem.rscript.log ${ctg_save_dir}
   fi
@@ -1105,7 +1145,7 @@ process setup_ctg_save {
   fi
 
   ## copy the entire scripts dir into the ctg save dir
-  if [[ -d "${params.scriptsdir}/rnaseq-main.nf" ]]; then
+  if [[ -d "${params.scriptsdir}" ]]; then
     cp -r ${params.scriptsdir} ${ctg_save_dir}/scripts
   fi
 
@@ -1133,8 +1173,16 @@ process finalize_delivery {
   """
   mv ${deliverytemp} ${deliverydir}
   cd ${deliverydir}
+  dirsize=$(du -ch -d 0 .| grep 'total')
+
+
   echo "ctg delivery complete"               > $readme
   echo "Project:   ${projectid}"             >> $readme
-  du -ch -d 0 . | grep 'total'               >> $readme
+  echo "Total size:   /${dirsize}"             >> $readme
+
+
+
+
+
   """
 }

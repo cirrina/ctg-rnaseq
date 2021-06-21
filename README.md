@@ -14,6 +14,8 @@ Project id cannot have dots '.'. For example, Bcl2fastq removes dot i project fo
 
 
 ## Add new species
+References - 4 different.
+
 should be added nto multiple locations
 checklist-iem.csv
 nextflow.config. Reference file paths.
