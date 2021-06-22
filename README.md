@@ -1,8 +1,23 @@
+## v1.1 to-d0
+- nexflow log file
+save the final nextflow log =, e.g. 2021_076.nextflow.log.complete to the ctg save (ctg-qc) directory
+
+- Picard RnaSeqMetrics. does not support rRNA intervals file. Error.
+
+- remove rnaseq primer/driver etc from ctg-drivers. These are now included in project script.
+
+- add the ctg-interop foldder to ctg-multiQC run. dont think it is....? OR Maybe, fix so that interop/runfolder is run in ctg-multiqc also for pooled runs,
+
+- add parameter-controlled text sections for Propject Delivery. References should here be changed according to assay, and correct parameters should be reflected?
+
+- Rscript. force replace - to _ (not space as is now)
+
+- samplesheet original. not in ctg-save folder
+
+
 ## v1.0 to-do
 + Add 'Rattus norvegicus' references to ls4
 + Add 'Rattus norvegicus' species file paths in nextflow.config
-
-
 
 file(ctg_save_dir).mkdir()
 
