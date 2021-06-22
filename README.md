@@ -2,9 +2,9 @@
 - nexflow log file
 save the final nextflow log =, e.g. 2021_076.nextflow.log.complete to the ctg save (ctg-qc) directory
 
-- Picard RnaSeqMetrics. does not support rRNA intervals file. Error.
+- Picard RnaSeqMetrics. does not support rRNA intervals file for Rattus norvegicus. Error.
 
-- remove rnaseq primer/driver etc from ctg-drivers. These are now included in project script.
+- remove legacy rnaseq primer/driver etc from ctg-drivers. These are now included in project script.
 
 - add the ctg-interop foldder to ctg-multiQC run. dont think it is....? OR Maybe, fix so that interop/runfolder is run in ctg-multiqc also for pooled runs,
 
@@ -13,6 +13,8 @@ save the final nextflow log =, e.g. 2021_076.nextflow.log.complete to the ctg sa
 - Rscript. force replace - to _ (not space as is now)
 
 - samplesheet original. not in ctg-save folder
+
+- add proper support for resume pipeline. both nextflow resume and resume without --resume
 
 
 ## v1.0 to-do
