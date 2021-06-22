@@ -588,7 +588,7 @@ process rnaseqmetrics {
 
 
 
-  if ( params.run_rnaseqmetrics )
+  if ( params.run_rnaseqmetrics && ! species == "Rattus norvegicus" )
   """
     echo "strand: ${strand}"
     echo "rrna file: ${rrna}"
@@ -602,6 +602,20 @@ process rnaseqmetrics {
       STRAND=${strand} \\
       RIBOSOMAL_INTERVALS=${rrna}
   """
+  // temp workaround - ribosomal intervals file for Rat is not workling in v1.0
+  else if ( params.run_rnaseqmetrics && species == "Rattus norvegicus" )
+  """
+    echo "strand: ${strand}"
+    echo "rrna file: ${rrna}"
+    mkdir -p ${rnaseqmetricsdir}
+
+    java -jar /usr/local/bin/picard.jar CollectRnaSeqMetrics \\
+      INPUT=${stardir}/${bam} \\
+      OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
+      REF_FLAT=${refflat} \\
+      STRAND=${strand}
+  """
+
   else
   """
   """
