@@ -203,7 +203,7 @@ We avoid sending passwords through mail. Also, we need to activate for your IP a
 
 Data is downloaded from our server using SCP (Secure Copy Protocol) protocol. This can be performed either using terminal or using a file transfer software that support SCP file transfers, e.g. FileZilla. Detailed instructions on how to download data, and how to obtain your computer IP adress is depicted in the 'CTG Data Delivery Guide' attached to this mail.
 
-After sequencing delivery, data will be kept by us for a maximum of 3 months and subsequently deleted. After download, we recommend you to check data integrity using the md5sum-files provided. We strongly recommend you to backup your data, i.e.that have at least two copies. CTG can not help you if your data gets corrupt or lost!
+Data will be kept by us for a maximum of 3 months and subsequently deleted. After download, we recommend you to check data integrity using the md5sum-files provided. We strongly recommend you to backup your data, i.e.that have at least two copies. CTG can not help you if your data gets corrupt or lost!
 
 Please do not hesitate to get back to us if you have any questions. Also, please let us know when the data is successfully downloaded.
 

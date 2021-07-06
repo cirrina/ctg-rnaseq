@@ -10,11 +10,26 @@ save the final nextflow log =, e.g. 2021_076.nextflow.log.complete to the ctg sa
 
 - add parameter-controlled text sections for Propject Delivery. References should here be changed according to assay, and correct parameters should be reflected?
 
-- Rscript. force replace - to _ (not space as is now)
+- Rscript. force replace '-' to '_' (instead of nothing '' as is now?)
 
 - samplesheet original. not in ctg-save folder
+ALSO
+- sample sheet - keep unaltered name?
 
 - add proper support for resume pipeline. both nextflow resume and resume without --resume
+
++ BUG- finalize delivery - if deliverydir already exists - then delivery is moved wronlgy to ctg delivery
+  maybe has to do with mv ${deliverytemp} ${deliverydir} ---- mv ${deliverytemp}/ ${deliverydir}
+  ADD CHECK when starting script. delivery dir must not exist.
+
+- remove the STARtmp folders ('projectid_STARtmp') from star folder prior delivery
+
+- after md5recursive on delivery dir, remove the line for 'md5sum.txt' in the md5sum.txt file.
+
+- add user_id (customer) to sample sheet and process by the R script.
+
+## v1.0 deploy
+2021 06 21
 
 
 ## v1.0 to-do
@@ -25,6 +40,9 @@ file(ctg_save_dir).mkdir()
 
 
 ## Knowm Bugs  v1.0
+FeatureCounts not functioning for ratus norvegicus
+
+
 Project id cannot have dots '.'. For example, Bcl2fastq removes dot i project folder and pipe will crash.
     - Include a exit abnormal if $projectid includes a dot.
 
