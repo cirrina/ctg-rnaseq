@@ -3,7 +3,7 @@
 ## v1.2 to-d0
 Main update: Merge the primer and driver scripts - only one script should be run
 
-
+The `scriptsdir` parameter is not optimal. Try setting this parameter from the actual execution command. See e.g. https://stackoverflow.com/questions/192319/how-do-i-know-the-script-file-name-in-a-bash-script
 -
 
 
