@@ -3,19 +3,19 @@
 ## Requirements
 
 1. Clone and build the Singularity container for this pipeline: (currently. https://github.com/cirrina/ctg-singularity/tree/main/rnaseq/v1.2).
-  - Add the path to the .sif in the nextflow.config `container = ` parameter under process{}
-  - Note that the STAR version used int the container must match the verrsion of STAR used to built references.
-2. Edit your samplesheet to match the example samplesheet. See section `SampleSheet` below
-3. Edit the nextflow.config file to fit your project and system.
-4. Run pipeline (from runfolder)
+  + Add the path to the .sif in the nextflow.config `container = ` parameter under process{}
+2. Edit your samplesheet to fullill the requirements. See section `SampleSheet` below
+3. Edit the nextflow.config so that file paths are correct. Make sure that the STAR version installed in .sif matches the verrsion of STAR used to built references in nextflow.config.
+
 ```
 nohup nextflow run pipe-seqonly-qc.nf > log.pipe-seqonly-qc.txt &
 ```
 
-## Run with Driver
+## Run pipeline using Primer & Driver
 .. 1-3 from above  
-4. Edit the driver folder declaration to fit your system  
-5. Add cloned git repo folder to your system PATH  
+4. Start by running the 'rnaseq-driver'
+  + 
+5.
 6. Start driver from runfolder  
 
 ```
