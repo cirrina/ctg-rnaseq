@@ -6,6 +6,13 @@ Main update: Merge the primer and driver scripts - only one script should be run
 The `scriptsdir` parameter is not optimal. Try setting this parameter from the actual execution command. See e.g. https://stackoverflow.com/questions/192319/how-do-i-know-the-script-file-name-in-a-bash-script
 -
 
+* Merge all parameters into one file , i.e move parameters from shell script to nextflow.comfig. Read these parameters in shell script usong grep/sed ...
+  Also move the [ -l force_lane ] [ -l force_index ] flags into config OR sample sheet
+
+* Proper LOGs. Crete ./logs directory. Make sure that nextflow logs are moved here.
+
+* nextflow config. make sure to copy the nextflow log within the work project foldee - this may have been modified!
+
 
 ## v1.01 to-d0
 - add versionto log - at least what command whas run
