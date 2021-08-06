@@ -6,11 +6,11 @@ Different librarties within a pooled run should be processed separately.
 
 ## Installation lsens
 Version specific pipeline folders are installed on ls4 at: `/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/`.
-* Note that, at pipleline initiation, the entire directory with executables and configs are copied to (and run from) the project folder.
-* Note: Avoid adding the ctg-rnaseq script directories to $PATH. Instead run these scripts usgin full path (thus allowing proper vresion control).
+**Note** When running `rnaseq-primer`the entire directory with executables and configs are copied to (and run from within) the project folder. Each time the `rnaseq-primer` is run, all script files (including the `nextflow.config` will be overwritten)
+**Note** Avoid adding the ctg-rnaseq script directories to $PATH. Instead run the `rnaseq-primer` script usging full path (thus allowing proper vresion control).
 
 ## Requirements
- 1. Clone and build the *Singularity container* for this pipeline, e.g. https://github.com/cirrina/ctg-singularity/tree/main/rnaseq/v1.1). Add the correct path to the .sif -`singularity_container = ` parameter in `rnaseq-primer` shell sctipt.  
+ 1. Clone and build the **Singularity container** for this pipeline, e.g. https://github.com/cirrina/ctg-singularity/tree/main/rnaseq/v1.1). Add the correct path to the .sif -`singularity_container = ` parameter in `rnaseq-primer` shell sctipt.  
  2. Make SURE that the `scriptsdir`file location, hardcoded in the `rnaseq-primer` shell script, are valid.
  2. Edit your samplesheet to fullill all requirements. See section `SampleSheet` below
  3. Edit the nextflow.config so that file paths are correct. Make sure that the software versions as installed in .sif are compatible with references defined in nextflow.config, e.g. STAR indexed references.
@@ -71,22 +71,25 @@ help          -h : print help message
     - `./scripts/nextflow.params.project_id`
     - `iem.rscript.log`
     - `./multiqc-ctg/`. The multiqc-ctg analysis is run on all sequencing and project specific files and folders, including the Illumina runfolder and full bcl2fastq demultiplexing folder. Thus includes more information than the multiqc sent to customer.
+  + **note** as of v1.0 not all relevant files are copied/transfered.
 
 
 
 
+## Detailed Pipeline steps:
 
-### Detailed Pipeline steps:
+1. **rnaseq-primer**
+  a. Create **work folder** based on the `project_id` flag (-i) and the `project_root` parameter. The pipeline executables and config files are copied and run from whitin the project directory.
+  b. Run Rscript `iem-samplesheet-processor.R` to validate and generate modified SampleSheets for downstream analyses.
+    + Input: IEM style SampleSheet with some modifications (see SampleSheet below).
+    + Output: Tow sample sheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`) and a logfile (`iem.rscript.log`) that is used by `rnaseq-primer` to generate parameters file `nextflow.params.2021_070` used for the main nextflow sctipt.
 
-1. `rnaseq-primer` step.
-a. Generate a project work folder based on the `project_id` flag (-i) and the `project_root` parameter. The pipeline executables and config files are copied and run from whitin the project directory.
-a. `iem-samplesheet-processor.R`. Process the SampleSheet and generate two SampleSheets used for script (one for demux and one for data analysis).
-  + illegal characters are removed.
-  + Column settings are cross checked against database
-  + Indexes are cross-checked and replaced if needed
-  a.
+    + illegal characters are removed.
+    + Column settings are cross checked against database
+    + Indexes are cross-checked and replaced if needed
+  c. output: nextflow parameters file: `nextflow.params.2021_070`
 
-1. `rnaseq-driver` & `nextflow-main`
+2. **rnaseq-driver & nextflow-main**
 Write run & project specific parameters: `nextflow.params.XXX`
 * `Demultiplexing` (bcl2fastq): Converts raw basecalls to fastq, and demultiplex samples based on index (https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf).
 
