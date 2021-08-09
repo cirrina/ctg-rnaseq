@@ -1,8 +1,9 @@
 # ctg-rnaseq v1.0
+
 Pipeline for demultiplexing, qc, alignment and transcript summarization for RNAseq Illumina sequencing data.  
 **Note** The script can only process samples that are run in one sequencing run (one Illumina Runfolder). If a project uses multiple sequencing runs, these have top be processed separately.  
 **Note** Different projects/librarties within a pooled run must be processed separately.  
-----
+
 ## Installation lsens
 Version specific pipeline folders are installed on ls4 at: `/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/`.
 **Note:** When running `rnaseq-primer`the entire directory with executables and configs are copied to (and run from within) the project folder. Each time the `rnaseq-primer` is run, all script files (including the `nextflow.config` will be overwritten)
@@ -143,7 +144,7 @@ Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,I5_Index_ID,ind
 
 ### Source files
 
-* **./bin folder**
+1. **./bin folder**
 The bin directory is copied into the project directory. The bin contains executables (`iem-samplesheet-processor.R`)
   + `/bin/checklist-iem.csv` :
   + `/bin/checklist-index.csv` :
