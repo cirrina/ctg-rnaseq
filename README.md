@@ -1,9 +1,9 @@
 # ctg-rnaseq v1.0
-Pipeline for demultiplexing, qc, alignment and summarization for RNAseq Illumina sequencing data.
-The script can only process samples that are run in different sequencing runs. These have top be processed separately.
-Different librarties within a pooled run should be processed separately.
+Pipeline for demultiplexing, qc, alignment and transcript summarization for RNAseq Illumina sequencing data.
 
-
+**Note** The script can only process samples that are run in one sequencing run (one Illumina Runfolder). If a project uses multiple sequencing runs, these have top be processed separately.  
+**Note** Different projects/librarties within a pooled run must be processed separately.  
+----
 ## Installation lsens
 Version specific pipeline folders are installed on ls4 at: `/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/`.
 **Note** When running `rnaseq-primer`the entire directory with executables and configs are copied to (and run from within) the project folder. Each time the `rnaseq-primer` is run, all script files (including the `nextflow.config` will be overwritten)
@@ -49,7 +49,7 @@ help          -h : print help message
 
 
 ## Output:
-* Pipeeline work folder.
+* Pipeline work folder.
   + `project_root`+`project_id` e.g. `/projects/fs1/shared/ctg-projects/rnaseq/2021_070`.
   + Work folder. Used while pipeline is running. All deliverables and ctg specific logs and qc metrics should be copied from this directory upon pipeline completion and should be safe to delete.
     - `./.nextflow/`. Temporary files used by nextflow pipeline. Will not be archived. Used for debugging faulty runs together with the `/.nextflow.log` and `/nf.log.rnaseq`
@@ -79,18 +79,30 @@ help          -h : print help message
 ## Detailed Pipeline steps:
 
 1. **rnaseq-primer**
+
   a. Create **work folder** based on the `project_id` flag (-i) and the `project_root` parameter. The pipeline executables and config files are copied and run from whitin the project directory.
   b. Run Rscript `iem-samplesheet-processor.R` to validate and generate modified SampleSheets for downstream analyses.
-    + Input: IEM style SampleSheet with some modifications (see SampleSheet below).
-    + Output: Tow sample sheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`) and a logfile (`iem.rscript.log`) that is used by `rnaseq-primer` to generate parameters file `nextflow.params.2021_070` used for the main nextflow sctipt.
+    + Input: IEM style SampleSheet modified to CTG LIMS (see SampleSheet below).
+    + Output: Two sample sheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`) and a logfile (`iem.rscript.log`) that is used by `rnaseq-primer` to generate parameters file `nextflow.params.2021_070` used for the main nextflow sctipt.
+    + The Rscript will:
+      - check basic integrity of the IEM samplesheet,
+      - check that required columns are present and correctly specified. This is done using the `./bin/checklist-iem.csv` file. A given Assay/Index Adapters combionation will have specific requirements, e.g. Read2StartFromCycle or Adapter, all specified in the `checklist-iem.csv`
+      - check for illegal sample namimings and duplicated sample names
+      - Replace illegal characters.
+      - cross check index nmames and sequences against the `./bin/checklist-index.csv` file.
+    + Options/flags:
+      -   
 
-    + illegal characters are removed.
     + Column settings are cross checked against database
     + Indexes are cross-checked and replaced if needed
   c. output: nextflow parameters file: `nextflow.params.2021_070`
 
+
 2. **rnaseq-driver & nextflow-main**
-Write run & project specific parameters: `nextflow.params.XXX`
+
+This driver will initiate nextflow pipeline `nextflow-main` using two config files (`nextflow.config` and `nextflow.params.2021_070`).
+
+
 * `Demultiplexing` (bcl2fastq): Converts raw basecalls to fastq, and demultiplex samples based on index (https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf).
 
 * `FastQC`: FastQC calculates quality metrics on raw sequencing reads (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). MultiQC summarizes FastQC reports into one document (https://multiqc.info/).
