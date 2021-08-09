@@ -123,28 +123,27 @@ Workflow,GenerateFASTQ
 Application,NovaSeq FASTQ Only  
 Instrument Type,NovaSeq  
 Assay,Nextera XT  
-Index Adapters,"Nextera XT v2 Index Kit A"  // Must be specified according
-Chemistry,Amplicon
-*Species*,Homo sapiens      // curremtly Homo sapiens, Rattus norwegicus or Mus musculus
-*Pooled*,true               // IMPORTANT: true or false.
+Index Adapters,"Nextera XT v2 Index Kit A"  // Must be specified according  
+Chemistry,Amplicon  
+**Species**,Homo sapiens      // curremtly Homo sapiens, Rattus norwegicus or Mus musculus  
+**Pooled**,true               // IMPORTANT: true or false  
 
 [Reads]  
-***26***  
-***78***  
+**26**    
+**78**  
 
 [Settings]  
-Adapter,***CTGTCTCTTATACACATCT***  
+Adapter,**CTGTCTCTTATACACATCT**  
 
 [Data]  
 Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,I5_Index_ID,index2,Sample_Project,Description  
-***S1***,***S1***,,,***N702***,***CGTACTAG***,,,2021_024,  
-***S2***,***S2***,,,***N706***,***TAGGCATG***,,,2021_024,  
+**S1**,**S1**,,,**N702**,**CGTACTAG**,,,2021_024,  
+**S2**,**S2**,,,**N706**,**TAGGCATG**,,,2021_024,  
 
 
 ### Source files
 
-
-* ./bin
+* **./bin folder**
 The bin directory is copied into the project directory. The bin contains executables (`iem-samplesheet-processor.R`)
   + `/bin/checklist-iem.csv` :
   + `/bin/checklist-index.csv` :
