@@ -13,6 +13,7 @@ The `scriptsdir` parameter is not optimal. Try setting this parameter from the a
 
 * nextflow config. make sure to copy the nextflow log within the work project foldee - this may have been modified!
 
+* Check so that analysis output from fastqscreen are archived.
 
 ## v1.01 to-d0
 - add versionto log - at least what command whas run
