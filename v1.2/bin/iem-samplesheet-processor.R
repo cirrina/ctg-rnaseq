@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 ## ========================================== ##
-##    Sctipt usage
+##    v1.1
 ## ========================================== ##
 
 # Input:    An Illumina IEM style .csv sample sheet as input. "-s", "--sample_sheet"

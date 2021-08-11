@@ -1,4 +1,4 @@
-# available indexes and allowed index kits. Note that default NovaSeq Instrument type is NovaSeq1.5,,,,,,,
+# v1.1. available indexes and allowed index kits. Note that default NovaSeq Instrument type is NovaSeq1.5,,,,,,,
 Index_Adapters,product.no,Instrument_Type,Index_Plate_Well,I7_Index_ID,index,I5_Index_ID,index2
 IDT-Ilmn RNA UD Indexes SetA Ligation,20040553,NovaSeq,A01,UDP0001,GAACTGAGCG,UDP0001,CGCTCCACGA
 IDT-Ilmn RNA UD Indexes SetA Ligation,20040553,NovaSeq,B01,UDP0002,AGGTCAGATA,UDP0002,TATCTTGTAG

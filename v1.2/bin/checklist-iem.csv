@@ -1,4 +1,4 @@
-# Checklist for iem sample sheet. Define required values parameters,,,,,
+# v.1.1 Checklist for iem sample sheet. Define required values parameters,,,,,
 iem_section,parameter,conditional_parameter,conditional_value,value,Comment
 [Header],Instrument Type,,,NovaSeq,Short for NovaSeq1.5. Default run.
 [Header],Instrument Type,,,NovaSeq1.0,
@@ -16,8 +16,8 @@ iem_section,parameter,conditional_parameter,conditional_value,value,Comment
 [Settings],AdapterRead2,Index Adapters,IDT-ILMN TruSeq RNA UD Indexes (96 Indexes),AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,
 [Settings],Adapter,Index Adapters,IDT-Ilmn RNA UD Indexes SetA Ligation,CTGTCTCTTATACACATCT,
 [Settings],Adapter,Index Adapters,IDT-Ilmn RNA UD Indexes SetB Ligation,CTGTCTCTTATACACATCT,
-[Settings],Adapter,Index Adapters,SMARTer RNA Unique Dual Index Kit �96U Set A,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,
-[Settings],AdapterRead2,Index Adapters,SMARTer RNA Unique Dual Index Kit �96U Set A,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,
+[Settings],Adapter,Index Adapters,SMARTer RNA Unique Dual Index Kit -96U Set A,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,
+[Settings],AdapterRead2,Index Adapters,SMARTer RNA Unique Dual Index Kit -96U Set A,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,
 [Settings],Adapter,Index Adapters,IDT-ILMN Nextera DNA UD Indexes (96 Indexes) Set C,CTGTCTCTTATACACATCT,
 [Settings],Read1StartFromCycle,Index Adapters,IDT-Ilmn RNA UD Indexes SetA Ligation,2,
 [Settings],Read2StartFromCycle,Index Adapters,IDT-Ilmn RNA UD Indexes SetA Ligation,2,

@@ -135,7 +135,7 @@ The **Bold** fields below must be correctly specified!
 **Note on Sample_ID:** : Olny Sample_ID values are required. **Sample_Name** will be forced to the same value as Sample_ID. This to force the file structure output from bcl2fastq demux to be consistant. Sample_ID ≠ Sample_Name will produce additioonal folder structure.    
 **Note on Sample_Project:** This column will be force overwritten by the `iem-samplesheet-processor.R` script to the same project id value as defined when executing the pipeline.  
 
-```
+
 [Header]
 IEMFileVersion,5  
 Investigator Name,X  
@@ -161,7 +161,8 @@ Chemistry,Amplicon
 **Sample_ID**,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,I5_Index_ID,index2,Sample_Project,Description  
 **S1**,**S1**,,,**N702**,**CGTACTAG**,,,2021_024,  
 **S2**,**S2**,,,**N706**,**TAGGCATG**,,,2021_024,  
-```
+
+
 
 ### Source files
 
