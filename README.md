@@ -174,8 +174,8 @@ Chemistry,Amplicon
 #### ./bin folder
 The bin contains executables used by the pipeline, The bin directory is copied into the project work directory and files are accessed locally from here.
 
-1. **`iem-samplesheet-processor.R`**
-2. `/bin/checklist-iem.csv`.
+1. **`iem-samplesheet-processor.R`**  
+2. **`/bin/checklist-iem.csv`**  
 Used by the `iem-samplesheet-processor` rscript to cross check allowed values and value combinations given in the sample sheet, for example check that the Assay value is allowed, or that Species value is properly specified. Also, conditional rules can here be defined, such as requiring that one paricular Assay must also have Read2StartFromCycle a particular [Settings] defined.
 
 The following columns are expected and are used to define rules in the rscript:  
@@ -196,7 +196,7 @@ Such as the line:
 will be interpreted as:
 IF the `conditional_parameter` *Assay* matches the conditional value `SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian`, the script will require that the `Read2StartFromCycle` parameter is given under `iem_section` *[Settings]* AND that it matches the `value` of *4*.  
 
-3. `/bin/checklist-index.csv` :
+3. **`/bin/checklist-index.csv`**  
 Used by the `iem-samplesheet-processor` rscript to check that index id and well postions correspond to the sequence given in the samplesheet.  
 csv-delimited file
 Note that default NovaSeq Instrument type (specified as *Novaseq*) is the NovaSeq1.5 chemistry.  
