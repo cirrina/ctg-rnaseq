@@ -3,7 +3,7 @@
 Pipeline for demultiplexing, qc, alignment and transcript summarization for RNAseq Illumina sequencing data.  
 
 **Note:** The script can only process samples that are run in one single sequencing run (one Illumina Runfolder). If a project uses multiple sequencing runs, these have top be processed separately.  
-**Note** The `project_id` (-i flag) will owerwrite the `Sample_Project` column in sample sheet - again only **one project** is allowed per demux/pipeline run.
+**Note** The `project_id` (-i flag) will owerwrite the `Sample_Project` column in sample sheet - again only **one project** is allowed per demux/pipeline run.  
 **Note:** Different projects/librarties within a pooled run must be processed separately.  
 
 
@@ -11,7 +11,7 @@ Pipeline for demultiplexing, qc, alignment and transcript summarization for RNAs
 Version specific pipeline folders are installed on ls4 at: `/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/`
 
 **Note:** When running `rnaseq-primer`the entire directory with executables and configs are copied to (and run from within) the project folder. Each time the `rnaseq-primer` is run, all script files (including the `nextflow.config` will be overwritten).  
-**Note:** Do **not add** the ctg-rnaseq script directories to **$PATH**. Instead run the `rnaseq-primer` script usging full path - thus allowing proper vresion control.  
+**Note:** Do **not add** the ctg-rnaseq script directories to **$PATH**. Instead run the `rnaseq-primer` script usging full path - thus allowing proper version control.  
 
 ## Running the ctf-rnaseq pipeline
  1. Clone and build the **Singularity container** for this pipeline, e.g. https://github.com/cirrina/ctg-singularity/tree/main/rnaseq/v1.1). Add the correct path to the .sif -`singularity_container = ` parameter in `rnaseq-primer` bash sctipt.
@@ -52,7 +52,7 @@ help  -h : print help message
 ## Output:
 In short, the pipeline will produce (1) customer delivery folder, contatining all relevant deliverables, including a customer-specific multiqc anlalysis (2) ctg archive folder containing an extended multiqc analysis together with logfiles, scripts and samplesheets making it possible to replicate the analysis, and (3) a  workfolder used during pipeline excecution.
 
-1. **Project rnaseq pipeline work folder**
+1. **Pipeline work folder**
 `project_root`+`project_id` e.g. `/projects/fs1/shared/ctg-projects/rnaseq/2021_070`.  
 Temporary work folder - used while pipeline is running. Upon a successful pipeline execution, all deliverables and ctg specific logs and qc metrics should have been copied from this directory, i.e. this folder can be  safely deleted after delivery.
 
@@ -61,7 +61,7 @@ Temporary work folder - used while pipeline is running. Upon a successful pipeli
   - `./nf-output/`: Temporary folder to which all analyses are written. Files are moved/copied to delivery and ctg archive folders in the last step of pipelie execution. **All analyses** written to this directory are included when running the `ctg-multiqc`. Not all analyses files are archived though, such alignmnent files used by fastqscreen analysis.
 
 
-2. Customer delvery folder
+2. **Customer delvery folder**
 `delivery_root`+`project_id` e.g. `/projects/fs1/nas-sync/ctg-delivery/rnaseq/2021_070`.  
 Primary delivery folder. This is the folder that should be transfered to the delivery server for customer delivery. In a standard project, no additional files or folders should be needed.
 
@@ -72,13 +72,14 @@ Primary delivery folder. This is the folder that should be transfered to the del
     - `./multiqc/` Lighter version of multiqc for customer delivery (not the same as `ctg-multiqc` that is more extensive). This is basically only run on the contents present in delivery folder (including fastq, fastqc, star and featurecounts, but does not include anlalyses such as fastqscreen, picard, or illumina InterOp)
     - `./md5sum.txt`: md5sum on all files in the customer delivery folder.
 
-3. CTG archive folder (ctg-qc)
+3. **CTG archive folder (ctg-qc)**  
 `ctg_save_root`+`project_id`, e.g. `/projects/fs1/shared/ctg-qc/rnaseq/2021_070`  
-Here pipeline log files, ececutables, configs and samplesheets are saved together with relevant QC files, such as ctg-multiqc and fastqc.
+Here pipeline log files, executaables, configs and samplesheets are archived together with relevant QC files, such as ctg-multiqc and fastqc.
   - `./scripts/nextflow.params.project_id`
   - `iem.rscript.log`
-  - `./multiqc-ctg/`. The multiqc-ctg analysis is run on all sequencing and project specific files and folders, including the Illumina runfolder and full bcl2fastq demultiplexing folder. Thus includes more information than the multiqc sent to customer.
-  + **note** as of v1.0 not all relevant files are copied/transfered.
+  - `./multiqc-ctg/`. The multiqc-ctg analysis is run on all sequencing and project specific files and folders, including the Illumina runfolder and full bcl2fastq demultiplexing folder. Thus includes more information than the multiqc sent to customer.  
+
+**Note:** as of v1.0 all relevant files are not yet copied/transfered.
 
 
 
@@ -87,21 +88,24 @@ Here pipeline log files, ececutables, configs and samplesheets are saved togethe
 
 1. **rnaseq-primer**
   a. Create **work folder** based on the `project_id` flag (-i) and the `project_root` parameter. The pipeline executables and config files are copied and run from whitin the project directory.  
-  b. Run Rscript `iem-samplesheet-processor.R` to validate and generate modified SampleSheets for downstream analyses.  
-    + Input: IEM style SampleSheet modified to CTG LIMS (see SampleSheet below).
-    + Output: Two sample sheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`) and a logfile (`iem.rscript.log`) that is used by `rnaseq-primer` to generate parameters file `nextflow.params.2021_070` used for the main nextflow sctipt.
-    + The Rscript will:
-      - check basic integrity of the IEM samplesheet,
-      - check that required columns are present and correctly specified. This is done using the `./bin/checklist-iem.csv` file. A given Assay/Index Adapters combionation will have specific requirements, e.g. Read2StartFromCycle or Adapter, all specified in the `checklist-iem.csv`
-      - check for illegal sample namimings and duplicated sample names
-      - Replace illegal characters.
-      - cross check index nmames and sequences against the `./bin/checklist-index.csv` file.
-    + Options/flags:
-      -   
 
-    + Column settings are cross checked against database
-    + Indexes are cross-checked and replaced if needed
-  c. output: nextflow parameters file: `nextflow.params.2021_070`
+  b. Run Rscript `iem-samplesheet-processor.R` to validate and generate modified SampleSheets for downstream analyses.  
+    - Input: IEM style SampleSheet modified to CTG LIMS (see SampleSheet below).
+    - Output: Two sample sheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`) and a logfile (`iem.rscript.log`) that is used by `rnaseq-primer` to generate parameters file `nextflow.params.2021_070` used for the main nextflow sctipt.
+
+    The Rscript will:
+    - check basic integrity of the IEM samplesheet,
+    - check that required columns are present and correctly specified. This is done using the `./bin/checklist-iem.csv` file. A given Assay/Index Adapters combionation will have specific requirements, e.g. Read2StartFromCycle or Adapter, all specified in the `checklist-iem.csv`
+    - check for illegal sample namimings and duplicated sample names
+    - Replace illegal characters.
+    - cross check index nmames and sequences against the `./bin/checklist-index.csv` file.
+
+    Options/flags:
+    - Column settings are cross checked against database
+    - Indexes are cross-checked and replaced if needed
+
+  c. rnaseq-primer output: 
+  nextflow parameters file: `nextflow.params.2021_070`
 
 
 2. **rnaseq-driver & nextflow-main**
