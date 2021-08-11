@@ -110,17 +110,19 @@ Here pipeline log files, executaables, configs and samplesheets are archived tog
 ### **rnaseq-driver & rnaseq-main.nf**
 
 This driver will initiate nextflow pipeline `rnaseq-main.nf` using two config files (`nextflow.config` and `nextflow.params.2021_070`) together with samplesheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`).   
-`Slurm settings`: are defined within `nextflow.config` and `rnaseq-main.nf`.  
-`Singularity` container file location is supplied within the `rnaseq-primer` sript.
+`Slurm settings`: are defined for each process in the `rnaseq-main.nf` script.  
+`Singularity` container file location is supplied within the `nextflow.config` and `rnaseq-primer` sripts.  
 
-i. `Demultiplexing`  
+#### `Demultiplexing`  
 bcl2fastq: Converts raw basecalls to fastq, and demultiplex samples based on index (https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf).  
 
-ii. Check files. Chek if all expected fastq files have been generated. The fastq names are hardcoded into the ctg sample sheet (`SampleSheet-2021_070-ctg.csv`) columns `fastq_1`and `fastq_2` by the `iem-samplesheet-processor.R` rscript.  
+#### Check Files
+Chek if all expected fastq files have been generated. The fastq names are hardcoded into the ctg sample sheet (`SampleSheet-2021_070-ctg.csv`) columns `fastq_1`and `fastq_2` by the `iem-samplesheet-processor.R` rscript.  
 
-ii. `FastQC`: FastQC calculates quality metrics on raw sequencing reads (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). MultiQC summarizes FastQC reports into one document (https://multiqc.info/).  
+#### `FastQC`
+FastQC calculates quality metrics on raw sequencing reads (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). MultiQC summarizes FastQC reports into one document (https://multiqc.info/).  
 
-iii. `multiQC`: Compile fastQC and cellranger count metrics in multiqc report (https://multiqc.info/)  
+#### `multiQC`: Compile fastQC and cellranger count metrics in multiqc report (https://multiqc.info/)  
 
 
  `md5sum`: md5sum of all fastq files
