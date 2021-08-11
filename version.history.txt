@@ -15,6 +15,9 @@ The `scriptsdir` parameter is not optimal. Try setting this parameter from the a
 
 * Check so that analysis output from fastqscreen are archived.
 
+* add project id to header instead of -i flag
+
+
 ## v1.01 to-d0
 - add versionto log - at least what command whas run
 
