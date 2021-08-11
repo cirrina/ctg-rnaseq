@@ -180,7 +180,8 @@ This script validate sample sheet, and to generate modified SampleSheets for dow
   Illumina Experiment Manager (IEM) style SampleSheet *modified to fit CTG LIMS* (see SampleSheet below).  
 
   - **Output:**  
-  Two sample sheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`) and a logfile (`iem.rscript.log`).  
+`SampleSheet-2021_070-demux.csv`. Designed to
+  `SampleSheet-2021_070-ctg.csv` and ) and a logfile (`iem.rscript.log`).  
   The logfile is used by `rnaseq-primer` to generate parameters file `nextflow.params.2021_070` used for the main nextflow sctipt.
 
   The Rscript will:
@@ -189,7 +190,8 @@ This script validate sample sheet, and to generate modified SampleSheets for dow
   - check for illegal sample namimings and duplicated sample names
   - Replace illegal characters.
   - cross check index nmames and sequences against the `./bin/checklist-index.csv` file.
-  - add fastq and bam file namings according to defined nomenclature. These are used by `nextflow-main` to chek if all expected files have been generated.  
+  - add fastq and bam file namings according to defined nomenclature. These are used by `nextflow-main` to check if all expected files have been generated.  
+
   Options/flags:
   - Column settings are cross checked against database
   - Indexes are cross-checked and replaced if needed
