@@ -135,17 +135,19 @@ The **Bold** fields below must be correctly specified!
 **Note on Sample_ID:** : Olny Sample_ID values are required. **Sample_Name** will be forced to the same value as Sample_ID. This to force the file structure output from bcl2fastq demux to be consistant. Sample_ID ≠ Sample_Name will produce additioonal folder structure.    
 **Note on Sample_Project:** This column will be force overwritten by the `iem-samplesheet-processor.R` script to the same project id value as defined when executing the pipeline.  
 
-
+**Instrument Type:**  Can be NovaSeq or NovaSeq1.0 protocol.  
+**Assay:**  Allowed Assay values are listed in `./bin/checklist-iem.csv`. Assays are specified using same nomenclature as within the IEM software.  
+**Index Adapters:**  Allowed Index Adapters values (and Assay combinations) are listed in `./bin/checklist-iem.csv`. Specified using same nomenclature as within the IEM software.  
 
 ----
-[Header]
+[Header]  
 IEMFileVersion,5  
 Investigator Name,X  
 Experiment Name,X  
 Date,YYYY-MM-DD  
 Workflow,GenerateFASTQ  
 Application,NovaSeq FASTQ Only  
-**Instrument Type**,**NovaSeq**         // Can be NovaSeq or NovaSeq1.0 protocol.  
+**Instrument Type**,**NovaSeq**
 **Assay**,**TruSeq Stranded mRNA**      // Allowed Assay values are listed in `./bin/checklist-iem.csv`. Assays are specified using same nomenclature as within the IEM software.  
 **Index Adapters**,**IDT-ILMN TruSeq RNA UD Indexes (96 Indexes)**     // Allowed Index Adapters values (and Assay combinations) are listed in `./bin/checklist-iem.csv`. Specified using same nomenclature as within the IEM software.  
 Chemistry,Amplicon  
@@ -163,6 +165,7 @@ Chemistry,Amplicon
 **Sample_ID**,Sample_Name,Sample_Plate,Sample_Well,**Index_Plate_Well**,**I7_Index_ID**,**index,I5_Index_ID**,**index2**,Sample_Project,Description  
 **R41_C**,,CTGpl_073,A01,**A01**,**UDI0001**,**CCGCGGTT**,**UDI0001**,**CTAGCGCT**,2021_070,CTGpool_0158  
 **R41_T1**,,CTGpl_073,B01,**B01**,**UDI0002**,**TTATAACC**,**UDI0002**,**TCGATATC**,2021_070,CTGpool_0158  
+  
 ----
 
 ### Source files
