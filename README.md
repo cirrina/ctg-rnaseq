@@ -87,30 +87,31 @@ Here pipeline log files, executaables, configs and samplesheets are archived tog
 
 ## Detailed Pipeline steps:
 
-1. **rnaseq-primer**  
-  a. Create **work folder**  
+### **rnaseq-primer**  
+  1. Create **work folder**  
   e.g. `project_root`+`project_id` e.g. `/projects/fs1/shared/ctg-projects/rnaseq/2021_070`  
   Based on the `project_id` flag (-i) and the `project_root` parameter.
   he pipeline executables (e.g. `rnaseq-driver`) and config files and scripts (e.g. `nextflow.config` and `rnaseq-main.nf`) are copied and run from whitin the project directory **not** from their primary location on lsens.
 
-  b. Run Rscript `iem-samplesheet-processor.R`  
-    To validate and generate modified SampleSheets for downstream analyses.  
-    **Input:**  
-    Illumina Experiment Manager (IEM) style SampleSheet *modified to fit CTG LIMS* (see SampleSheet below).  
-    **Output:**  
-    `SampleSheet-2021_070-demux.csv`: used for bcl2fastq  
-    `SampleSheet-2021_070-ctg.csv`: used by the main nextflow script. The rsctipt add Assay specific columns, such as, strandness, paired, and the file names for fastq and bam fils etc.  
-    `iem.rscript.log`: logfile with paramaters that are imported by nextflow-primer and passed on to `nextflow.params.2021_070` used by the main nextflow script.  
+  2. Run Rscript `iem-samplesheet-processor.R`  
+  To validate and generate modified SampleSheets for downstream analyses.  
+  **Input:**  
+  Illumina Experiment Manager (IEM) style SampleSheet *modified to fit CTG LIMS* (see SampleSheet below).  
+  **Output:**  
+  `SampleSheet-2021_070-demux.csv`: used for bcl2fastq  
+  `SampleSheet-2021_070-ctg.csv`: used by the main nextflow script. The rsctipt add Assay specific columns, such as, strandness, paired, and the file names for fastq and bam fils etc.  
+  `iem.rscript.log`: logfile with paramaters that are imported by nextflow-primer and passed on to `nextflow.params.2021_070` used by the main nextflow script.  
     See `Source` section below for additonal script info.  
 
-  c. rnaseq-primer output:
-  nextflow parameters file: `nextflow.params.2021_070`.
+  3. rnaseq-primer output:
+  nextflow parameters file: `nextflow.params.2021_070`.  
 
 
-2. **rnaseq-driver & nextflow-main**
+### **rnaseq-driver & rnaseq-main.nf**
 
-This driver will initiate nextflow pipeline `nextflow-main` using two config files (`nextflow.config` and `nextflow.params.2021_070`) together with samplesheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`)  
-
+This driver will initiate nextflow pipeline `rnaseq-main.nf` using two config files (`nextflow.config` and `nextflow.params.2021_070`) together with samplesheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`).   
+`Slurm settings`: are defined within `nextflow.config` and `rnaseq-main.nf`.  
+`Singularity` container file location is supplied within the `rnaseq-primer` sript.
 
 i. `Demultiplexing`  
 bcl2fastq: Converts raw basecalls to fastq, and demultiplex samples based on index (https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf).  
