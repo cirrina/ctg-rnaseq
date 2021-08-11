@@ -160,9 +160,9 @@ Chemistry,Amplicon
 **Adapter**,**CTGTCTCTTATACACATCT**  // Adapters will be cross-checked using the`./bin/checklist-iem.csv` file. The Adapter value must match the value specified under respective Index Adapter.
 
 [Data]  
-**Sample_ID**,Sample_Name,Sample_Plate,Sample_Well,**Index_Plate_Well**,**I7_Index_ID**,**index,I5_Index_ID**,**index2**,Sample_Project,Description
-**R41_C**,,CTGpl_073,A01,**A01**,**UDI0001**,**CCGCGGTT**,**UDI0001**,**CTAGCGCT**,2021_070,CTGpool_0158
-**R41_T1**,,CTGpl_073,B01,**B01**,**UDI0002**,**TTATAACC**,**UDI0002**,**TCGATATC**,2021_070,CTGpool_0158
+**Sample_ID**,Sample_Name,Sample_Plate,Sample_Well,**Index_Plate_Well**,**I7_Index_ID**,**index,I5_Index_ID**,**index2**,Sample_Project,Description  
+**R41_C**,,CTGpl_073,A01,**A01**,**UDI0001**,**CCGCGGTT**,**UDI0001**,**CTAGCGCT**,2021_070,CTGpool_0158  
+**R41_T1**,,CTGpl_073,B01,**B01**,**UDI0002**,**TTATAACC**,**UDI0002**,**TCGATATC**,2021_070,CTGpool_0158  
 ----
 
 ### Source files
