@@ -1,6 +1,7 @@
 # ctg-rnaseq v1.2
 
-Pipeline for demultiplexing, qc, alignment and transcript summarization for RNAseq Illumina sequencing data.  
+Pipeline for demultiplexing, qc, alignment and transcript summarization for RNAseq Illumina sequencing data.
+The pipeline is designed to handle multiple different RNAseq Assays and Species. Different assays will require differences in read strandness, read trimming etc.     
 
 **Note:** The script can only process samples that are run in one single sequencing run (one Illumina Runfolder). If a project uses multiple sequencing runs, these have top be processed separately.  
 **Note** The `project_id` (-i flag) will owerwrite the `Sample_Project` column in sample sheet - again only **one project** is allowed per demux/pipeline run.  
@@ -52,18 +53,18 @@ help  -h : print help message
 ## Output:
 In short, the pipeline will produce (1) customer delivery folder, contatining all relevant deliverables, including a customer-specific multiqc anlalysis (2) ctg archive folder containing an extended multiqc analysis together with logfiles, scripts and samplesheets making it possible to replicate the analysis, and (3) a  workfolder used during pipeline excecution.
 
-1. **Pipeline work folder**
+1. **Pipeline work folder**  
 `project_root`+`project_id` e.g. `/projects/fs1/shared/ctg-projects/rnaseq/2021_070`.  
 Temporary work folder - used while pipeline is running. Upon a successful pipeline execution, all deliverables and ctg specific logs and qc metrics should have been copied from this directory, i.e. this folder can be  safely deleted after delivery.
 
   - `./.nextflow/`. Temporary files used by nextflow pipeline. Will not be archived. Used for debugging faulty runs together with the `/.nextflow.log` and `/nf.log.rnaseq` files.
-  - `./bin/` Executables used by pipeline copied from the `ctg-rnaseq` version specific archive, e.g. `/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/v1.0/bin/`.
-  - `./nf-output/`: Temporary folder to which all analyses are written. Files are moved/copied to delivery and ctg archive folders in the last step of pipelie execution. **All analyses** written to this directory are included when running the `ctg-multiqc`. Not all analyses files are archived though, such alignmnent files used by fastqscreen analysis.
+  - `./bin/` Executables used by pipeline cloned from the `ctg-rnaseq` version specific archive, e.g. `/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/v1.0/bin/`.  
+  - `./nf-output/`: Temporary folder to which all analyses are written. Files are moved/copied to delivery and ctg archive folders in the last step of pipelie execution. **All analyses** written to this directory are included when running the `ctg-multiqc`. Not all analyses files are archived though, such as alignmnent files used by fastqscreen analysis.  
 
 
-2. **Customer delvery folder**
+2. **Customer delvery folder**  
 `delivery_root`+`project_id` e.g. `/projects/fs1/nas-sync/ctg-delivery/rnaseq/2021_070`.  
-Primary delivery folder. This is the folder that should be transfered to the delivery server for customer delivery. In a standard project, no additional files or folders should be needed.
+Primary delivery folder. This is the folder that should be transfered to the delivery server for customer delivery. In a standard pipeline run, no additional files or folders should need to be added.
 
     - `./fastq/` : bcl2fastq output with fastq files in project id folder (stemming from the project_id column in sample sheet wich is forced to pipeline project id)`./fastq/2021_070` If `pooled, false` (thus a seq run with non pooled data) is specified in sample sheet, then this folder will also incude `./fastq/Undetermined*.fastq` files as well as `./fastq/Reports` and and
     - `./featurecounts/`: transcript summarization matrix, e.g. `2021_070_geneid.featureCounts.txt`
@@ -93,38 +94,35 @@ Here pipeline log files, executaables, configs and samplesheets are archived tog
   he pipeline executables (e.g. `rnaseq-driver`) and config files and scripts (e.g. `nextflow.config` and `rnaseq-main.nf`) are copied and run from whitin the project directory **not** from their primary location on lsens.
 
   b. Run Rscript `iem-samplesheet-processor.R`  
-  To validate and generate modified SampleSheets for downstream analyses.  
-    - **Input:**  
-    Illumina Experiment Manager (IEM) style SampleSheet *modified to fit CTG LIMS* (see SampleSheet below).
-    - **Output:**  
-    Two sample sheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`) and a logfile (`iem.rscript.log`).  
-    The logfile is used by `rnaseq-primer` to generate parameters file `nextflow.params.2021_070` used for the main nextflow sctipt.
-
-    The Rscript will:
-    - check basic integrity of the IEM samplesheet,
-    - check that required columns are present and correctly specified. This is done using the `./bin/checklist-iem.csv` file. A given Assay/Index Adapters combionation will have specific requirements, e.g. Read2StartFromCycle or Adapter, all specified in the `checklist-iem.csv`
-    - check for illegal sample namimings and duplicated sample names
-    - Replace illegal characters.
-    - cross check index nmames and sequences against the `./bin/checklist-index.csv` file.
-
-    Options/flags:
-    - Column settings are cross checked against database
-    - Indexes are cross-checked and replaced if needed
+    To validate and generate modified SampleSheets for downstream analyses.  
+    **Input:**  
+    Illumina Experiment Manager (IEM) style SampleSheet *modified to fit CTG LIMS* (see SampleSheet below).  
+    **Output:**  
+    `SampleSheet-2021_070-demux.csv`: used for bcl2fastq  
+    `SampleSheet-2021_070-ctg.csv`: used by the main nextflow script. The rsctipt add Assay specific columns, such as, strandness, paired, and the file names for fastq and bam fils etc.  
+    `iem.rscript.log`: logfile with paramaters that are imported by nextflow-primer and passed on to `nextflow.params.2021_070` used by the main nextflow script.  
+    See `Source` section below for additonal script info.  
 
   c. rnaseq-primer output:
-  nextflow parameters file: `nextflow.params.2021_070`
+  nextflow parameters file: `nextflow.params.2021_070`.
 
 
 2. **rnaseq-driver & nextflow-main**
 
-This driver will initiate nextflow pipeline `nextflow-main` using two config files (`nextflow.config` and `nextflow.params.2021_070`).
+This driver will initiate nextflow pipeline `nextflow-main` using two config files (`nextflow.config` and `nextflow.params.2021_070`) together with samplesheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`)  
 
 
-* `Demultiplexing` (bcl2fastq): Converts raw basecalls to fastq, and demultiplex samples based on index (https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf).
+i. `Demultiplexing`  
+bcl2fastq: Converts raw basecalls to fastq, and demultiplex samples based on index (https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf).  
 
-* `FastQC`: FastQC calculates quality metrics on raw sequencing reads (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). MultiQC summarizes FastQC reports into one document (https://multiqc.info/).
-* `multiQC`: Compile fastQC and cellranger count metrics in multiqc report (https://multiqc.info/)
-* `md5sum`: md5sum of all fastq files
+ii. Check files. Chek if all expected fastq files have been generated. The fastq names are hardcoded into the ctg sample sheet (`SampleSheet-2021_070-ctg.csv`) columns `fastq_1`and `fastq_2` by the `iem-samplesheet-processor.R` rscript.  
+
+ii. `FastQC`: FastQC calculates quality metrics on raw sequencing reads (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). MultiQC summarizes FastQC reports into one document (https://multiqc.info/).  
+
+iii. `multiQC`: Compile fastQC and cellranger count metrics in multiqc report (https://multiqc.info/)  
+
+
+ `md5sum`: md5sum of all fastq files
 
 
 
@@ -139,6 +137,7 @@ The **Bold** fields below must be correctly specified!
 **Note on [Header] Assay:**  Allowed Assay values are listed in `./bin/checklist-iem.csv`. Assays are specified using same nomenclature as within the IEM software.  
 **Note on [Header] Index Adapters:**  Allowed Index Adapters values (and Assay combinations) are listed in `./bin/checklist-iem.csv`. Specified using same nomenclature as within the IEM software.    
 **Note on [Settings] Adapter:**  Adapters will be cross-checked using the`./bin/checklist-iem.csv` file. The Adapter value must match the value specified under respective Index Adapter.
+**Note on [Reads]:** This section is used to determine if the run is **paired or not**. Note that the actual read lenths are **probably** not used by bcl2fastq, pooling of different Assay types may complicate thisgs,
 
 ----
 [Header]  
@@ -156,8 +155,8 @@ Chemistry,Amplicon
 **Pooled**,**true**
 
 [Reads]  
-101    
-101
+**101**    
+**101**
 
 [Settings]  
 **Adapter**,**CTGTCTCTTATACACATCT**  
@@ -172,13 +171,35 @@ Chemistry,Amplicon
 ### Source files
 
 #### ./bin folder
-The bin contains executables used by the pipeline, The bin directory is copied into the project work directory and files are accessed locally from here.
+The `./bin/` contains executables used by the pipeline, The bin directory is cloned into the project work directory and files are accessed locally from within there.
 
 1. **`iem-samplesheet-processor.R`**  
+This script validate sample sheet, and to generate modified SampleSheets for downstream analyses.
+
+  - **Input:**  
+  Illumina Experiment Manager (IEM) style SampleSheet *modified to fit CTG LIMS* (see SampleSheet below).  
+
+  - **Output:**  
+  Two sample sheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`) and a logfile (`iem.rscript.log`).  
+  The logfile is used by `rnaseq-primer` to generate parameters file `nextflow.params.2021_070` used for the main nextflow sctipt.
+
+  The Rscript will:
+  - check basic integrity of the IEM samplesheet,
+  - check that required columns are present and correctly specified. This is done using the `./bin/checklist-iem.csv` file. A given Assay/Index Adapters combionation will have specific requirements, e.g. Read2StartFromCycle or Adapter, all specified in the `checklist-iem.csv`
+  - check for illegal sample namimings and duplicated sample names
+  - Replace illegal characters.
+  - cross check index nmames and sequences against the `./bin/checklist-index.csv` file.
+  - add fastq and bam file namings according to defined nomenclature. These are used by `nextflow-main` to chek if all expected files have been generated.  
+  Options/flags:
+  - Column settings are cross checked against database
+  - Indexes are cross-checked and replaced if needed
+
+
+
 2. **`/bin/checklist-iem.csv`**  
 Used by the `iem-samplesheet-processor` rscript to cross check allowed values and value combinations given in the sample sheet, for example check that the Assay value is allowed, or that Species value is properly specified. Also, conditional rules can here be defined, such as requiring that one paricular Assay must also have Read2StartFromCycle a particular [Settings] defined.
 
-The following columns are expected and are used to define rules in the rscript:  
+The following columns are expected and are used to define what rules the rscript will use to cross check sample sheet:  
 - iem_section
 - parameter
 - conditional_parameter
