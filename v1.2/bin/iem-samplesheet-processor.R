@@ -89,7 +89,8 @@ option_list <- list(
 
   ## demux specific params
   make_option(c("-d", "--output_demux_sheet"  ), type="character"   , default=NULL  , metavar="path", help="Name of demux sample sheet"                          ),
-  make_option(c("-o", "--output_ctg_sheet"    ), type="character"   , default=NULL  , metavar="path", help="Name of output sample sheet"                          ),
+  make_option(c("-o", "--output_ctg_sheet"    ), type="character"   , default=NULL  , metavar="path", help="Name of output sample sheet"
+  # make_option(c("-p", "--output_original_sheet"    ), type="character"   , default=NULL  , metavar="path", help="Clone of original sample sheet. for archival purposes"                          ),
   make_option(c("-l", "--force_lane"          ), type="numeric"     , default=0  , metavar="numeric", help="If to force lane, this is mostly only used if lane divider is used. Default is 0 which means no action. If '1' or '2' an exta column is added in the demux sample sheet."),
   make_option(c("-f", "--force_replace_index" ), type="logical"     , default=FALSE  , metavar="boelean", help="If to use the checklist-index.csv to fordce update I7/I5 IDs and Sequences. Use this option if you are sure that i) the 'Index_Plate_Well' column is supplied corectly AND that ii) the correct 'Index Adapters' kit is supplied  ")
 

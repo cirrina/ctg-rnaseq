@@ -1145,7 +1145,7 @@ process setup_ctg_save {
     cp ${samplesheet_demux} ${ctg_save_dir}/samplesheets
   fi
   if [ -f ${samplesheet_original} ]; then
-    cp ${samplesheet_original} ${ctg_save_dir}/samplesheets
+    cp ${samplesheet_original} ${ctg_save_dir}/samplesheets/SampleSheet-${projectid}-original.csv
   fi
 
   ##  samplesheet check rscript output
