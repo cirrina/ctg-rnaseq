@@ -127,7 +127,7 @@ outboxsyncdir="${outboxsync_root}/${projectid}"
 # Samplesheet names - outputed from samplesheet rscript
 samplesheet_demux="${projectdir}/SampleSheet-${projectid}-demux.csv"
 samplesheet_ctg="${projectdir}/SampleSheet-${projectid}-ctg.csv"
-
+samplesheet_original="${projectdir}/SampleSheet-${projectid}-original.csv"
 
 
 
@@ -180,7 +180,7 @@ echo "samplesheet-ctg       : $samplesheet_ctg" ;
 echo "samplesheet-demux     : $samplesheet_demux"         ;
 echo "";
 echo "force_lane            : $force_lane";
-echo "force_index   : $force_index";
+echo "force_index           : $force_index";
 echo "";
 
 # Prompt user to approve running in current directory and input
@@ -232,7 +232,7 @@ echo ""
 
 mkdir -p $projectdir
 cp -r ${scriptsdir}/* ${projectdir}/ # rsync nextflow foles. Will overwrite configs
-
+cp ${samplesheet}  ${projectdir}/${samplesheet_original}
 
 
 
@@ -318,7 +318,7 @@ echo ""                                                               >> $nf_con
 echo "  //  samplesheets and files                                  " >> $nf_conf
 echo "  samplesheet           =  '${samplesheet_ctg}'               " >> $nf_conf
 echo "  samplesheet_demux     =  '${samplesheet_demux}'             " >> $nf_conf
-echo "  samplesheet_original  =  '${samplesheet}'                   " >> $nf_conf
+echo "  samplesheet_original  =  '${samplesheet_original}'          " >> $nf_conf
 
 echo ""                                                               >> $nf_conf
 echo "  //  assay specific                                          " >> $nf_conf

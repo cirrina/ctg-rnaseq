@@ -4,6 +4,11 @@
 ##    v1.1
 ## ========================================== ##
 
+
+## Known issues: error for duplicated indexes if multiple lanes- include support for multiple Lanes. This when checking sample name and index duplicates. Index duplicates may exist on different Lanes.
+
+
+
 # Input:    An Illumina IEM style .csv sample sheet as input. "-s", "--sample_sheet"
 # Input:   AND a project ID ("-i", "--project_id")
 
@@ -753,5 +758,5 @@ write.table(x = data_df.out, file = out.file.name, sep = ",", append = T, quote 
   print(iem.log)
   cat("\n=============================================================================== \n\n\n ")
   out.file.name <- file.path(dirname(opt$sample_sheet), 'iem.rscript.log')
-  cat(c("# Log file from Rscript iem-samplesheet-processer. Warnings below should be modified before re-running script.\n"), file=out.file.name)
+  cat(c("# Log file from Rscript iem-samplesheet-processer. Warnings below should be addressed before re-running script.\n"), file=out.file.name)
   write.table(iem.log, file=out.file.name, sep = ",", row.names = T, col.names = F, append = T, quote = FALSE)

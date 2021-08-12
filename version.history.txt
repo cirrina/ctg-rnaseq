@@ -1,7 +1,10 @@
 
 
-## v1.2 to-d0
-Main update: Merge the primer and driver scripts - only one script should be run
+== v1.2
+
+
+=== List of new Issues
+- Main update: Merge the primer and driver scripts - only one script should be run
 
 The `scriptsdir` parameter is not optimal. Try setting this parameter from the actual execution command. See e.g. https://stackoverflow.com/questions/192319/how-do-i-know-the-script-file-name-in-a-bash-script
 -
@@ -18,7 +21,22 @@ The `scriptsdir` parameter is not optimal. Try setting this parameter from the a
 * add project id to header instead of -i flag
 
 
-## v1.01 to-d0
+- Rscript error: 'Index_Plate_Well,Warning: Column contains duplicate entries'.
+  This can be expected IF multiple lanes exist, i.e. using Lane divider.
+  This check has to be perfomed given LANE,
+  ALSO!!! Lane should then be incliuded into fastq naming nomenclature? NO - not when running --no lane splitting as default
+
+
+=== List of adressed stuff in v1.2
+√ added `-original.csv` sample sheet to projct work folder (by `rnaseq-primer`) and to ctg archive (nf main script). This is just a clone of the input sample sheet.
+
+=== Knowm Issues inherited from previous versions
+- FeatureCounts not functioning for ratus norvegicus
+
+
+
+
+== v1.01 to-d0
 - add versionto log - at least what command whas run
 
 - nexflow log file
@@ -54,18 +72,22 @@ ALSO
 ONE execution with proper resume - that is a check for files before each step.
 
 
-## v1.0 deploy
+== v1.0
+=== v1.0 deploy on lsens
 2021 06 21
 
 
-## v1.0 to-do
-+ Add 'Rattus norvegicus' references to ls4
-+ Add 'Rattus norvegicus' species file paths in nextflow.config
+=== v1.0 to-do
+-
+
+== v1.0 addressed
+√ Added 'Rattus norvegicus' references to ls4
+√ Added 'Rattus norvegicus' species file paths in nextflow.config
 
 file(ctg_save_dir).mkdir()
 
 
-## Knowm Bugs  v1.0
+### Knowm Bugs  v1.0
 FeatureCounts not functioning for ratus norvegicus
 
 

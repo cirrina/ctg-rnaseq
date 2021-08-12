@@ -1,26 +1,23 @@
 # ctg+rnaseq v1.2
 
-## Development version - not deployed
-
-Mail objective - add resumeability
-
-
 Pipeline for demultiplexing, qc, alignment and transcript summarization for RNAseq Illumina sequencing data.
 The pipeline is designed to handle multiple different RNAseq Assays and Species. Different assays will require differences in read strandness, read trimming etc.     
 
 **Note:** The script can only process samples that are run in one single sequencing run (one Illumina Runfolder). If a project uses multiple sequencing runs, these have top be processed separately.  
 **Note** The `project_id` (-i flag) will owerwrite the `Sample_Project` column in sample sheet - again only **one project** is allowed per demux/pipeline run.  
 **Note:** Different projects/librarties within a pooled run must be processed separately.  
+**Note:** The pipeline is designed for **one and the same** specie and Assay etc. If multiple species or differences in Library preparation, then run multiple pipeline runs, i.e. separate sample sheets and separate projects_ids.    
 
 
-## Installation lsens
-Version specific pipeline folders are installed on ls4 at: `/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/`
+
+## Installation on ls4
+Version specific pipeline folders are copied to ls4 at: `/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/`
 
 **Note:** When running `rnaseq-primer`the entire directory with executables and configs are copied to (and run from within) the project folder. Each time the `rnaseq-primer` is run, all script files (including the `nextflow.config` will be overwritten).  
 **Note:** Do **not add** the ctg-rnaseq script directories to **$PATH**. Instead run the `rnaseq-primer` script usging full path - thus allowing proper version control.  
 
-## Running the ctf-rnaseq pipeline
- 1. Clone and build the **Singularity container** for this pipeline, e.g. https://github.com/cirrina/ctg-singularity/tree/main/rnaseq/v1.1). Add the correct path to the .sif -`singularity_container = ` parameter in `rnaseq-primer` bash sctipt.
+## Running the ctg-rnaseq pipeline
+ 1. Clone and build the **Singularity container** for this pipeline, e.g. https://github.com/cirrina/ctg-singularity/tree/main/rnaseq/v1.2). Add the correct path to the .sif -`singularity_container = ` parameter in `rnaseq-primer` bash sctipt.  
  2. Make sure that the `scriptsdir`file location, hardcoded in the `rnaseq-primer` shell script, are valid and matches the current version.
  2. Edit your samplesheet to fullill all requirements. See section `SampleSheet` below
  3. Run the `naseq-primer`from *within the Illumina Sequencing Runfolder*. A project_id -i flag must be supplied as well as a SampleSheet located within the current dir.
