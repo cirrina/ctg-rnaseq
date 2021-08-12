@@ -27,6 +27,7 @@ ctg_save_root='/projects/fs1/shared/ctg-qc/rnaseq' # '/Users/david/tasks/rnaseq_
 #######################################
 force_lane='0'
 force_index='false'
+skip_demux='false'
 # usage message
 usage() {
     echo ""
@@ -42,7 +43,8 @@ usage() {
     echo "------------------- "
     echo " optional : "
     echo "------------------- "
-    echo " force_lane             -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will overrid the Lane column in sample sheet"
+    echo " force_lane     -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will overrid the Lane column in sample sheet"
+    echo " skip_demux:    -d : Set this flag if to skip demux, i.e. fastq files are already present in fastq work dir as specified by file names in sample sheet. The script will check if all files are pesent."
     echo " force_index:   -f : Set this flag if to force iem samplesheet Rscript to overwrite index id and sequence informations based on index well id. "
     echo " help                   -h : print help message"
     echo "------------------- "
@@ -56,7 +58,7 @@ exit_abnormal() {
 }
 
 # Read and control input arguments
-while getopts ":i:s:l:fh" opt; do
+while getopts ":i:s:l:dfh" opt; do
     case $opt in
       i) projectid=$OPTARG
 	     ;;
@@ -64,6 +66,8 @@ while getopts ":i:s:l:fh" opt; do
 	     ;;
       l) force_lane=$OPTARG
         ;;
+      f) skip_demux=true
+            ;;
       f) force_index=true
           ;;
       h) exit_abnormal
@@ -337,7 +341,7 @@ echo "  pooled_run          =  '${pooled_run}'          // defined by 'Pooled' H
 echo "  deliver_raw         =  false                    // not implemeted     " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  major modes                                             " >> $nf_conf
-echo "  run_demux             =  true                               " >> $nf_conf
+echo "  skip_demux             =  true                               " >> $nf_conf
 echo "  run_align             =  true                               " >> $nf_conf
 echo "  run_fastqc            =  true                               " >> $nf_conf
 echo "  run_multiqc           =  true                               " >> $nf_conf

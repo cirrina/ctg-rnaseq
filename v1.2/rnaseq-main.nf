@@ -163,8 +163,9 @@ for (param in checkPathParamList) {
 
 // Demux specific (bcl2fastq2 )
 // -----------------------------
-// Check if runfolder is defined. If not set demux to false and assume that a custom fastq dir is supplied
-if ( params.run_demux == true ) {
+// Check if runfolder is defined.
+// If not set demux to false and assume that a custom fastq dir is supplied -- not implemented
+if ( params.skip_demux == false ) {
   file(runfolderdir, checkIfExists: true)
   file(samplesheet_demux, checkIfExists: true)
 }
@@ -271,8 +272,8 @@ def msg_modules = """\
 
     Run modules
     ---------------------------------
-    demux       :  ${params.run_demux}
-    fastqc      :  ${params.run_fastqc}
+    skip_demux    :  ${params.skip_demux}
+    fastqc        :  ${params.run_fastqc}
 
    """
    .stripIndent()
@@ -325,7 +326,7 @@ println " > Projects to process : "
   *    --- Demux and fastq files section ---
   =============================================================== */
 
-// Run bcl2fastq if run_demux
+// Run bcl2fastq if not skip_demux
 process bcl2fastq {
   // -w must be lower than number of samples
   // publishDir "${fastqdir}", mode: 'copy', overwrite: 'true'
@@ -335,7 +336,7 @@ process bcl2fastq {
   time '24h'
 
   when:
-  params.run_demux
+  !params.skip_demux
 
   input:
   val samplesheet_demux
@@ -359,7 +360,7 @@ process bcl2fastq {
 
 // Channel to start count if demux == 'n'
 // Projects
-if ( params.run_demux == false ) {
+if ( params.skip_demux == true ) {
    Channel
 	 .from("x")
    .set{ fastq_check_ch }
