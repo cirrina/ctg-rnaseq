@@ -37,7 +37,6 @@ usage() {
     echo "------------------- "
     echo " arguments : "
     echo "------------------- "
-    echo " project_id         The project id is required in the samplesheet in the [Header] section.  'project id', typically 202X-XXX. This will define the runfolder, but also define some output folders, such as blc2fastq2 output folders."
     echo " samplesheet        -s : IEM style laboratory samplesheet for this run. Within runfolder. (Default: CTG_SampleSheet.csv) "
     echo ""
     echo "------------------- "
@@ -49,6 +48,10 @@ usage() {
     echo " help                   -h : print help message"
     echo "------------------- "
     echo ""
+    echo "------------------- "
+    echo " info : "
+    echo "------------------- "
+    echo " project_id         The project id is required to be supplied through the samplesheet in the [Header] section.  'project id', typically 202X-XXX. This will define the runfolder, but also define some output folders, such as blc2fastq2 output folders."
     echo ""
 }
 
@@ -102,7 +105,6 @@ fi
 ################################################
 ## IMPORT PROJECT ID from samplesheet
 ################################################
-
 
 projectid=$(awk -F, '$1 == "Project"' ${samplesheet} | awk -F, '{print $2}')
 echo "project id: $projectid"

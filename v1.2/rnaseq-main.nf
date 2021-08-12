@@ -336,7 +336,7 @@ process bcl2fastq {
   time '24h'
 
   when:
-  ! params.skip_demux
+  params.skip_demux == false
 
   input:
   val samplesheet_demux
