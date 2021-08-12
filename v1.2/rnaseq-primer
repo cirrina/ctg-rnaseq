@@ -32,12 +32,12 @@ skip_demux='false'
 usage() {
     echo ""
     echo ""
-    echo "usage: prime-ctg-rnaseq [ -i projectid ] [ -s samplesheet ] [ -l force_lane ] [ -f force_index ] [ -h help ] "  1>&2
+    echo "usage: prime-ctg-rnaseq [ -s samplesheet ] [ -l force_lane ] [ -f force_index ] [ -h help ] "  1>&2
     echo ""
     echo "------------------- "
     echo " arguments : "
     echo "------------------- "
-    echo " project_id         -i : Define 'project id'. Typically 202X-XXX. This will define the runfolder, but also define some output folders, such as blc2fastq2 output folders."
+    echo " project_id         The project id is required in the samplesheet in the [Header] section.  'project id', typically 202X-XXX. This will define the runfolder, but also define some output folders, such as blc2fastq2 output folders."
     echo " samplesheet        -s : IEM style laboratory samplesheet for this run. Within runfolder. (Default: CTG_SampleSheet.csv) "
     echo ""
     echo "------------------- "
@@ -58,10 +58,8 @@ exit_abnormal() {
 }
 
 # Read and control input arguments
-while getopts ":i:s:l:dfh" opt; do
+while getopts ":s:l:d:fh" opt; do
     case $opt in
-      i) projectid=$OPTARG
-	     ;;
       s) samplesheet=$OPTARG
 	     ;;
       l) force_lane=$OPTARG
@@ -81,15 +79,48 @@ done
 
 
 ################################################
-## Check project id if allowed
+# Check input arguments and variables
 ################################################
-## project id cannot include a dot
+shift "$(( OPTIND -1 ))"
 
-# if [[ $projectid =~ \\. ]]; then
-  #echo ""; echo "Error: "
-  #echo "Warning: project id cannot inlude a dot '.'"; echo""; echo ""
-  #exit_abnormal
-#fi
+
+## Check Sample Sheet. if file is present in work directory.
+if [ -z $samplesheet ]; then
+  echo ""; echo "Error:"
+  echo "Specify sample sheet (in current dir): '-s' flag. "; echo ""
+  exit_abnormal
+  # sheet="CTG_SampleSheet.csv"
+  # echo "- Using 'CTG_SampleSheet.csv'"
+fi
+if [ ! -f $samplesheet ]; then
+  echo ""; echo "Error:"
+  echo "Sample Sheet does not exist (in current dir)"
+  #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
+  exit_abnormal
+fi
+
+################################################
+## IMPORT PROJECT ID from samplesheet
+################################################
+
+
+projectid=$(awk -F, '$1 == "Projectid"' ${samplesheet} | awk -F, '{print $2}')
+echo "project id: $projectid"
+
+if [ -z "$projectid" ]; then
+  echo ""; echo "Error: "
+  echo "Warning: project id is not properly supplied in samplesheet. \
+ Project id must be given as 'Projectid' within the [Header] section"; echo""; echo ""
+  exit_abnormal
+fi
+
+
+if [[ $projectid =~ \\. ]]; then
+  echo ""; echo "Error: "
+  echo "Warning: project id cannot inlude a dot '.'"; echo""; echo ""
+  exit_abnormal
+fi
+
 
 ################################################
 # Define variables
@@ -135,33 +166,6 @@ samplesheet_original="${projectdir}/SampleSheet-${projectid}-original.csv"
 
 
 
-################################################
-# Check arguments and variables
-################################################
-shift "$(( OPTIND -1 ))"
-
-## check  projct id input
-if [ -z $projectid ]; then
-  echo ""; echo "Error: "
-  echo "Specify project id: '-i' flag"; echo""; echo ""
-  exit_abnormal
-fi
-
-
-## Check Sample Sheet. if file is present in work directory.
-if [ -z $samplesheet ]; then
-  echo ""; echo "Error:"
-  echo "Specify sample sheet (in current dir): '-s' flag. "; echo ""
-  exit_abnormal
-  # sheet="CTG_SampleSheet.csv"
-  # echo "- Using 'CTG_SampleSheet.csv'"
-fi
-if [ ! -f $samplesheet ]; then
-  echo ""; echo "Error:"
-  echo "Sample Sheet does not exist (in current dir)"
-  #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
-  exit_abnormal
-fi
 
 
 #
@@ -252,7 +256,7 @@ $singcmd ${projectdir}/bin/iem-samplesheet-processor.R \
       --output_ctg_sheet ${samplesheet_ctg} \
       --bin_dir "${projectdir}/bin/" \
       --force_lane ${force_lane} \
-      --force_index ${force_index}
+      --force_replace_index ${force_index}
 
 echo "copy rlog script"
 if [[ $runfolder_mode == "true" ]]; then
@@ -333,15 +337,14 @@ echo "  paired              =   ${paired}                           " >> $nf_con
 echo "  strandness          =  '${strandness}'                      " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  runfolder and demux                                     " >> $nf_conf
-echo "  runfolder_mode      =  '${runfolder_mode}'                  " >> $nf_conf
 echo "  runfolderdir        =  '${runfolderdir}'                    " >> $nf_conf
 echo "  fastqdir_bcl2fastq  =  '${fastqdir_bcl2fastq}'              " >> $nf_conf
 echo "  runfolder           =  '${runfolder}'                             " >> $nf_conf
-echo "  pooled_run          =  '${pooled_run}'          // defined by 'Pooled' Header in Sample sheet  " >> $nf_conf
-echo "  deliver_raw         =  false                    // not implemeted     " >> $nf_conf
+echo "  pooled_run          =  ${pooled_run}         // defined by 'Pooled' under [Header] in Sample sheet  " >> $nf_conf
+echo "  deliver_raw         =  false                 // not implemeted     " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  major modes                                             " >> $nf_conf
-echo "  skip_demux            = '${skip_demux}'                     " >> $nf_conf
+echo "  skip_demux            = ${skip_demux}                     " >> $nf_conf
 echo "  run_align             =  true                               " >> $nf_conf
 echo "  run_fastqc            =  true                               " >> $nf_conf
 echo "  run_multiqc           =  true                               " >> $nf_conf
