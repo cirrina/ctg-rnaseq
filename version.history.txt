@@ -4,13 +4,23 @@
 == ctg-rnaseq v1.2
 
 
+=== Changes in v1.2
+√ added `-original.csv` sample sheet to projct work folder (by `rnaseq-primer`) and to ctg archive (nf main script). This is just a clone of the input sample sheet.
+
+√ added -d flag `skip_demux` to `rnaseq-primer`. This will replace run_demux to instead flag to skip demux. If skipping demux, all fastq filenames in samplesheet must be found in the project specific fastq work folder.
+
+√ updated to `iem-samplesheet-processor.R v1.1`. For changes, see below.
+
+√ updated to `checklist-iem.csv v1.1`. Fixed an issue with illegal character.
+
+
 === List of new Issues
 - Main update: Merge the primer and driver scripts - only one script should be run
 
-The `scriptsdir` parameter is not optimal. Try setting this parameter from the actual execution command. See e.g. https://stackoverflow.com/questions/192319/how-do-i-know-the-script-file-name-in-a-bash-script
+The `scriptsdir` parameter is not optimal. Try setting this parameter to match the actual execution command version. See e.g. https://stackoverflow.com/questions/192319/how-do-i-know-the-script-file-name-in-a-bash-script
 -
 
-* Merge all parameters into one file , i.e move parameters from shell script to nextflow.comfig. Read these parameters in shell script usong grep/sed ...
+* Merge all parameters into one parameter file , i.e move parameters from shell script to nextflow.comfig. Read these parameters in shell script usong grep/sed ...
   Also move the [ -l force_lane ] [ -l force_index ] flags into config OR sample sheet
 
 * Proper LOGs. Crete ./logs directory. Make sure that nextflow logs are moved here.
@@ -21,18 +31,12 @@ The `scriptsdir` parameter is not optimal. Try setting this parameter from the a
 
 * add project id to header instead of -i flag
 
-
-- Rscript error: 'Index_Plate_Well,Warning: Column contains duplicate entries'.
-  This can be expected IF multiple lanes exist, i.e. using Lane divider.
-  This check has to be perfomed given LANE,
-  ALSO!!! Lane should then be incliuded into fastq naming nomenclature? NO - not when running --no lane splitting as default
+-  Should Lane should then be incliuded into fastq naming nomenclature? NO - not when running --no lane splitting as default
 
 
-=== List of adressed stuff in v1.2
-√ added `-original.csv` sample sheet to projct work folder (by `rnaseq-primer`) and to ctg archive (nf main script). This is just a clone of the input sample sheet.
 
 === Knowm Issues inherited from previous versions
-- FeatureCounts not functioning for ratus norvegicus
+- Picard RnaSeqMetrics. does not support rRNA intervals file for Rattus norvegicus. Error.
 
 
 === update to iem-samplesheet-processor.R v1.1
@@ -41,6 +45,7 @@ The `scriptsdir` parameter is not optimal. Try setting this parameter from the a
 √ added `checklist_flags$multiple_lanes` if >1 Lanes in sample sheet
 
 √ Updated so that duplicate indexes are checked *within* Lane, i.e. duplicated indexes are allowed between different lanes.
+
 
 
 
@@ -58,7 +63,7 @@ save the final nextflow log =, e.g. 2021_076.nextflow.log.complete to the ctg sa
 
 - add parameter-controlled text sections for Propject Delivery. References should here be changed according to assay, and correct parameters should be reflected?
 
-- Rscript. force replace '-' to '_' (instead of nothing '' as is now?)
+- Rscript. force replace '-' to _ (instead of nothing '' as is now?)
 
 - samplesheet original. not in ctg-save folder
 ALSO

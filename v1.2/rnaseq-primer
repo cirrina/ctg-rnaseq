@@ -6,7 +6,7 @@
 # ctg primer for ctg-rnaeseq v1.2
 #######################################
 
-scriptsdir='/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/v1.2' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
+scriptsdir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.2' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
 singularity_container='/projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif'
 
 ## Root directories (based on ourr set folder naming conventions on lsens)
@@ -32,7 +32,7 @@ skip_demux='false'
 usage() {
     echo ""
     echo ""
-    echo "usage: prime-ctg-rnaseq [ -i projectid ] [ -s samplesheet ] [ -l force_lane ] [ -l force_index ] [ -h help ] "  1>&2
+    echo "usage: prime-ctg-rnaseq [ -i projectid ] [ -s samplesheet ] [ -l force_lane ] [ -f force_index ] [ -h help ] "  1>&2
     echo ""
     echo "------------------- "
     echo " arguments : "
@@ -66,7 +66,7 @@ while getopts ":i:s:l:dfh" opt; do
 	     ;;
       l) force_lane=$OPTARG
         ;;
-      f) skip_demux=true
+      d) skip_demux=true
             ;;
       f) force_index=true
           ;;
@@ -236,7 +236,7 @@ echo ""
 
 mkdir -p $projectdir
 cp -r ${scriptsdir}/* ${projectdir}/ # rsync nextflow foles. Will overwrite configs
-cp ${samplesheet}  ${projectdir}/${samplesheet_original}
+cp ${samplesheet}  ${samplesheet_original}
 
 
 
@@ -341,7 +341,7 @@ echo "  pooled_run          =  '${pooled_run}'          // defined by 'Pooled' H
 echo "  deliver_raw         =  false                    // not implemeted     " >> $nf_conf
 echo ""                                                               >> $nf_conf
 echo "  //  major modes                                             " >> $nf_conf
-echo "  skip_demux             =  true                               " >> $nf_conf
+echo "  skip_demux            = '${skip_demux}'                     " >> $nf_conf
 echo "  run_align             =  true                               " >> $nf_conf
 echo "  run_fastqc            =  true                               " >> $nf_conf
 echo "  run_multiqc           =  true                               " >> $nf_conf
