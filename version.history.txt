@@ -23,6 +23,10 @@
 
 
 === List of new Issues
+
+- params.custom
+If this file is available in runfolder - then use this file rather than the params.default file in ./versio dir
+
 - Main update: Merge the primer and driver scripts - only one script should be run
 
 The `scriptsdir` parameter is not optimal. Try setting this parameter to match the actual execution command version. See e.g. https://stackoverflow.com/questions/192319/how-do-i-know-the-script-file-name-in-a-bash-script
