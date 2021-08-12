@@ -4,8 +4,7 @@
 ##    v1.1
 ## ========================================== ##
 
-
-## Known issues: error for duplicated indexes if multiple lanes- include support for multiple Lanes. This when checking sample name and index duplicates. Index duplicates may exist on different Lanes.
+## Update:  for duplicated indexes if multiple lanes- include support for multiple Lanes. This when checking sample name and index duplicates. Index duplicates may exist on different Lanes.
 
 
 
@@ -95,7 +94,6 @@ option_list <- list(
   ## demux specific params
   make_option(c("-d", "--output_demux_sheet"  ), type="character"   , default=NULL  , metavar="path", help="Name of demux sample sheet"                          ),
   make_option(c("-o", "--output_ctg_sheet"    ), type="character"   , default=NULL  , metavar="path", help="Name of output sample sheet"
-  # make_option(c("-p", "--output_original_sheet"    ), type="character"   , default=NULL  , metavar="path", help="Clone of original sample sheet. for archival purposes"                          ),
   make_option(c("-l", "--force_lane"          ), type="numeric"     , default=0  , metavar="numeric", help="If to force lane, this is mostly only used if lane divider is used. Default is 0 which means no action. If '1' or '2' an exta column is added in the demux sample sheet."),
   make_option(c("-f", "--force_replace_index" ), type="logical"     , default=FALSE  , metavar="boelean", help="If to use the checklist-index.csv to fordce update I7/I5 IDs and Sequences. Use this option if you are sure that i) the 'Index_Plate_Well' column is supplied corectly AND that ii) the correct 'Index Adapters' kit is supplied  ")
 
@@ -565,6 +563,19 @@ u <- duplicated(data_df$Sample_ID)
 if(any(u)) stop("Warning: 'Sample_ID' contains duplicated ectries after string replacement")# stop("Duplicated Sample_ID present: ", data_df$Sample_ID[u])
 
 
+# ========================================================
+#  Lanes - multiple_lanes flag
+# ========================================================
+# Check if lane column is present - if so, and if cultiple lanes are present, introduce multiple lanes flag. This
+
+if('Lane' %in% colnames(data_df.out)){
+  if(any(is.na(data_df.out$Lane))) stop("Warning: 'Lane' contains NA values")#
+  checklist_flags$multiple_lanes <- if_else(length(unique(data_df.out$Lane)) == 1, 'false', 'true')
+}
+if(! ('Lane' %in% colnames(data_df.out))){
+  checklist_flags$multiple_lanes <- 'false'
+}
+
 
 # ========================================================
 #  Check indexes
@@ -574,14 +585,32 @@ if(any(u)) stop("Warning: 'Sample_ID' contains duplicated ectries after string r
 # index_df
 
 # 1. Check if any duplicated entries in the list of
-index_dup <- sapply(index_columns, function(x) any(duplicated(data_df.out[,x])) )
+## IF multiple lanes - duplicated indexes are OK - loop over all lanes
 
-if(any(index_dup)){
-  index_dup <- index_dup[index_dup==T]
-  index_dup <- sapply(index_dup, function(x) if_else(x==T, 'Warning: Column contains duplicate entries', 'ok unique'))
-  checklist_flags <- append(checklist_flags, index_dup)
+if(!checklist_flags$multiple_lanes=='true'){
+  index_dup <- sapply(index_columns, function(x) any(duplicated(data_df.out[,x])) )
+  if(any(index_dup)){
+    index_dup <- index_dup[index_dup==T]
+    index_dup <- sapply(index_dup, function(x) if_else(x==T, 'Warning: Column contains duplicate entries', 'ok unique'))
+    checklist_flags <- append(checklist_flags, index_dup)
+    if(any(index_dup=='Warning: Column contains duplicate entries')) stop("Duplicate indexes were found in sample sheet. This is only allowed if in different Lanes")
+   }
 }
 
+if(checklist_flags$multiple_lanes=='true'){
+  available_lanes = unique(data_df.out$Lane)
+  for(i in 1:length(available_lanes)){
+    current_lane = available_lanes[i]
+    current_lane_i = data_df.out$Lane==current_lane
+    index_dup <- sapply(index_columns, function(x) any(duplicated(data_df.out[current_lane_i,x])) )
+    if(any(index_dup)){
+      index_dup <- index_dup[index_dup==T]
+      index_dup <- sapply(index_dup, function(x) if_else(x==T, 'Warning: Column contains duplicate entries', 'ok unique'))
+      checklist_flags <- append(checklist_flags, index_dup)
+      if(any(index_dup=='Warning: Column contains duplicate entries')) stop(paste0("Duplicate indexes were found in sample sheet - WITHIN - Lane: ", current_lane))
+     }
+  } # end i
+}
 
 ## 2: Cross ceck indexes with 'checklist-index.csv'
 # Filter on the currect 'Index Adapters' kit and the 'Insterument Type' (and version)

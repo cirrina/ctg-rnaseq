@@ -16,6 +16,8 @@ Version specific pipeline folders are copied to ls4 at: `/projects/fs1/shared/ct
 **Note:** When running `rnaseq-primer`the entire directory with executables and configs are copied to (and run from within) the project folder. Each time the `rnaseq-primer` is run, all script files (including the `nextflow.config` will be overwritten).  
 **Note:** Do **not add** the ctg-rnaseq script directories to **$PATH**. Instead run the `rnaseq-primer` script usging full path - thus allowing proper version control.  
 
+This version is designed to work on ls4 under `ml nextflow/19.04.1`  
+
 ## Running the ctg-rnaseq pipeline
  1. Clone and build the **Singularity container** for this pipeline, e.g. https://github.com/cirrina/ctg-singularity/tree/main/rnaseq/v1.2). Add the correct path to the .sif -`singularity_container = ` parameter in `rnaseq-primer` bash sctipt.  
  2. Make sure that the `scriptsdir`file location, hardcoded in the `rnaseq-primer` shell script, are valid and matches the current version.

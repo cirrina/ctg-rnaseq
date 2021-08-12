@@ -1,6 +1,7 @@
 
 
-== v1.2
+
+== ctg-rnaseq v1.2
 
 
 === List of new Issues
@@ -33,6 +34,11 @@ The `scriptsdir` parameter is not optimal. Try setting this parameter from the a
 === Knowm Issues inherited from previous versions
 - FeatureCounts not functioning for ratus norvegicus
 
+
+=== iem-samplesheet-processor.R v1.1
+√ small fixes
+√ added `checklist_flags$multiple_lanes` if >1 Lanes in sample sheet
+√ Updated so that duplicate indexes are checked *within* Lane, i.e. duplicated indexes are allowed between different lanes.  
 
 
 
