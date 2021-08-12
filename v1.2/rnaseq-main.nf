@@ -1150,8 +1150,8 @@ process setup_ctg_save {
   fi
 
   ##  samplesheet check rscript output
-  if [[ -f "${runfolderdir}/iem.rscript.log" ]]; then
-    cp ${runfolderdir}/iem.rscript.log ${ctg_save_dir}
+  if [[ -f "${runfolderdir}/log.rscript.samplesheet" ]]; then
+    cp ${runfolderdir}/log.rscript.samplesheet ${ctg_save_dir}
   fi
 
   ## project specic parameters file

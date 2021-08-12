@@ -262,18 +262,18 @@ $singcmd ${projectdir}/bin/iem-samplesheet-processor.R \
 
 echo "copy rlog script"
 if [[ $runfolder_mode == "true" ]]; then
-  chmod 770 ${execdir}/iem.rscript.log
-  cp ${execdir}/iem.rscript.log ${projectdir}
+  chmod 770 ${execdir}/log.rscript.samplesheet
+  cp ${execdir}/log.rscript.samplesheet ${projectdir}
 fi
 
 #################################################################
-# Retrieve info extracted by Rscript in 'iem.rscript.log'
+# Retrieve info extracted by Rscript in 'log.rscript.samplesheet'
 #################################################################
 ## if this script is executed in runfolder, then the rscript log will be placed there. Move this to project dir.
 
 
 echo "extract info from rlog"
-logfile_iem="${execdir}/iem.rscript.log" ## path and file suffix 'iem.rscript.log' is dedfined within 'iem-samplesheet-processor.R'.
+logfile_iem="${execdir}/log.rscript.samplesheet" ## path and file suffix 'log.rscript.samplesheet' is dedfined within 'iem-samplesheet-processor.R'.
 assay=$(cat ${logfile_iem} | grep 'Assay' |  cut -f2 -d",")
 instrument_type=$(cat ${logfile_iem} | grep 'Instrument_type' |  cut -f2 -d",")
 index_adapters=$(cat ${logfile_iem} | grep 'Index_Adapters' |  cut -f2 -d",")
