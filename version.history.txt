@@ -13,6 +13,14 @@
 
 √ updated to `checklist-iem.csv v1.1`. Fixed an issue with illegal character.
 
+√ changed namings of `nextflow.params.` file to `nextflow.config.project.`
+
+√ changed namings of `iem.rscript.log` file to `log.rscript.samplesheet`
+
+√ **Major:**  Changed so that project_id now is supplied through SampleSheet rather than -i flag in primer script.
+
+
+
 
 === List of new Issues
 - Main update: Merge the primer and driver scripts - only one script should be run

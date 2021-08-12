@@ -1,4 +1,4 @@
-# ctg+rnaseq v1.2
+nextflow.config.project.# ctg+rnaseq v1.2
 
 Pipeline for demultiplexing, qc, alignment and transcript summarization for RNAseq Illumina sequencing data.
 The pipeline is designed to handle multiple different RNAseq Assays and Species. Different assays will require differences in read strandness, read trimming etc.     
@@ -82,7 +82,7 @@ Primary delivery folder. This is the folder that should be transfered to the del
 3. **CTG archive folder (ctg-qc)**  
 `ctg_save_root`+`project_id`, e.g. `/projects/fs1/shared/ctg-qc/rnaseq/2021_070`  
 Here pipeline log files, executaables, configs and samplesheets are archived together with relevant QC files, such as ctg-multiqc and fastqc.
-  - `./scripts/nextflow.params.project_id`
+  - `./scripts/nextflow.config.project.project_id`
   - `iem.rscript.log`
   - `./multiqc-ctg/`. The multiqc-ctg analysis is run on all sequencing and project specific files and folders, including the Illumina runfolder and full bcl2fastq demultiplexing folder. Thus includes more information than the multiqc sent to customer.  
 
@@ -106,16 +106,16 @@ Here pipeline log files, executaables, configs and samplesheets are archived tog
   **Output:**  
   `SampleSheet-2021_070-demux.csv`: used for bcl2fastq  
   `SampleSheet-2021_070-ctg.csv`: used by the main nextflow script. The rsctipt add Assay specific columns, such as, strandness, paired, and the file names for fastq and bam fils etc.  
-  `iem.rscript.log`: logfile with paramaters that are imported by nextflow-primer and passed on to `nextflow.params.2021_070` used by the main nextflow script.  
+  `iem.rscript.log`: logfile with paramaters that are imported by nextflow-primer and passed on to `nextflow.config.project.2021_070` used by the main nextflow script.  
     See `Source` section below for additonal script info.  
 
   3. rnaseq-primer output:
-  nextflow parameters file: `nextflow.params.2021_070`.  
+  nextflow parameters file: `nextflow.config.project.2021_070`.  
 
 
 ### **rnaseq-driver & rnaseq-main.nf**
 
-The driver will initiate nextflow pipeline `rnaseq-main.nf` using two config files (`nextflow.config` and `nextflow.params.2021_070`) together with samplesheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`).   
+The driver will initiate nextflow pipeline `rnaseq-main.nf` using two config files (`nextflow.config` and `nextflow.config.project.2021_070`) together with samplesheets (`SampleSheet-2021_070-ctg.csv` and `SampleSheet-2021_070-demux.csv`).   
 **Slurm settings:** are defined for each process in the `rnaseq-main.nf` script.  
 **Singularity** container is supplied within the `nextflow.config` and `rnaseq-primer` sripts.  
 
@@ -303,7 +303,7 @@ This script validate sample sheet, and to generate modified SampleSheets for dow
   **Output:**  
   - `SampleSheet-2021_070-demux.csv`.  
   - `SampleSheet-2021_070-ctg.csv`  
-  - `iem.rscript.log`: The logfile is used by `rnaseq-primer` to generate parameters file `nextflow.params.2021_070` used for the main nextflow sctipt.  
+  - `iem.rscript.log`: The logfile is used by `rnaseq-primer` to generate parameters file `nextflow.config.project.2021_070` used for the main nextflow sctipt.  
 
   The Rscript will:
   - check basic integrity of the IEM samplesheet
