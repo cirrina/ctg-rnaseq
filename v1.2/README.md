@@ -6,7 +6,6 @@ The pipeline is designed to handle multiple different RNAseq Assays and Species.
 **Note:** The script can only process samples that are run in one single sequencing run (one Illumina Runfolder). If a project uses multiple sequencing runs, these have top be processed separately.  
 **Note** The `project_id` (supplied by `Project` in SampleSheet) will owerwrite the `Sample_Project` column in sample sheet - again only **one project** is allowed per demux/pipeline run.  
 **Note** As of v1.2 the `project_id` is supplied through the SampleSheet, **not** using -i flag as for version <1.2.   
-
 **Note:** Different projects/librarties within a pooled run must be processed separately.  
 **Note:** The pipeline is designed for **one and the same** specie and Assay etc. If multiple species or differences in Library preparation, then run multiple pipeline runs, i.e. separate sample sheets and separate projects_ids.    
 
@@ -262,6 +261,7 @@ The **Bold** fields below must be correctly specified!
 
 ----
 [Header]  
+**Project**, 2021_053,
 IEMFileVersion,5  
 Investigator Name,X  
 Experiment Name,X  

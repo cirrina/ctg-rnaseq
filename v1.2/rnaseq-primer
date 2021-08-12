@@ -104,13 +104,13 @@ fi
 ################################################
 
 
-projectid=$(awk -F, '$1 == "Projectid"' ${samplesheet} | awk -F, '{print $2}')
+projectid=$(awk -F, '$1 == "Project"' ${samplesheet} | awk -F, '{print $2}')
 echo "project id: $projectid"
 
 if [ -z "$projectid" ]; then
   echo ""; echo "Error: "
   echo "Warning: project id is not properly supplied in samplesheet. \
- Project id must be given as 'Projectid' within the [Header] section"; echo""; echo ""
+ Project id must be given as 'Project' within the [Header] section of sample sheet"; echo""; echo ""
   exit_abnormal
 fi
 
