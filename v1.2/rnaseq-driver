@@ -72,7 +72,7 @@ projectdir=${execdir}
 
 # logfile="${logfolder}/$id.log"
 projectfolder=$(basename ${execdir})
-nf_conf="${projectdir}/nextflow.params.${id}"
+nf_conf="${projectdir}/nextflow.config.project.${id}"
 nf_pipe="rnaseq-main.nf"
 if [ ${id} != ${projectfolder} ]; then
   echo "Error: Project id (flag '-i') must be same as execution dir. the script must be initiated within the proect folder "

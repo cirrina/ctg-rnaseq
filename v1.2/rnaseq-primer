@@ -291,7 +291,7 @@ samplesheet_accepted=$(cat ${logfile_iem} | grep 'samplesheet_accepted' |  cut -
 #######################################################################
 echo "genrate nextflow params"
 # project specific config file
-nf_conf="${projectdir}/nextflow.params.${projectid}"
+nf_conf="${projectdir}/nextflow.config.project.${projectid}"
 
 ## Write to file
 echo ""                                    > $nf_conf

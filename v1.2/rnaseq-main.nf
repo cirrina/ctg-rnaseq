@@ -1105,7 +1105,7 @@ process md5sum_delivery {
 //  - fastQC
 //
 //  - Sample Sheets in ./samplesheets/
-//  - Nextflow scripts, nextflow.params., rnaseq-main, nextflow.config, drivers, ./bin files etc (./scripts)
+//  - Nextflow scripts, nextflow.config.project., rnaseq-main, nextflow.config, drivers, ./bin files etc (./scripts)
 
 //  - logs,  (the final nextflow genereated onComplee is copied in that segion)
 
@@ -1155,8 +1155,8 @@ process setup_ctg_save {
   fi
 
   ## project specic parameters file
-  if [[ -f "${projectdir}/nextflow.params.${projectid}" ]]; then
-    cp ${projectdir}/nextflow.params.${projectid} ${ctg_save_dir}/scripts
+  if [[ -f "${projectdir}/nextflow.config.project.${projectid}" ]]; then
+    cp ${projectdir}/nextflow.config.project.${projectid} ${ctg_save_dir}/scripts
   fi
 
   ## copy the entire scripts dir into the ctg save dir
