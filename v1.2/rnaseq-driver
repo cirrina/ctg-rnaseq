@@ -137,9 +137,9 @@ echo "";echo ""
 #  Initiate Nextflow Pipeline
 # #############################
 if [ "$resume" == true ]; then
-    nohup nextflow run $nf_pipe -c $nf_conf --resume > nf.log.rnaseq &
+    nohup nextflow run $nf_pipe -c $nf_conf --resume > log.nextflow.rnaseq.resume &
 else
-    nohup nextflow run $nf_pipe -c $nf_conf > nf.log.rnaseq &
+    nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.rnaseq &
     # nextflow run $nf_pipe -c $nf_conf
     echo "nextflow run $nf_pipe -c $nf_conf"
 fi
