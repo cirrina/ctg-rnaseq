@@ -378,6 +378,11 @@ log.file in csv format: `log.rscript.filecheck.csv`
 
 Example:  
 ```
+./bin/samplecheck.R \\
+  --sample_sheet ${samplesheet_ctg} \\
+  --project_id ${projectid} \\
+  --check_dir ${ctg_save_dir}
+  --output ${ctg_save_dir}/log.rscript.filecheck.csv
 
 ```
 

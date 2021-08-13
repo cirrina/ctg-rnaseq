@@ -1194,6 +1194,13 @@ process finalize_delivery {
   script:
 
   """
+  ## first check output files using rscript. Then move delivery files
+  ./bin/samplecheck.R \\
+    --sample_sheet ${samplesheet_ctg} \\
+    --project_id ${projectid} \\
+    --check_dir ${projectdir}
+    --output ${deliverydir}/log.rscript.filecheck.csv
+
   mv ${deliverytemp} ${deliverydir}
   cd ${deliverydir}
 
