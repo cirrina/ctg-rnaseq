@@ -981,6 +981,9 @@ process setup_deliverytemp {
     if [ -f ${samplesheet_demux} ]; then
      cp ${samplesheet_demux} ${deliverytemp}
     fi
+    if [ -f ${samplesheet_original} ]; then
+     cp ${samplesheet_original} ${deliverytemp}
+    fi
   """
 }
 
