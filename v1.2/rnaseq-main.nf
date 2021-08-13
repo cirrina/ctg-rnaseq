@@ -133,8 +133,8 @@ interopdir_ctg = runfolderdir + '/ctg-interop'
 readme = deliverydir +'/README_ctg_delivery_' + projectid
 
 // log file for nextflow .onComplete
-logfile              =  file( projectdir + '/' + projectid + '.log.nextflow.complete' )
-logfile_sav          =  file( ctg_save_dir + '/' + projectid + 'log.nextflow.complete' )
+logfile              =  file( projectdir + '/' + 'log.nextflow.complete' )
+logfile_sav          =  file( ctg_save_dir + '/' + 'log.nextflow.complete' )
 
 
 /* ===============================================================

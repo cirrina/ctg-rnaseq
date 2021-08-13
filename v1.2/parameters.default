@@ -1,7 +1,8 @@
 ## NOT YET IMPLEMENTED
 
 ## !!! DO NOT MODIFY !!!
-## .csv separated file. v1.0.
+## .csv separated parameters file. v1.0.
+## 
 
 # Singularity container. Note STAR version must match STAR built reference. Container is defined in the 'rnaseq-primer' script.
 singularity_container='/projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif'
