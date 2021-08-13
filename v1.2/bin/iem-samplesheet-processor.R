@@ -786,6 +786,6 @@ write.table(x = data_df.out, file = out.file.name, sep = ",", append = T, quote 
   cat("\n\n\n\n=============================================================================== \n   iem-samplesheet-processer COMPLETE. Check log for appropriate actions  \n=============================================================================== \n\n")
   print(iem.log)
   cat("\n=============================================================================== \n\n\n ")
-  out.file.name <- file.path(dirname(opt$sample_sheet), 'iem.rscript.log')
+  out.file.name <- file.path(dirname(opt$sample_sheet), 'log.rscript.samplesheet')
   cat(c("# Log file from Rscript iem-samplesheet-processer. Warnings below should be addressed before re-running script.\n"), file=out.file.name)
   write.table(iem.log, file=out.file.name, sep = ",", row.names = T, col.names = F, append = T, quote = FALSE)
