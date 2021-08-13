@@ -367,6 +367,21 @@ The following columns are expected:
 - index2
 
 
+#### **`/bin/checkfiles_pipeline.R`**  
+Used to check if expected files are present in a directory or not. The script will RECURSIVELY check if files are present in a parent directory or not. So a 'PASS' will indicate if *ALL* expected files, present in sample sheet, are found in any directory, though, all files have to be present in the same directory and not spread out. The script is intended to be run on:
+1) ctg archive dir 2) customer delivery dir and 3) work dir.
+
+**input:**  
+sample_sheet-ctg with required columns with file names in columns **fastq_1**, **fastq_2** (if PAIRED), and **bam**.
+**output**  
+log.file in csv format: `log.rscript.filecheck.csv`  
+
+Example:  
+```
+
+```
+
+
 ## Important Folders & Variables that are hard-coded (should be moved to .config)
 + `rnaseq-primer` shell sctipt
   + `scriptsdir` : Must match the script file name (version folder)

@@ -194,6 +194,11 @@ cat(paste(c('multiqc_files', x), collapse = ","), file = logfile, sep = "\n", ap
 checklist_files$multiqc_files <- x[1]
 
 # logfiles
+my_files <- paste0("md5sum.txt")
+x <-foo.checkfiles(filenames = my_files, parent_dir= opt$check_dir)
+cat(paste(c('md5sum_file', x), collapse = ","), file = logfile, sep = "\n", append = T)
+checklist_files$md5sum_file <- x[1]
+
 
 
 # samplesheets

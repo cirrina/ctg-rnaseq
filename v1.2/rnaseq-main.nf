@@ -1164,6 +1164,14 @@ process setup_ctg_save {
     cp -r ${params.scriptsdir} ${ctg_save_dir}/scripts
   fi
 
+  ## check output files using rscript
+  ./bin/samplecheck.R \\
+    --sample_sheet ${samplesheet_ctg} \\
+    --project_id ${projectid} \\
+    --check_dir ${ctg_save_dir}
+    --output ${ctg_save_dir}/log.rscript.filecheck.csv
+
+
   """
 }
 
@@ -1192,6 +1200,13 @@ process finalize_delivery {
   echo "ctg delivery complete"               > $readme
   echo "Project:   ${projectid}"             >> $readme
   du -ch -d 0 . | grep 'total'               >> $readme
+
+  ## check output files using rscript
+  ./bin/samplecheck.R \\
+    --sample_sheet ${samplesheet_ctg} \\
+    --project_id ${projectid} \\
+    --check_dir ${deliverydir}
+    --output ${deliverydir}/log.rscript.filecheck.csv
 
   """
 }
