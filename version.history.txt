@@ -19,7 +19,7 @@
 
 √ **Major:**  Changed so that project_id now is supplied through SampleSheet rather than -i flag in primer script.
 
-
+√ **Major:** added checkfiles rscript. So far this script will only check files and print to log. No actions are taken.
 
 
 === List of new Issues
