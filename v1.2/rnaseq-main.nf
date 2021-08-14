@@ -1168,7 +1168,7 @@ process setup_ctg_save {
   fi
 
   ## check output files using rscript
-  ./bin/samplecheck.R \\
+  ${projectdir}/bin/samplecheck.R \\
     --sample_sheet ${samplesheet_ctg} \\
     --project_id ${projectid} \\
     --check_dir ${ctg_save_dir}
@@ -1198,7 +1198,7 @@ process finalize_delivery {
 
   """
   ## first check output files using rscript. Then move delivery files
-  ./bin/samplecheck.R \\
+  ${projectdir}/bin/samplecheck.R \\
     --sample_sheet ${samplesheet_ctg} \\
     --project_id ${projectid} \\
     --check_dir ${projectdir}
@@ -1212,7 +1212,7 @@ process finalize_delivery {
   du -ch -d 0 . | grep 'total'               >> $readme
 
   ## check output files using rscript
-  ./bin/samplecheck.R \\
+  ${projectdir}/bin/samplecheck.R \\
     --sample_sheet ${samplesheet_ctg} \\
     --project_id ${projectid} \\
     --check_dir ${deliverydir}
