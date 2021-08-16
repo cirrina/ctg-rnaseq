@@ -23,6 +23,10 @@
 
 
 === List of new Issues
+
+- Maybe includ a check for if the deliverydir exists. The deliverydir is 'created' by moving the temp delivery folder from the project work folder. Since qc is performed on the deliverytemp, and since this is the filnal step. the delivery dir must not exist and be overwritten.
+Fix: add an early check for if the deliverydir exists in primer, if so stop and flag.
+
 √ added -d flag `skip_demux` to `rnaseq-primer`. This will replace run_demux to instead flag to skip demux. If skipping demux, all fastq filenames in samplesheet must be found in the project specific fastq work folder. NOT WORKING. Has to be added to driver ... Fix when driver and primer is same.
 
 - params.custom

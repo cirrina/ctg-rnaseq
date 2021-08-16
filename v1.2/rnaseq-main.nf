@@ -1204,7 +1204,7 @@ process finalize_delivery {
     --check_dir ${projectdir}
     --output ${deliverydir}/log.rscript.filecheck.csv
 
-  mv -f ${deliverytemp} ${deliverydir}
+  mv ${deliverytemp} ${deliverydir}
   cd ${deliverydir}
 
   echo "ctg delivery complete"               > $readme
