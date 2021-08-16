@@ -79,7 +79,7 @@ usage() {
     echo "------------------- "
     echo " skip_demux:    -d : Set this flag if to skip demux, i.e. fastq files are already present in fastq work dir as specified by file names in sample sheet. The script will check if all files are pesent."
     echo " resume         -r : Nextflow-specific. If to resume nextflow run"
-    echo " force_lane     -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will overrid the Lane column in sample sheet"
+    echo " force_lane     -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will override the Lane column in sample sheet"
     echo " force_index:   -f : Set this flag if to force iem samplesheet Rscript to overwrite index id and sequence informations based on index well id. "
     echo " help                   -h : print help message"
     echo "------------------- "
@@ -149,11 +149,11 @@ echo "Pipeline: $pipeline"
 if [ -z "$pipeline" ]; then
   echo ""; echo "Error: "
   echo "Warning: 'Piepeline' is not properly supplied in samplesheet. \
- Project id must be given as 'Pipeline' within the [Header] section of sample sheet"; echo""; echo ""
+ Must be given as 'Pipeline, ctg-rnaseq v1.3' within the [Header] section of sample sheet"; echo""; echo ""
   exit_abnormal
 fi
 
-if [[ $pipeline !=  "ctg-rnaseq v1.3"]]; then
+if [[ ! $pipeline ==  "ctg-rnaseq v1.3" ]]; then
   echo ""; echo "Error: "
   echo "Warning: 'Piepeline' is not properly supplied in samplesheet. \
  Pipeline must be specified as 'ctg-rnaseq v1.3'"; echo""; echo ""
@@ -267,12 +267,8 @@ if [[ $runfolder_mode == "true" ]]; then
   # Prompt user to approve running in current directory and input
   read -p "
 
-  this primer script should be run from within:
+  The primer script is now run from within Illumina Runfolder:
 
-  i ) illumina runfolder (if priming nextflow analysis for demux)
-  ii) project folder (if not priming for demux)
-
-  current directory is:
   '${execdir}'
 
   Are input execution parameters correct?
@@ -291,7 +287,11 @@ if [[ $runfolder_mode == "true" ]]; then
   #################################################
   # Set up Project directory & nextflow scripts
   #################################################
-  echo "setup project dir"
+  echo ""
+  echo "----------------------------------  "
+  echo "Setting up project work folder"
+  echo "----------------------------------  "
+
   if [[ -d ${projectdir} ]]; then
     read -p "Warning:
 
@@ -321,8 +321,10 @@ if [[ $runfolder_mode == "true" ]]; then
   #########################################################################
   # parse and generate sample sheets using Rscript in singularity container
   #########################################################################
-
-  echo "run rscript"
+  echo ""
+  echo "----------------------------------  "
+  echo " ... running samplesheet rscript"
+  echo "----------------------------------  "
   $singcmd ${projectdir}/bin/iem-samplesheet-processor.R \
         --project_id ${projectid} \
         --sample_sheet ${samplesheet} \
@@ -343,8 +345,10 @@ if [[ $runfolder_mode == "true" ]]; then
   #################################################################
   ## if this script is executed in runfolder, then the rscript log will be placed there. Move this to project dir.
 
-
-  echo "extract info from rlog"
+  echo ""
+  echo "----------------------------------------------------  "
+  echo " ... extracting info from rscript logfile"
+  echo "----------------------------------------------------  "
   logfile_iem="${execdir}/log.rscript.samplesheet" ## path and file suffix 'log.rscript.samplesheet' is dedfined within 'iem-samplesheet-processor.R'.
   assay=$(cat ${logfile_iem} | grep 'Assay' |  cut -f2 -d",")
   instrument_type=$(cat ${logfile_iem} | grep 'Instrument_type' |  cut -f2 -d",")
@@ -361,7 +365,11 @@ if [[ $runfolder_mode == "true" ]]; then
   #######################################################################
   # Prime nextflow configuration file -- nextflow.params_${projectid} --
   #######################################################################
-  echo "genrate nextflow params"
+  echo ""
+  echo "------------------------------------------------  "
+  echo "... writing to project specific nextflow config"
+  echo "------------------------------------------------  "
+
   # project specific config file
   nf_conf="${projectdir}/nextflow.config.project.${projectid}"
 
@@ -455,7 +463,10 @@ if [[ $runfolder_mode == "true" ]]; then
   #######################################################################
   #  End with Warning if samplesheet was not accepted
   #######################################################################
-  echo "check validity of samplesheet"
+  echo ""
+  echo "------------------------------------------------  "
+  echo " ... checking validity of samplesheet"
+  echo "------------------------------------------------  "
 
   if [ $samplesheet_accepted == "FALSE" ]; then
     echo ""; echo "Error:"
@@ -469,7 +480,10 @@ if [[ $runfolder_mode == "true" ]]; then
   #######################################################################
   #  Script complete
   #######################################################################
-  echo "final info dump"
+  echo ""
+  echo "------------------------------------------------  "
+  echo " ... final info dump"
+  echo "------------------------------------------------  "
 
   echo ""
   echo ""
@@ -495,10 +509,12 @@ if [[ $runfolder_mode == "true" ]]; then
 # echo ""; echo "";
   #
   chmod 770 ${projectdir}
-
+  echo ""
   echo "##################################### "
   echo "  OK !! "
   echo " #####################################"
+  echo ""
+  echo ""
 
   ## projectdir=${execdir}
   cd ${projectdir}
@@ -527,6 +543,7 @@ if [[ $runfolder_mode == "false" ]]; then
   echo "  running in current project folder "
   echo "  Assuming all configuration and sctipt files are present "
   echo " ###############################################"
+  echo ""
 
 fi
 
@@ -538,9 +555,9 @@ if [ ! -f ${nf_conf} ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${exe
   exit_abnormal
   # echo "'${projectdir}' already exists. Overwriting this folder."
 fi
-if [ ! -f "${execdir}/nextflow.config" ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
+if [ ! -f "${projectdir}/nextflow.config" ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
   echo ""; echo "Error:"
-  echo "'nextflow.configuration' file does not exist in current dir."; echo ""; echo ""
+  echo "'nextflow.config' file does not exist in project work directory"; echo ""; echo ""
   exit_abnormal
   # echo "'${projectdir}' already exists. Overwriting this folder."
 fi
@@ -561,6 +578,13 @@ fi
 ###################################################################
 nf_pipe="rnaseq-main.nf"
 
+echo ""
+echo ""
+echo "##################################### "
+echo "  STARTING NEXTFLOW PIPELINE "
+echo " #####################################"
+echo ""
+echo ""
 #
 ##############
 # Print info #
@@ -568,7 +592,8 @@ nf_pipe="rnaseq-main.nf"
 echo ""
 echo "Driver execution parameters "
 echo "----------------------------"
-echo " project id                : $id";
+echo " pipeline                  : $pipeline";
+echo " project id                : $projectid";
 echo " execution / project dir   : $execdir";
 echo " skip demux mode           : $skip_demux";
 echo " resume                    : $resume";
