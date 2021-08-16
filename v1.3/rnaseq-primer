@@ -27,13 +27,15 @@ ctg_save_root='/projects/fs1/shared/ctg-qc/rnaseq' # '/Users/david/tasks/rnaseq_
 # Initiation - Prime the ctg rnaseq pipeline
 #######################################
 force_lane='0'
-force_index='false'
-skip_demux='false'
+force_index=false
+skip_demux=false
+resume=false
+
 # usage message
 usage() {
     echo ""
     echo ""
-    echo "usage: prime-ctg-rnaseq [ -s samplesheet ] [ -l force_lane ] [ -f force_index ] [ -h help ] "  1>&2
+    echo "usage: prime-ctg-rnaseq [ -s samplesheet ] [ -r resume ] [ -d skip_demux ] [ -l force_lane ] [ -f force_index ] [ -h help ] "  1>&2
     echo ""
     echo "------------------- "
     echo " arguments : "
@@ -43,8 +45,9 @@ usage() {
     echo "------------------- "
     echo " optional : "
     echo "------------------- "
-    echo " force_lane     -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will overrid the Lane column in sample sheet"
     echo " skip_demux:    -d : Set this flag if to skip demux, i.e. fastq files are already present in fastq work dir as specified by file names in sample sheet. The script will check if all files are pesent."
+    echo " resume         -r : Nextflow-specific. If to resume nextflow run"
+    echo " force_lane     -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will overrid the Lane column in sample sheet"
     echo " force_index:   -f : Set this flag if to force iem samplesheet Rscript to overwrite index id and sequence informations based on index well id. "
     echo " help                   -h : print help message"
     echo "------------------- "
@@ -62,7 +65,7 @@ exit_abnormal() {
 }
 
 # Read and control input arguments
-while getopts ":s:l:d:fh" opt; do
+while getopts ":s:l:d:r:fh" opt; do
     case $opt in
       s) samplesheet=$OPTARG
 	     ;;
@@ -70,6 +73,8 @@ while getopts ":s:l:d:fh" opt; do
         ;;
       d) skip_demux=true
             ;;
+      r) resume=true
+       	     ;;
       f) force_index=true
           ;;
       h) exit_abnormal
@@ -105,7 +110,7 @@ fi
 
 
 ################################################
-## IMPORT CTG PIPELINE from samplesheet
+## Read CTG PIPELINE parameter from samplesheet.
 ################################################
 pipeline=$(awk -F, '$1 == "Pipeline"' ${samplesheet} | awk -F, '{print $2}')
 echo "Pipeline: $pipeline"
@@ -126,7 +131,7 @@ fi
 
 
 ################################################
-## IMPORT PROJECT ID from samplesheet
+## Read PROJECT ID from samplesheet
 ################################################
 
 projectid=$(awk -F, '$1 == "Project"' ${samplesheet} | awk -F, '{print $2}')
@@ -166,6 +171,8 @@ execdir=$(pwd) # execution dir. Should be either illumina runfolder dir or withi
 projectdir=${project_root}/${projectid}
 
 ## check if executed in rundfolder - if so set runfolder specific paths
+# A standard 1st time execution should be perfomrmed within the runfolder. This will set `runfolder_mode` to true.
+#  If a re-run or a run with already generated fastq files, then execute within roject directry. The runfolder_mode is set to false. In this case you need to manually copy releveant pipeline files to the project directory
 if [[ -d "${execdir}/Data/Intensities/BaseCalls" ]]; then
   runfolderdir=$execdir # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
   runfolder=$(basename $runfolderdir) #
@@ -439,12 +446,10 @@ echo ""
 echo "copied ctg-rnaseq nextflow files into projectdir and generated project-specific parameter config file: "
 echo "${nf_conf}"
 echo ""
-echo "check iem logfile to see if original sample sheet need to be modified (and primer script re-run):"
+echo "if problems - check iem logfile to see if original sample sheet need to be modified (and primer script re-run):"
 echo "${logfile_iem} "
 echo ""
-echo "when sample sheets are ok, move to project dir and check the project specific nextflow config':"
-echo "'${nf_conf}'"
-echo "before running 'driver-ctg-rnaseq' while in project dir"
+echo "Now proceeding to project dir and starting nextflow pipeline:"
 echo ""; echo "";
 #
 
@@ -458,3 +463,98 @@ chmod 770 ${projectdir}
 echo "##################################### "
 echo "  OK !! "
 echo " #####################################"
+
+
+
+####  FROM DRIVER --- INTEGRATION
+
+
+###################
+# Define variables based on input arguments
+################################################
+
+## projectdir=${execdir}
+cd ${projectdir}
+
+
+# logfile="${logfolder}/$id.log"
+# projectfolder=$(basename ${execdir})
+## nf_conf="${projectdir}/nextflow.config.project.${id}"
+
+
+if [[ $runfolder_mode == "false" ]]; then
+  projectfolder=$(basename ${execdir})
+  if [ ${projectid} != ${projectfolder} ]; then
+    echo "Error: This script must be initiated within the either an Illunmina runfolder OR a project folder with the same project id as specified in SampleSheet"
+    echo""; exit_abnormal
+  fi
+fi
+
+
+## Check if nextflow config files are properly generated
+if [ ! -f ${nf_conf} ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
+  echo ""; echo "Error:"
+  echo "'${nf_conf}' does not exist in current dir. Check script or crete file."; echo ""; echo ""
+  exit_abnormal
+  # echo "'${projectdir}' already exists. Overwriting this folder."
+fi
+if [ ! -f "${execdir}/nextflow.config" ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
+  echo ""; echo "Error:"
+  echo "'nextflow.configuration' file does not exist in current dir."; echo ""; echo ""
+  exit_abnormal
+  # echo "'${projectdir}' already exists. Overwriting this folder."
+fi
+
+
+nf_pipe="rnaseq-main.nf"
+
+#
+##############
+# Print info #
+##############
+echo ""
+echo "Driver execution parameters "
+echo "----------------------------"
+echo " project id                : $id";
+echo " execution / project dir   : $execdir";
+echo " resume                    : $resume";
+
+echo "";
+echo "";
+
+echo "'${nf_conf}' project specific configuration file: "
+echo "--------------------------------------------------"
+cat ${nf_conf}
+echo "--------------------------------------------------"
+# Prompt user to approve running in current directory and input
+echo "";
+read -p "Warning:
+  Nextflow Pipeline will start using the above nextflow configiration parameters.
+  Are input execution parameters correct?
+
+  (y/n)  ... " prompt
+if [[ $prompt != "y" ]]
+then
+    echo ""; echo "Exiting!! "
+    exit 0
+fi
+echo "";echo ""
+
+
+
+
+# #############################
+#  Initiate Nextflow Pipeline
+# #############################
+if [ "$resume" == true ]; then
+    nohup nextflow run $nf_pipe -c $nf_conf --resume > log.nextflow.rnaseq.resume &
+else
+    nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.rnaseq &
+    # nextflow run $nf_pipe -c $nf_conf
+    echo "nextflow run $nf_pipe -c $nf_conf"
+fi
+echo ""; echo ""
+echo "#################################"
+echo "# rnaseq pipeline submitted #"
+echo "#################################"
+echo ""; echo "";
