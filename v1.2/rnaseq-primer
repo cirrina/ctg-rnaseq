@@ -103,6 +103,28 @@ if [ ! -f $samplesheet ]; then
   exit_abnormal
 fi
 
+
+################################################
+## IMPORT CTG PIPELINE from samplesheet
+################################################
+pipeline=$(awk -F, '$1 == "Pipeline"' ${samplesheet} | awk -F, '{print $2}')
+echo "Pipeline: $pipeline"
+
+if [ -z "$pipeline" ]; then
+  echo ""; echo "Error: "
+  echo "Warning: 'Piepeline' is not properly supplied in samplesheet. \
+ Project id must be given as 'Pipeline' within the [Header] section of sample sheet"; echo""; echo ""
+  exit_abnormal
+fi
+
+if [[ $pipeline !=  "ctg-rnaseq v1.2"]]; then
+  echo ""; echo "Error: "
+  echo "Warning: 'Piepeline' is not properly supplied in samplesheet. \
+ Pipeline must be specified as 'ctg-rnaseq v1.2'"; echo""; echo ""
+  exit_abnormal
+fi
+
+
 ################################################
 ## IMPORT PROJECT ID from samplesheet
 ################################################
