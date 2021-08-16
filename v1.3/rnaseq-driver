@@ -78,7 +78,7 @@ usage() {
     echo " optional : "
     echo "------------------- "
     echo " skip_demux:    -d : Set this flag if to skip demux, i.e. fastq files are already present in fastq work dir as specified by file names in sample sheet. The script will check if all files are pesent."
-    echo " resume         -r : Nextflow-specific. If to resume nextflow run"
+    echo " resume         -r : Nextflow-specific. If to resume nextflow run. Can only be used when executing in Project work dir, NOT from Illumina runfolder"
     echo " force_lane     -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will override the Lane column in sample sheet"
     echo " force_index:   -f : Set this flag if to force iem samplesheet Rscript to overwrite index id and sequence informations based on index well id. "
     echo " help                   -h : print help message"
@@ -236,6 +236,15 @@ samplesheet_original="${projectdir}/SampleSheet-${projectid}-original.csv"
 ###################################################################
 #
 if [[ $runfolder_mode == "true" ]]; then
+
+  if [[ $resume == "true" ]]; then
+    echo ""; echo "Error: "
+    echo " Nextflow resume flag -r must not be used while executing sctipt in Illumina runfolder."
+    echo " Move to project directory and initiate resume"
+    echo""; echo ""
+    exit_abnormal
+  fi
+
   echo "##################################### "
   echo "  'runfolder_mode'"
   echo "  Priming project runfolder"
@@ -289,16 +298,20 @@ if [[ $runfolder_mode == "true" ]]; then
   #################################################
   echo ""
   echo "----------------------------------  "
-  echo "Setting up project work folder"
+  echo " ... Setting up project work folder"
   echo "----------------------------------  "
+  echo ""
 
   if [[ -d ${projectdir} ]]; then
-    read -p "Warning:
 
-    project folder already exists:
+    read -p " Warning!!
+
+    project work folder already exists:
     '${projectdir}'
 
-    sample sheets and scripts may be overwritten. Are you sure?
+    sample sheets and scripts will be overwritten
+
+    Are you sure?
 
     (y/n)  ...
 
@@ -581,7 +594,7 @@ nf_pipe="rnaseq-main.nf"
 echo ""
 echo ""
 echo "##################################### "
-echo "  STARTING NEXTFLOW PIPELINE "
+echo "  initaiting rnaseq nextflow pipeline "
 echo " #####################################"
 echo ""
 echo ""
@@ -607,11 +620,13 @@ cat ${nf_conf}
 echo "--------------------------------------------------"
 # Prompt user to approve running in current directory and input
 echo "";
-read -p "Warning:
-  Nextflow Pipeline will start using the above nextflow configiration parameters.
+read -p "
+
+  The Nextflow ${pipeline} pipeline will start using the above nextflow configiration parameters.
   Are input execution parameters correct?
 
   (y/n)  ... " prompt
+
 if [[ $prompt != "y" ]]
 then
     echo ""; echo "Exiting!! "
@@ -627,6 +642,7 @@ echo "";echo ""
 # #############################
 if [[ $resume == "true" ]]; then
     nohup nextflow run $nf_pipe -c $nf_conf --resume > log.nextflow.rnaseq &
+    echo "nextflow run $nf_pipe -c $nf_conf --resume"
 else
     nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.rnaseq &
     # nextflow run $nf_pipe -c $nf_conf
@@ -636,4 +652,7 @@ echo ""; echo ""
 echo "#################################"
 echo "# rnaseq pipeline submitted #"
 echo "#################################"
-echo ""; echo "";
+echo "";
+echo "Check pipeline status in logfile:"
+echo "cat ${projectdir}/log.nextflow.rnaseq"
+echo "";
