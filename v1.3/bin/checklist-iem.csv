@@ -24,7 +24,6 @@ iem_section,parameter,conditional_parameter,conditional_value,value,Comment
 [Settings],Read1StartFromCycle,Index Adapters,IDT-Ilmn RNA UD Indexes SetB Ligation,2,
 [Settings],Read2StartFromCycle,Index Adapters,IDT-Ilmn RNA UD Indexes SetB Ligation,2,
 [Settings],Read2StartFromCycle,Assay,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,4,
-[Settings],Read2StartFromCycle,Assay,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,4,
 [Settings],Read1StartFromCycle,Assay,SMART-Seq v4 Ultra Low Input RNA Kit,4,
 [Data],Strandness,Assay,TruSeq Stranded mRNA,reverse,
 [Data],Strandness,Assay,Illumina Stranded mRNA,reverse,
