@@ -581,7 +581,16 @@ fi
 #################################################
 # If skip demux flag is given in execution.
 if [[ $skip_demux == "true" ]]; then
+  ## check if fastq folder exists
+  if [[ ! -d ${fastqdir} ]]; then
+    echo ""; echo "Error:"
+    echo "Skipping demux but Cannot locate fastqdir: ${fastqdir}"; echo ""; echo ""
+    exit_abnormal
+  fi 
+
+  ## change project config skip_demux parameter
   sed "s/skip_demux.*/skip_demux            =  true/g" $nf_conf > tmp.txt ; mv tmp.txt $nf_conf ; rm tmp.txt
+
 fi
 
 
