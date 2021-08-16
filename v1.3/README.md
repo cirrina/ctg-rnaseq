@@ -261,6 +261,7 @@ The **Bold** fields below must be correctly specified!
 
 ----
 [Header]  
+**Pipeline**, ctg-rnaseq v1.3,
 **Project**, 2021_053,
 IEMFileVersion,5  
 Investigator Name,X  
