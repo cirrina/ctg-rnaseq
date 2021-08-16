@@ -1,6 +1,11 @@
 #!/bin/bash
 
-
+## NoteL The script may be initiated in either Illumina Runfolder OR the project work folder with same name as the project id specified in SampleSheet
+## A STANDARD RUN -- for which Demux is True -- should be initialted within the illumina runfolder. A project work folder is then created. The script will move to this folder and initialte the nextflow pipeline
+## ALT. In cases of re-running the complete pipeline without re-running the demux - start in the projectfolder. The script will then not re-run the initial steps of Sample sheet check etc.  Also, iff using fastq files from other sources.
+### ALT 1 regquires:
+#### 1. That the pipeline files are present in work folder, incliuding the project speciic nextflow config file, nextflow scripts and regular config.
+#### 2. A sample Sheet in ctg format AS WELL AS the origiinal sample sheet. The
 
 #######################################
 # ctg primer for ctg-rnaeseq v1.3
