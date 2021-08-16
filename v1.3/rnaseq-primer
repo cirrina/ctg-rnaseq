@@ -3,10 +3,10 @@
 
 
 #######################################
-# ctg primer for ctg-rnaeseq v1.2
+# ctg primer for ctg-rnaeseq v1.3
 #######################################
 
-scriptsdir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.2' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
+scriptsdir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.3' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
 
 
 singularity_container='/projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif'
@@ -117,10 +117,10 @@ if [ -z "$pipeline" ]; then
   exit_abnormal
 fi
 
-if [[ $pipeline !=  "ctg-rnaseq v1.2"]]; then
+if [[ $pipeline !=  "ctg-rnaseq v1.3"]]; then
   echo ""; echo "Error: "
   echo "Warning: 'Piepeline' is not properly supplied in samplesheet. \
- Pipeline must be specified as 'ctg-rnaseq v1.2'"; echo""; echo ""
+ Pipeline must be specified as 'ctg-rnaseq v1.3'"; echo""; echo ""
   exit_abnormal
 fi
 

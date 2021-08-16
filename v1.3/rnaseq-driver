@@ -1,0 +1,150 @@
+#!/bin/bash
+
+#######################################
+# driver for the ctg rnaseq pipeline
+#######################################
+
+### This script will
+## - 1 - Create project folder used for this run. The project folder will NOT be generated within the runfolder.
+## - 2 - Check sample sheet and generate two new ones used for i) demux and ii) downstream analyses and QC
+## - 3 - Copy the rnaseq nextflows scripts to project dir.
+## - 4 - Initialize the rnaseq workflow
+
+## The nextflow worklow will ....
+
+## Develiopment possibilities / known issues
+# - since the create samples sheet Rscripts are run in the driver, not in the nf workflow, strandness is not yet included in the ctg samplesheet
+
+
+# Initialize variables asdsadasd adfdsf
+execdir=$(pwd)
+resume=false
+
+#runfolder='' # runfolder will be set to execfolder if demux is true. It is possible to execute scriipt outside illumina runfolder if demux is FALSE
+# usage message
+usage() {
+    echo ""
+    echo ""
+    echo "usage: rnaseq-driver [ -i projectid ] [ -r resume ] [ -h help ] "  1>&2
+    echo ""
+    echo "------------------- "
+    echo " arguments : "
+    echo "------------------- "
+    echo " project_id         -i : Define 'project id'. Typically 202X-XXX. This MUST MATCH the project folder that you are in. The script use the rpojec t id to check the integrity of files - and that the project specific nf params file is present "
+    echo " resume             -r : If to resume nextflow run"
+    echo ""
+    echo ""
+}
+
+exit_abnormal() {
+    usage
+    exit 1
+}
+
+# Read and control input arguments
+while getopts ":i:rh" opt; do
+    case $opt in
+      i) id=$OPTARG
+	     ;;
+      r) resume=true
+ 	     ;;
+      h) exit_abnormal
+        ;;
+      \?) echo echo ""; echo "Error:";"Invalid option -$OPTARG" >&2
+        exit_abnormal ;;
+      :) echo ""; echo "Error:"; echo " -${OPTARG} requires an argument!"
+	     exit_abnormal ;;
+    esac
+done
+
+## check  projct id input
+if [ -z $id ]; then
+  echo ""; echo "Error: "
+  echo "Specify Project id ('-i' flag)"; echo""
+  exit_abnormal
+fi
+
+################################################
+# Define variables based on input arguments
+################################################
+
+projectdir=${execdir}
+
+# logfile="${logfolder}/$id.log"
+projectfolder=$(basename ${execdir})
+nf_conf="${projectdir}/nextflow.config.project.${id}"
+nf_pipe="rnaseq-main.nf"
+if [ ${id} != ${projectfolder} ]; then
+  echo "Error: Project id (flag '-i') must be same as execution dir. the script must be initiated within the proect folder "
+  echo""; exit_abnormal
+fi
+
+## Check arguments
+shift "$(( OPTIND -1 ))"
+
+
+if [ ! -f ${nf_conf} ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
+  echo ""; echo "Error:"
+  echo "'${nf_conf}' does not exist in current dir. Run 'primer-rnaseq' or crete file."; echo ""; echo ""
+  exit_abnormal
+  # echo "'${projectdir}' already exists. Overwriting this folder."
+fi
+if [ ! -f "${execdir}/nextflow.config" ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
+  echo ""; echo "Error:"
+  echo "'nextflow.configuration' file does not exist in current dir. Run 'primer-rnaseq' or crete file."; echo ""; echo ""
+  exit_abnormal
+  # echo "'${projectdir}' already exists. Overwriting this folder."
+fi
+
+
+
+#
+##############
+# Print info #
+##############
+echo ""
+echo "Driver execution parameters "
+echo "----------------------------"
+echo " project id                : $id";
+echo " execution / project dir   : $execdir";
+echo " resume                    : $resume";
+
+echo "";
+echo "";
+
+echo "'${nf_conf}' project specific configuration file: "
+echo "--------------------------------------------------"
+cat ${nf_conf}
+echo "--------------------------------------------------"
+# Prompt user to approve running in current directory and input
+echo "";
+read -p "Warning:
+  Nextflow Pipeline will start using the above nextflow configiration parameters.
+  Are input execution parameters correct?
+
+  (y/n)  ... " prompt
+if [[ $prompt != "y" ]]
+then
+    echo ""; echo "Exiting!! "
+    exit 0
+fi
+echo "";echo ""
+
+
+
+
+# #############################
+#  Initiate Nextflow Pipeline
+# #############################
+if [ "$resume" == true ]; then
+    nohup nextflow run $nf_pipe -c $nf_conf --resume > log.nextflow.rnaseq.resume &
+else
+    nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.rnaseq &
+    # nextflow run $nf_pipe -c $nf_conf
+    echo "nextflow run $nf_pipe -c $nf_conf"
+fi
+echo ""; echo ""
+echo "#################################"
+echo "# rnaseq pipeline submitted #"
+echo "#################################"
+echo ""; echo "";

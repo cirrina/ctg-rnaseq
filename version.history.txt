@@ -1,4 +1,6 @@
 
+== ctg-rnaseq v1.3
+Main objective - integrate primer and driver. Add resumue and no-demux functionablility
 
 
 == ctg-rnaseq v1.2
@@ -7,7 +9,7 @@
 === Changes in v1.2
 √ added `-original.csv` sample sheet to projct work folder (by `rnaseq-primer`) and to ctg archive (nf main script). This is just a clone of the input sample sheet.
 
-
+√ Included `Pipeline` requirement in sample sheet.
 
 √ updated to `iem-samplesheet-processor.R v1.1`. For changes, see below.
 
