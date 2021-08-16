@@ -229,6 +229,8 @@ samplesheet_ctg="${projectdir}/SampleSheet-${projectid}-ctg.csv"
 samplesheet_original="${projectdir}/SampleSheet-${projectid}-original.csv"
 
 
+# project specific config file
+nf_conf="${projectdir}/nextflow.config.project.${projectid}"
 
 
 ###################################################################
@@ -383,8 +385,6 @@ if [[ $runfolder_mode == "true" ]]; then
   echo "... writing to project specific nextflow config"
   echo "------------------------------------------------  "
 
-  # project specific config file
-  nf_conf="${projectdir}/nextflow.config.project.${projectid}"
 
   ## Write to file
   echo ""                                    > $nf_conf
@@ -614,7 +614,7 @@ echo " resume                    : $resume";
 echo "";
 echo "";
 
-echo "'${nf_conf}' project specific configuration file: "
+echo "${nf_conf} project specific configuration file: "
 echo "--------------------------------------------------"
 cat ${nf_conf}
 echo "--------------------------------------------------"
