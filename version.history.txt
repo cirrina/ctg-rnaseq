@@ -7,7 +7,7 @@
 === Changes in v1.2
 √ added `-original.csv` sample sheet to projct work folder (by `rnaseq-primer`) and to ctg archive (nf main script). This is just a clone of the input sample sheet.
 
-√ added -d flag `skip_demux` to `rnaseq-primer`. This will replace run_demux to instead flag to skip demux. If skipping demux, all fastq filenames in samplesheet must be found in the project specific fastq work folder.
+
 
 √ updated to `iem-samplesheet-processor.R v1.1`. For changes, see below.
 
@@ -23,6 +23,7 @@
 
 
 === List of new Issues
+√ added -d flag `skip_demux` to `rnaseq-primer`. This will replace run_demux to instead flag to skip demux. If skipping demux, all fastq filenames in samplesheet must be found in the project specific fastq work folder. NOT WORKING. Has to be added to driver ... Fix when driver and primer is same.
 
 - params.custom
 If this file is available in runfolder - then use this file rather than the params.default file in ./versio dir

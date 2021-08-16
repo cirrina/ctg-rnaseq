@@ -1008,18 +1008,18 @@ process move_fastq {
         mkdir -p ${deliverytemp}/fastq
         if [ -d ${fastqdir} ]; then
           echo "pooled run. moving fastq foldler only."
-          mv ${fastqdir} ${deliverytemp}/fastq
+          mv -f ${fastqdir} ${deliverytemp}/fastq
         fi
       """
     else if ( !params.pooled_run &&  params.deliver_fastq )
       """
       if [ -d ${fastqdir_bcl2fastq} ]; then
         echo "non pooled data. moving comlplete bcl2fastq output foldler."
-        mv ${fastqdir_bcl2fastq} ${deliverytemp}
+        mv -f ${fastqdir_bcl2fastq} ${deliverytemp}
       elif [ -d ${fastqdir} ]; then
         echo "non pooled run but cannot locate fastqdir_bcl2fastq. moving fastq foldler only."
         mkdir -p ${deliverytemp}/fastq
-        mv ${fastqdir} ${deliverytemp}/fastq
+        mv -f ${fastqdir} ${deliverytemp}/fastq
       fi
       """
     else
@@ -1204,7 +1204,7 @@ process finalize_delivery {
     --check_dir ${projectdir}
     --output ${deliverydir}/log.rscript.filecheck.csv
 
-  mv ${deliverytemp} ${deliverydir}
+  mv -f ${deliverytemp} ${deliverydir}
   cd ${deliverydir}
 
   echo "ctg delivery complete"               > $readme
