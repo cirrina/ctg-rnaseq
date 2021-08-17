@@ -521,7 +521,9 @@ if [[ $runfolder_mode == "true" ]]; then
 #  echo "Now proceeding to project dir and starting nextflow pipeline:"
 # echo ""; echo "";
   #
-  chmod 770 ${projectdir}
+  
+  # chmod -R 770 ${projectdir}
+
   echo ""
   echo "##################################### "
   echo "  OK !! "
@@ -586,8 +588,7 @@ if [[ $skip_demux == "true" ]]; then
     echo ""; echo "Error:"
     echo "Skipping demux but Cannot locate fastqdir: ${fastqdir}"; echo ""; echo ""
     exit_abnormal
-  fi 
-
+  fi
   ## change project config skip_demux parameter
   sed "s/skip_demux.*/skip_demux            =  true/g" $nf_conf > tmp.txt ; mv tmp.txt $nf_conf ; rm tmp.txt
 

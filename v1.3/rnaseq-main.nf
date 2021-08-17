@@ -1171,7 +1171,7 @@ process setup_ctg_save {
   ${projectdir}/bin/checkfiles_pipeline.R \\
     --sample_sheet ${samplesheet_ctg} \\
     --project_id ${projectid} \\
-    --check_dir ${ctg_save_dir}
+    --check_dir ${ctg_save_dir} \\
     --output ${ctg_save_dir}/log.rscript.filecheck.csv
 
 
@@ -1201,7 +1201,7 @@ process finalize_delivery {
   ${projectdir}/bin/checkfiles_pipeline.R \\
     --sample_sheet ${samplesheet_ctg} \\
     --project_id ${projectid} \\
-    --check_dir ${projectdir}
+    --check_dir ${projectdir} \\
     --output ${deliverydir}/log.rscript.filecheck.csv
 
   mv ${deliverytemp} ${deliverydir}
@@ -1215,7 +1215,7 @@ process finalize_delivery {
   ${projectdir}/bin/checkfiles_pipeline.R \\
     --sample_sheet ${samplesheet_ctg} \\
     --project_id ${projectid} \\
-    --check_dir ${deliverydir}
+    --check_dir ${deliverydir} \\
     --output ${deliverydir}/log.rscript.filecheck.csv
 
   """
