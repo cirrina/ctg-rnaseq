@@ -6,6 +6,9 @@ Main objective - integrate primer and driver. Add resumue and no-demux functiona
 === Known Issues
 - custom fastq folders is not able to define, As is you must use structrure obtained when running bcl2fastq. Thus: `"${projectdir}/nf-output/fastq/${projectid}"`
 
+- option to skip STAR alignment. is there one>
+
+- param.run_align seem useless as is.
 
 
 
