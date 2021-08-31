@@ -454,10 +454,7 @@ if [[ $runfolder_mode == "true" ]]; then
   echo "  run_checkfiles        =  true                               " >> $nf_conf
   echo ""                                                               >> $nf_conf
   echo "  //  delivery params                                         " >> $nf_conf
-  echo "  pooled              =  false                                " >> $nf_conf
-  echo "  deliver_raw         =  false                                " >> $nf_conf
   echo "  deliver_fastq       =  true                                 " >> $nf_conf
-  echo "  sync_outbox         =  true                                 " >> $nf_conf
   echo "  run_md5sum          =  true                                 " >> $nf_conf
   echo "  run_cleanup         =  true                                 " >> $nf_conf
   echo ""   >> $nf_conf
@@ -521,7 +518,7 @@ if [[ $runfolder_mode == "true" ]]; then
 #  echo "Now proceeding to project dir and starting nextflow pipeline:"
 # echo ""; echo "";
   #
-  
+
   # chmod -R 770 ${projectdir}
 
   echo ""
