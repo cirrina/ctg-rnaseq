@@ -37,28 +37,29 @@
 
 
 #######################################
-# ctg driver for uroscan rnaseq pipeline
+# ctg driver for  rnaseq pipeline
 #######################################
 
 ## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CHANGE WHEN DEPOLYT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# scriptsdir='/projects/fs1/shared/ctg-dev/pipelines/uroscan/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
+# scriptsdir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
 # scripts_root='/Users/david/scripts' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
 scripts_root="/projects/fs1/shared/ctg-dev/pipelines"
 # if DEVELOPMENT MODE, established pipelines are '/projects/fs1/shared/ctg-pieplines/pipelines/'
 # scriptsdir will be generated with this as base
-nf_pipe="uroscan-main.nf"
+nf_pipe="rnaseq-main.nf"
 
- singularity_container='/projects/fs1/shared/ctg-dev/containers/uroscan/v1.4/uroscan.sif'
-#singularity_container='/projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif'
+#  singularity_container='/projects/fs1/shared/ctg-dev/containers/uroscan/v1.4/uroscan.sif'
 
-singularity_container_rscript='/projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif'
+singularity_container='/projects/fs1/shared/ctg-containers/rnaseq/singularity-ctg-rnaseq-1.0.2.sif'
+singularity_container_rscript='/projects/fs1/shared/ctg-containers/rnaseq/singularity-ctg-rnaseq-1.0.2.sif'
+
 singcmd="singularity exec --bind /projects/fs1/ ${singularity_container}"
 singcmd_rscript="singularity exec --bind /projects/fs1/ ${singularity_container_rscript}"
 
 ## Root directories (based on ourr set folder naming conventions on lsens)
-project_root='/projects/fs1/shared/ctg-projects/uroscan'
-delivery_root='/projects/fs1/nas-sync/ctg-delivery/uroscan'
-ctg_save_root='/projects/fs1/shared/ctg-qc/uroscan'
+project_root='/projects/fs1/shared/ctg-projects/rnaseq'
+delivery_root='/projects/fs1/nas-sync/ctg-delivery/rnaseq'
+ctg_save_root='/projects/fs1/shared/ctg-qc/rnaseq'
 #project_root='/Users/david/tasks/nftest/projects' ## '/projects/fs1/shared/ctg-projects/uroscan'
 #delivery_root='/Users/david/tasks/nftest/delivery' ## '/projects/fs1/nas-sync/ctg-delivery/uroscan'
 #ctg_save_root='/Users/david/tasks/nftest/ctg-qc' # '/projects/fs1/shared/ctg-qc/uroscan'
@@ -91,21 +92,21 @@ usage() {
     echo "------------------- "
     echo " usage : "
     echo "------------------- "
-    echo " uroscan-driver [ -s samplesheet ] [ -r resume ] [ -f fastq_path ] [ -l force_lane ] [ -i force_index ] [ -h help ] "  1>&2
+    echo " rnaseq-driver [ -s samplesheet ] [ -r resume ] [ -f fastq_path ] [ -l force_lane ] [ -i force_index ] [ -h help ] "  1>&2
     echo ""
     echo "------------------- "
     echo " arguments : "
     echo "------------------- "
     echo " samplesheet    -s : IEM style laboratory SampleSheet. Project and pipeline specific parameters must be added "
     echo ""
-    echo " (see https://github.com/cirrina/uroscan/blob/main/README.md for details)"
+    echo " (see https://github.com/cirrina/rnaseq/blob/main/README.md for details)"
     echo ""
     echo " Required [header] rows for SampleSheet include:"
     echo ""
     echo " ProjectId:        CTG project id, e.g. 2021_026. Will define downsteam analysis folder and filenames."
     echo "                   If a project is run multiple times with different settings. Modify the project id and sample sheet accordingly."
     echo " RunFolder:        Name (not full path) of Illumina runfolder, e.g. . Set to NA if unknown and custom fastq files are run"
-    echo " PipelineName:     The CTG analysis pipeline. Must match the ctg pipeline naming nomenclature. e.g. uroscan OR ctg-rnaseq"
+    echo " PipelineName:     The CTG analysis pipeline. Must match the ctg pipeline naming nomenclature. e.g. rnaseq OR ctg-rnaseq"
     echo " PipelineVersion:  The CTG analysis pipeline version. Must match the ctg pipeline naming nomenclature, e.g. '1.0'"
     echo " PoolName:         Name of ctg pool, i.e. name of the library pool added to flowcell, e.g. 'CTGpool_0150'"
     echo " SharedFlowCell:  'true' or 'false'. If the pool/flowcell includes more than one customer projects."
@@ -201,6 +202,7 @@ fi
 echo " Reading SampleSheet:"
 echo "  ... samplesheet: $samplesheet"
 
+
 ## Read PROJECT ID from samplesheet
 ## ----------------------------------------------
 projectid=$(awk -F, '$1 == "ProjectId"' ${samplesheet} | awk -F, '{print $2}')
@@ -253,16 +255,19 @@ samplesheet_original="${projectdir}/SampleSheet-${projectid}-original.csv"
 
 ## Read CTG PIPELINE parameters from samplesheet.
 ## ----------------------------------------------
+
 pipelineName=$(awk -F, '$1 == "PipelineName"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... pipelineName: $pipelineName"
 pipelineVersion=$(awk -F, '$1 == "PipelineVersion"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... pipelineVersion: $pipelineVersion"
 
 
+
+
 if [ -z "$pipelineName" ]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo "Warning: 'PiepelineName' is not properly supplied in samplesheet. \
- Must be given as 'PipelineName, uroscan' within the [Header] section of sample sheet"; echo""; echo ""
+ Must be given as 'PipelineName, rnaseq' within the [Header] section of sample sheet"; echo""; echo ""
   exit_abnormal
 fi
 if [ -z "$pipelineVersion" ]; then
@@ -271,9 +276,11 @@ if [ -z "$pipelineVersion" ]; then
  Must be given as 'PipelineVersion, 1.0' within the [Header] section of sample sheet"; echo""; echo ""
   exit_abnormal
 fi
+
+
 # generate pipeline path from what is specified im sample sheet
 pipeline="${pipelineName} ${pipelineVersion}"
-scriptsdir="${scripts_root}/${pipelineName}/v${pipelineVersion}"
+scriptsdir="${scripts_root}/${pipelineName}/${pipelineVersion}"
 
 if [[ ! -d $scriptsdir ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
@@ -282,6 +289,27 @@ if [[ ! -d $scriptsdir ]]; then
   exit_abnormal
 fi
 
+
+## Profile uroscan or rnaseq
+profileName=$(awk -F, '$1 == "ProfileeName"' ${samplesheet} | awk -F, '{print $2}')
+
+if [ -z "$profileName" ]; then
+  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
+  echo "Warning: 'profileName' is not properly supplied in samplesheet. \
+ Must be given as 'uroscan or rnaseq' within the [Header] section of sample sheet"; echo""; echo ""
+  exit_abnormal
+fi
+
+if [[ $profileName == "rnaseq" ]]; then
+  echo "  ... profileName: $profileName"
+elif [[ $profileName == "uroscan"  ]]; then
+  echo "  ... profileName: $profileName"
+else
+  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
+  echo "Warning: 'profileName' is not properly supplied in samplesheet. \
+ Must be given as 'uroscan or rnaseq' within the [Header] section of sample sheet"; echo""; echo ""
+  exit_abnormal
+fi
 
 
 ## Read RunFolder from samplesheet
@@ -389,7 +417,7 @@ if [[ $resume == "true" ]]; then
   echo " RESUME mode"
   echo " ... trying to resume nextflow"
   echo " ... Hail mary !!! "
-  nohup nextflow run $nf_pipe -c $nf_conf --resume > log.nextflow.uroscan &
+  nohup nextflow run $nf_pipe -c $nf_conf -profile ${profileName} --resume > log.nextflow.rnaseq &
   echo " ... :  nextflow run $nf_pipe -c $nf_conf --resume"
 fi
 
@@ -605,15 +633,15 @@ if [[ $runfolder_mode == "true" ]]; then
   echo ""                                                               >> $nf_conf
   echo " }"                                                             >> $nf_conf
   echo ""                                                               >> $nf_conf
-  ## Singularity container depending on uroscan or rnaseq
-  echo " // Define SLURM specs                                        " >> $nf_conf
-  echo " process {                                                    " >> $nf_conf
-  echo "  executor = 'slurm'                                          " >> $nf_conf
-  echo "  container = '${singularity_container}'                      " >> $nf_conf
-  echo "  time = '48h'                                                " >> $nf_conf
-  echo "  cpus = '16'                                                 " >> $nf_conf
-  echo "  memory = '100 GB'                                           " >> $nf_conf
-  echo " } " >> $nf_conf
+  ## Singularity container depending on rnaseq or rnaseq
+  # echo " // Define SLURM specs                                        " >> $nf_conf
+  # echo " process {                                                    " >> $nf_conf
+  # echo "  executor = 'slurm'                                          " >> $nf_conf
+  # echo "  container = '${singularity_container}'                      " >> $nf_conf
+  # echo "  time = '48h'                                                " >> $nf_conf
+  # echo "  cpus = '16'                                                 " >> $nf_conf
+  # echo "  memory = '100 GB'                                           " >> $nf_conf
+  # echo " } " >> $nf_conf
 
 
 
@@ -731,10 +759,11 @@ echo "";echo ""
 #  Initiate Nextflow Pipeline
 # #############################
 
-# nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.uroscan &
+# nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.rnaseq &
 cd ${projectdir}
-nextflow run $nf_pipe -c $nf_conf > log.nextflow.progress &
-echo "  Running :   nextflow run $nf_pipe -c $nf_conf"
+nextflow run $nf_pipe -c $nf_conf -profile ${profileName} > log.nextflow.progress &
+
+echo "  Running :   nextflow run $nf_pipe -c $nf_conf -profile ${profileName}"
 echo "  Singularity container:  ${singularity_container}"
 echo "";
 echo "  ########################## "
