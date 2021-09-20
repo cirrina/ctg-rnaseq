@@ -16,9 +16,6 @@ output:
   pdf_document: default
 ---
 
-## ADD INPUT PARAMS !!!
-
-
 
 <style type="text/css">
 
@@ -35,8 +32,8 @@ font-size: 14px
 
 
 
-## DEBUG ONLY
 ```{r debug,  eval=FALSE, include=FALSE}
+## DEBUG ONLY
 params <- list(
   clarity_id="R09_T1",
   rsem_in= "/Users/david/tasks/blrep_test/uroscan_data/R09_T1.rsem.genes.results",
@@ -241,9 +238,9 @@ Rapportversion  | 1.1.0 - Reviderad 2021-09-17
 
 RNA-kvalitet: <b>godkänd</b>
 
-```{r, results_classifier, include=T,echo=F}
+```{r, results_classifier, include=T, echo=F}
 
-results <- LundClassifier(SampleData = sample)
+results <- suppressWarnings(LundClassifier(SampleData = sample))
 #results$Report$Main_subtype<-"Urotel-lik"
 #results$Report$Subtype<-"Urotel-lik A"
 if(grepl("Uro",results$Report$Subtype)){ ReportSubtype<<-results$Report$Subtype}else{ReportSubtype<<-"-"}

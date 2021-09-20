@@ -1169,9 +1169,16 @@ process bladderreport {
         sampleid='${sid}', \\
         rsem_in='${rsemdir}/${sid}.rsem', \\
         star_qc='${stardir}/${sid}_Log.final.out', \\
+        RIN='${RIN}', \\
+        concentration='${concentration}', \\
         clarity_id='${sid}'),  \\
+
       output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
 
+  chromium-browser --headless --disable-gpu --print-to-pdf=${sample_id}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
+
+  /data/bnf/scripts/bladderreport/bladder_noreport2txt.pl bladderreport_ctg_no_results.html > ${sample_id}.STAR.bladderreport.txt
+      chmod 664 ${sample_id}.STAR.bladderreport.pdf ${sample_id}.STAR.bladderreport.txt
 
   """
   else
@@ -1181,36 +1188,36 @@ process bladderreport {
 }
 
 
-// if ( params.run_publish_bladderreport == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ publish_bladderreport_complete_ch }
+// // if ( params.run_publish_bladderreport == false ) {
+// //    Channel
+// // 	 .from("x")
+// //    .set{ publish_bladderreport_complete_ch }
+// // }
+// process publish_bladderreport {
+//   tag "$id"
+//   cpus 4
+//   memory '32 GB'
+//   time '3h'
+//   echo debug_mode
+//
+//   input:
+//   val x from bladderreport_complete_ch.collect()
+//
+//   output:
+//   val "x" into publish_bladderreport_complete_ch
+//
+//   // when: params.run_publish_bladderreport
+//
+//   script:
+//   if ( params.run_publish_bladderreport )
+//     """
+//
+//     """
+//   else
+//     """
+//     echo "run_publish_bladderreport skipped"
+//     """
 // }
-process publish_bladderreport {
-  tag "$id"
-  cpus 4
-  memory '32 GB'
-  time '3h'
-  echo debug_mode
-
-  input:
-  val x from bladderreport_complete_ch.collect()
-
-  output:
-  val "x" into publish_bladderreport_complete_ch
-
-  // when: params.run_publish_bladderreport
-
-  script:
-  if ( params.run_publish_bladderreport )
-    """
-
-    """
-  else
-    """
-    echo "run_publish_bladderreport skipped"
-    """
-}
 
 
 /* ===============================================================
@@ -1329,7 +1336,7 @@ process multiqc_ctg {
   val x from align_complete_ch.collect()
   val x from fastqscreen_complete_ch.collect()
   val x from rsem_complete_ch.collect()
-  val x from publish_bladderreport_complete_ch.collect()
+  val x from bladderreport_complete_ch.collect()
   val x from salmon_complete_ch.collect()
 
   output:
