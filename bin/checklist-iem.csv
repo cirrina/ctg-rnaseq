@@ -1,6 +1,6 @@
 # v.1.1 Checklist for iem sample sheet. Define required values parameters,,,,,
 iem_section,parameter,conditional_parameter,conditional_value,value,Comment
-[Header],Instrument Type,,,NovaSeq,Short for NovaSeq1.5. Default run.
+[Header],Instrument Type,,,NovaSeq1.5,Short for NovaSeq1.5. Default run.
 [Header],Instrument Type,,,NovaSeq1.0,
 [Header],Assay,,,TruSeq Stranded mRNA,TruSeq Stranded mRNA Sample Preparation Guide (Part 15031047 Rev. E) Modification of Enrich DNA Fragment step:from 15 to 13 PCR cycles
 [Header],Assay,,,Illumina Stranded mRNA,"Illumina Stranded mRNA Prep, Ligation (20040534, Illumina)"
