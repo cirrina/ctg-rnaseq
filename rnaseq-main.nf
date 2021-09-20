@@ -310,7 +310,7 @@ Channel
 Channel
   .fromPath(samplesheet_ctg)
   .splitCsv(header:true)
-  .map { row -> tuple( row.Sample_ID, row.bam, row.Strandness, row.Species) }
+  .map { row -> tuple( row.Sample_ID, row.bam, row.Strandness, row.Species, row.concentration, row.RIN) }
   .tap { infobam }
   .into { bam_checkbam_ch; bam_indexbam_ch; bam_rnaseqmetrics_ch; bam_markdups_ch; bam_qualimap_ch; bam_rseqc_ch;  bam_bladderreport_ch }
 

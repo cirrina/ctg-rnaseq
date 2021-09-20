@@ -291,7 +291,7 @@ fi
 
 
 ## Profile uroscan or rnaseq
-profileName=$(awk -F, '$1 == "ProfileName"' ${samplesheet} | awk -F, '{print $2}')
+profileName=$(awk -F, '$1 == "PipelineProfile"' ${samplesheet} | awk -F, '{print $2}')
 
 if [ -z "$profileName" ]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
@@ -359,7 +359,7 @@ else
     echo " If set to 'NA', then fastq_path (-f) must be supplied."; echo""; echo ""
     exit_abnormal
   fi
-  echo "  ... ... expect exection within in project work dir ...."
+  echo "  ... ... expect execution within in project work dir ...."
   if [[ "$execdir" != "$projectdir" ]]; then
     echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
     echo " Trying to execute script outside Illumina Runfolder."
