@@ -291,7 +291,7 @@ fi
 
 
 ## Profile uroscan or rnaseq
-profileName=$(awk -F, '$1 == "ProfileeName"' ${samplesheet} | awk -F, '{print $2}')
+profileName=$(awk -F, '$1 == "ProfileName"' ${samplesheet} | awk -F, '{print $2}')
 
 if [ -z "$profileName" ]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
