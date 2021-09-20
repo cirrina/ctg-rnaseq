@@ -1,0 +1,2 @@
+Labb-ID	Personnummer	Patientens Namn	RNA-kvalité	Koncentration	Ankomstdatum	Rapportdatum	Indatafil	Subtyp	Undergrupp	Grad	RIN	DV200	Unikt inpassade läsningar (M)	Unikt inpassade läsningar (%)	Multiinpassade läsningar (%)	Missmatchratio per bas (%)	Kanoniska splitsningar (n)	Icke-kanoniska splitsningar (n)
+	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-

@@ -1,0 +1,19 @@
+
+
+# A script to create uroscan reports on low quality rna samples.
+# Edited by PP 20200218.
+#
+# check for arguments
+if [[ $# != 2 ]] ; then
+    echo 'How to use this script:'
+    echo 'knit_no_report.sh <clarity_id> <sample_id>'
+    exit 0
+fi
+#
+sample_id=$1"-CTG"
+clarity_id=$2
+#
+Rscript -e "library(rmarkdown); rmarkdown::render('/data/bnf/scripts/bladderreport/bladderreport_ctg_no_results.Rmd', params = list(clarity_id = '${clarity_id}',sampleid='${sample_id}'), 'html_document')"
+chromium-browser --headless --disable-gpu --print-to-pdf=${sample_id}.STAR.bladderreport.pdf bladderreport_ctg_no_results.html
+/data/bnf/scripts/bladderreport/bladder_noreport2txt.pl bladderreport_ctg_no_results.html > ${sample_id}.STAR.bladderreport.txt
+chmod 664 ${sample_id}.STAR.bladderreport.pdf ${sample_id}.STAR.bladderreport.txt

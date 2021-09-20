@@ -1,0 +1,374 @@
+---
+title: ''
+params:
+  clarity_id: ALL354A34
+  rsem_in: ./example_data/19KFU0006_0.rsem
+  sampleid: 19KFU0006_rsem
+  star_qc: ./example_data/Log.final.out
+  anonymous: yes
+output:
+  html_document:
+    highlight: tango
+  pdf_document: default
+---
+
+
+<style type="text/css">
+
+body, td {
+font-size: 14px;
+}
+code.r{
+font-size: 18px;
+}
+pre {
+font-size: 14px
+}
+</style>
+
+
+```{r setup, include=FALSE}
+
+.libPaths('')
+
+.libPaths( c( "/home/petter/R/x86_64-pc-linux-gnu-library/3.4") )
+
+library("ggplot2")
+library("cowplot")
+library("reshape")
+library("knitr", lib ="/home/petter/R/x86_64-pc-linux-gnu-library/3.4")
+library("kableExtra", lib ="/home/petter/R/x86_64-pc-linux-gnu-library/3.4")
+library("dplyr",, lib ="/home/petter/R/x86_64-pc-linux-gnu-library/3.4")
+library("ranger")
+library("jsonlite")
+library("gridExtra")
+
+
+options(digits=2)
+
+options(stringsAsFactors = F)
+
+colorPal <- c("#7BC0F7", "#3B8AD9", "#F18226", "#FFDB69", "#61737B", "#A6B3B3", "#E24B26")
+
+knitr::opts_chunk$set(echo = TRUE)
+
+
+### 
+# Functions Nour/Pontus
+###
+
+source("scripts/functions_LundClassifier2018.r")
+
+### 
+# </Functions Nour>
+###
+
+
+# Example data
+#rsem_file <- "/data/bnf/premap/rnaseq/18KFU0001_0.rsem"
+#clarity_id <- "ALL354A1"
+
+### 
+# read the GEX data for one sample 
+###
+
+rsem_file <- params$rsem_in
+
+if (!file.exists(rsem_file)){
+  exit("In file not found")
+}
+
+rsem <- read.table(rsem_file, header = T, row.names = 1)
+sample <- rsem$TPM
+symbol <- sapply(strsplit(rownames(rsem),"_"), "[[", 2)
+
+symbol <- gsub("-","_",symbol)
+names(sample)<-symbol
+sample <- as.matrix(sample)
+
+#######################################################
+# Extract patient and sample information from clarity if on region skåne server
+#######################################################
+
+clarity_id<-params$clarity_id
+
+sampledata<-data.frame(
+  patientnamn="Ej tillgänglig",
+  personnummer = "Ej tillgänglig",
+  ankomstdatum = "Ej tillgänglig",
+  koncentration = "Ej tillgänglig",
+  dv200 = "Ej tillgänglig",
+  RIN = "Ej tillgänglig")
+
+
+if( Sys.info()["nodename"] == "MTLUCMDS1"){
+
+  system(paste0("python /data/bnf/scripts/extract_sample_info_from_clarity.py --sampleid ",clarity_id," --out ", "/data/bnf/tmp/",clarity_id,".json"))
+  
+  patientdata <- fromJSON(paste0("/data/bnf/tmp/",clarity_id,".json"))
+  
+  system(paste0("rm /data/bnf/tmp/",clarity_id,".json"))
+  
+  
+  if(is.list(patientdata)){
+  #sampledata$patientnamn <- patientdata$`Patient Name`
+  sampledata$personnummer <- strsplit( patientdata$`Personal Identity Number`, "-" )[[1]][1]
+  sampledata$ankomstdatum <- patientdata$`Date of arrival`
+  sampledata$koncentration <- patientdata$`Sample concentration (ng/ul)`
+  if(!is.null(patientdata$DV200)){
+    sampledata$dv200 <- patientdata$DV200
+  }
+  if(!is.null(patientdata$RIN)){
+   sampledata$RIN <- patientdata$RIN 
+  }
+  }
+  
+}
+
+
+
+### 
+# Read QC
+###
+
+star_qc <- params$star_qc
+
+if (!file.exists(star_qc)){
+  cat(paste0("File not found: ",star_qc))
+  q(save = "no")
+}
+
+qc.log<-read.csv(star_qc,sep="\t",header=F)
+
+qc.data<-data.frame(uppmatt=c(sampledata$RIN,sampledata$dv200,
+    as.numeric(qc.log[grep("Uniquely mapped reads number",qc.log$V1),"V2"])/1e6,
+                              qc.log[grep("Uniquely mapped reads %",qc.log$V1),"V2"],
+                              qc.log[grep("% of reads mapped to multiple loci",qc.log$V1),"V2"],
+                              qc.log[grep("Mismatch rate per base, %",qc.log$V1),"V2"],
+                              qc.log[grep("Number of splices: Annotated",qc.log$V1),"V2"],
+                              qc.log[grep("Number of splices: Non-canonical",qc.log$V1),"V2"]),
+                    riktlinje=c(">6", ">50",">20",">80%","<10%","< 3%","NA","NA" ))
+
+#qc.data<-rbind(qc.data,c(as.integer(as.numeric(qc.data$uppmatt[5])/as.numeric(qc.data$uppmatt[6])),">100"))
+
+qc.data$variabel =  c("RIN", "DV200", "Unikt inpassade läsningar (M)","Unikt inpassade läsningar (%)", "Multiinpassade läsningar (%)","Missmatchratio per bas (%)", "Kanoniska splitsningar (n)", "Icke-kanoniska splitsningar (n)")
+
+
+
+
+```
+
+`r knitr::include_graphics("lu-logo.jpg")`
+
+## Analysrapport inom ramen för forskningsstudien UROSCANSEQ - Expressionsdriven klassificering av blåscancer
+
+
+
+
+Information   | `r params$sampleid`
+------------- | -------------
+Patientnamn   | `r sampledata$patientnamn`
+Personnummer  | `r sampledata$personnummer`
+Prov-ID       | `r params$sampleid`
+Ankomstdatum  | `r sampledata$ankomstdatum`
+Rapportdatum  | `r format(Sys.time(), "%Y-%m-%d")`
+Ingångsmaterial    | RNA
+Koncentration  | `r sampledata$koncentration` ng/ul
+RNA-kvalitet | Godkänd
+Analysmetod   | NGS-/MPS-analys med RNA-seq
+Indatafil     | `r params$rsem_in`
+Analys genomförd av  | Centrum för Translationell Genomik (CTG), Lunds Universitet
+Rapportversion  | 1.02 - Reviderad 2019-04-30
+
+***
+
+### Slutsats
+
+RNA-kvalitet: <b>godkänd</b>
+
+```{r results_classifier, include=T,echo=F}
+
+results <- LundClassifier(SampleData = sample)
+#results$Report$Main_subtype<-"Urotel-lik"
+#results$Report$Subtype<-"Urotel-lik A"
+if(grepl("Uro",results$Report$Subtype)){ ReportSubtype<<-results$Report$Subtype}else{ReportSubtype<<-"-"}
+
+```
+
+
+#### Molekylär Subtyp
+Expressionsprofilen tyder på att tumören är av subtypskategorin: <b>`r results$Report$Main_subtype`</b>
+
+Undergrupp av "Urotel-lik" (om bedömbart): <b>`r ReportSubtype`</b>
+
+#### Grad
+```{r,echo=F}
+
+Grad <- "Ej tillgänglig"
+if(results$Report$Grade=="grad 3"){
+  Grad<-"Grad 3"
+}else{
+  Grad <- "Ej Grad 3"
+}
+```
+Molekylär grad bedöms som: <b>`r Grad`</b>
+
+***
+
+### Analysresultat
+
+Nedan syns algoritm värde för varje subtyp för tumören för RandomForestklassificeraren respektive SwitchBoxklassificeraren.
+
+
+#### Random Forest
+
+```{r results_classifier_table_rf, include=T,echo=F,fig.width=10,fig.height=4}
+
+rf<-data.frame(subtyp=colnames(results$RandomForest$Scores),score=results$RandomForest$Scores[1,])
+rf$max <- "N"
+rf[which.max(rf$score),"max"]<-"Y"
+
+rf$subtyp <- factor(rf$subtyp, levels = rf$subtyp)
+t1<-ttheme_default(core=list(
+        fg_params=list(fontface=setNames(c("plain","bold"),c("N","Y"))[rf[,3]])
+        ))
+
+
+p1<-ggplot(rf,aes(x=subtyp,y=score,fill=max))+geom_bar(stat="identity",position = "dodge")+ylab("Värde")+xlab("")+ylim(0,1)+scale_fill_manual(values = colorPal[c(1,5)])+theme(legend.title=element_blank(),legend.position = "none")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+rownames(rf)<-NULL
+colnames(rf)<-c("Typ","Värde","Max")
+plot_grid(p1,NULL,plot_grid(tableGrob(rf[,-3],theme=t1),NULL,ncol=1,rel_heights =c(0.6,0.4)),rel_widths = c(0.5,0.25,0.25),ncol=3,axis="t") 
+
+```
+
+***
+
+#### SwitchBox
+```{r results_classifier_table_sb, include=T,echo=F,fig.width=10,fig.height=4}
+sb <- results$SwitchBox$Scores
+
+sb<-data.frame(subtyp=colnames(results$SwitchBox$Scores)[1:8],score=results$SwitchBox$Scores[1,1:8])
+sb$max <- "N"
+sb[which.max(sb$score),"max"]<-"Y"
+t2<-ttheme_default(core=list(
+        fg_params=list(fontface=setNames(c("plain","bold"),c("N","Y"))[sb[,3]])
+        ))
+
+sb.main <- sb[grep("Urotel-lik[[:blank:]][[:alnum:]]",sb$subtyp,invert = T),]
+sb.uro <- sb[grep("Urotel-lik[[:blank:]][[:alnum:]]",sb$subtyp),]
+
+sb.main$subtyp <- factor(sb.main$subtyp, levels = sb.main$subtyp)
+sb.uro$subtyp <- factor(sb.uro$subtyp, levels = sb.uro$subtyp)
+ 
+
+main.p<-ggplot(sb.main,aes(x=subtyp,y=score,fill=max))+geom_bar(stat="identity",position = "dodge")+ylab("Värde")+xlab("")+ylim(0,1)+scale_fill_manual(values = colorPal[c(1,5)])+theme(legend.title=element_blank(),legend.position = "none")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+rownames(sb.main)<-NULL
+colnames(sb.main)<-c("Typ","Värde","Max")
+
+if(results$Report$Main_subtype != "Urotel-lik"){
+plot_grid(plot_grid(main.p,NULL,align="hv",rel_widths=c(0.67,0.33)),plot_grid(tableGrob(sb.main[,-3],theme=t2),NULL,ncol=1,align="v"),rel_widths=c(0.75,0.25))
+}else{
+
+#if(results$Report$Main_subtype == "Urotel-lik"){
+
+    # Subtypes
+    sub.p<-ggplot(sb.uro,aes(x=subtyp,y=score,fill=max))+geom_bar(stat="identity",position = "dodge")+ylab("")+xlab("")+ylim(0,1)+scale_fill_manual(values = colorPal[c(1,5)])+theme(legend.title=element_blank(),legend.position = "none")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+  rownames(sb.uro)<-NULL
+  colnames(sb.uro)<-c("Typ","Värde","Max")
+  
+  t3<-ttheme_default(core=list(
+        fg_params=list(fontface=setNames(c("plain","bold"),c("N","Y"))[sb.uro[,3]])
+        ))
+
+
+  plot_grid(plot_grid(main.p,sub.p,align="hv",rel_widths=c(0.67,0.33)),plot_grid(tableGrob(sb.main[,-3],theme=t2),tableGrob(sb.uro[,-3],theme=t3),ncol=1,align="v"),rel_widths=c(0.75,0.25))
+
+  }
+
+```
+
+#### Molekylär grad
+
+
+```{r results_classifier_table_grader, include=T,echo=F,fig.width=2,fig.height=2}
+grade_score <-data.frame(score=results$SwitchBox$Scores[9]) 
+
+if(grade_score>0.5){
+  cat(paste0("Expressionsprofilen tyder på att tumören är av grad 3 (värde: ",prettyNum(grade_score,digits=2), ")."))
+}else{
+  cat(paste0("Expressionsprofilen tyder på att tumören EJ är av grad 3 (värde: ",prettyNum(grade_score,digits=2), ")."))
+}
+
+
+
+
+sampleid<-params$sampleid
+
+ggplot(grade_score,(aes(y=score,x=sampleid)))+geom_bar(stat="identity")+ylab("")+geom_hline(yintercept=0.5,col="red")+ylim(c(0,1))+xlab("")
+
+````
+
+### Kvalitetskontroll
+
+
+
+
+```{r qc, include=T,echo=F}
+
+samplename <- params$sampleid
+# 
+# if(as.numeric(qc.data$uppmatt[1]) > 20 & as.numeric(substr(qc.data$uppmatt[2],1,2)) > 80 & as.numeric(substr(qc.data$uppmatt[3],1,2))< 10  
+#    & as.numeric(substr(qc.data$uppmatt[4],1,4))< 3){
+#   cat(paste0("Provet uppfyller av CTG uppställda kvalitetskriterier."))
+# }else{
+#   cat(paste0("Provet uppfyller EJ av CTG uppställda kvalitetskriterier."))
+# }
+
+
+fail <- c(0)
+
+if(as.numeric(qc.data$uppmatt[3]) < 20){
+  fail <- c(1)
+}
+if (as.numeric(substr(qc.data$uppmatt[4],1,4)) < 80 ){
+  
+  fail <- c(fail,2)
+}
+if (as.numeric(substr(qc.data$uppmatt[5],1,4))> 10 ){
+  
+  fail <- c(fail,3)
+}
+if (as.numeric(substr(qc.data$uppmatt[6],1,4))> 3 ){
+  
+  fail <- c(fail,4)
+}
+
+
+if(sum(fail)>0){
+  qc.data[,c(3,2,1)] %>%
+    kable(col.names = c("","Riktvärde",samplename)) %>%
+    kable_styling() %>% row_spec(fail, bold = T, background = "grey")
+  
+}else{
+  qc.data[,c(3,2,1)] %>%
+    kable(col.names = c("","Riktvärde",samplename)) %>%
+    kable_styling()
+}
+
+```
+
+
+### Analysbeskrivning
+
+RNA har extraherats från insänt prov (tumörbiopsi från TURB) och analyserats med massivt parallell sekvensering (MPS, även kallat NGS). budbärar-RNA selekterades från 200 ng total-ribonukleinsyror med hjälp av polyA-rening, fragmenterades och amplifierades med slumpmässiga startmolekyler med hjälp av "TruSeq Stranded mRNA"-kittet från Illumina. Efter DNA-ändsreparation, cDNA-syntes och ligering av sekvenseringsadaptorer sekvenserades provet på en NextSeq 500 med en läslängd av 2 x 150.
+
+Resulterande läsningar sekvensinpassades (STAR) samt kvantifierades (RSEM) mot det human genomet version b37. För klassificering används en ensemblklassificareare med en "top scoring pair classifier"-del och en "random forest"-del implementerad i R och utvecklad och tränad av Mattias Höglund med kollegor.
+
+### Referenser
+* Li et al 2013: https://arxiv.org/abs/1303.3997
+* A framework for variation discovery and genotyping using next-generation DNA sequencing dataDePristo M, Banks E, Poplin R, Garimella K, Maguire J, Hartl C, Philippakis A, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell T, Kernytsky A, Sivachenko A, Cibulskis K, Gabriel S, Altshuler D, Daly M, 2011 NATURE GENETICS 43:491-498
+* From FastQ Data to High-Confidence Variant Calls: The Genome Analysis Toolkit Best Practices Pipeline Van der Auwera GA, Carneiro M, Hartl C, Poplin R, del Angel G, Levy-Moonshine A, Jordan T, Shakir K, Roazen D, Thibault J, Banks E, Garimella K, Altshuler D, Gabriel S, DePristo M, 2013 CURRENT PROTOCOLS IN BIOINFORMATICS 43:11.10.1-11.10.33
+

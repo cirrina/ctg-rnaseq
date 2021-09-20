@@ -1,0 +1,109 @@
+---
+title: ''
+params:
+  clarity_id: ALL354A311
+  sampleid: 19KFU0016
+output:
+  html_document:
+    highlight: tango
+---
+
+
+<style type="text/css">
+
+body, td {
+font-size: 14px;
+}
+code.r{
+font-size: 18px;
+}
+pre {
+font-size: 14px
+}
+</style>
+
+
+```{r setup, include=FALSE}
+
+library("jsonlite")
+
+#######################################################
+# Extract patient and sample information from clarity if on region skåne server
+#######################################################
+
+clarity_id<-params$clarity_id
+
+sampledata<-data.frame(
+  patientnamn="Ej tillgänglig",
+  personnummer = "Ej tillgänglig",
+  ankomstdatum = "Ej tillgänglig",
+  koncentration = "Ej tillgänglig",
+  dv200 = "Ej tillgänglig",
+  RIN = "Ej tillgänglig")
+
+
+if( Sys.info()["nodename"] == "MTLUCMDS1.lund.skane.se"){
+  
+  system(paste0("python2 /data/bnf/scripts/extract_sample_info_from_clarity.py --sampleid ",clarity_id," --out ", "/data/bnf/tmp/",clarity_id,".json"))
+  
+  patientdata <- fromJSON(paste0("/data/bnf/tmp/",clarity_id,".json"))
+  
+  system(paste0("rm /data/bnf/tmp/",clarity_id,".json"))
+  
+  
+  sampledata$patientnamn <- patientdata$`Patient Name`
+  sampledata$personnummer <- patientdata$`Personal Identity Number`
+  sampledata$ankomstdatum <- patientdata$`Date of arrival`
+  sampledata$koncentration <- patientdata$`Sample concentration (ng/ul)`
+  if(!is.null(patientdata$DV200)){
+    sampledata$dv200 <- patientdata$DV200
+  }
+  if(!is.null(patientdata$RIN)){
+   sampledata$RIN <- patientdata$RIN 
+  }
+}
+
+
+
+
+
+```
+
+`r knitr::include_graphics("lu-logo.jpg")`
+
+## Analysrapport inom ramen för forskningsstudien UROSCANSEQ - Expressionsdriven klassificering av blåscancer
+
+
+
+
+Information   | `r params$sampleid`
+------------- | -------------
+Patientnamn   | `r sampledata$patientnamn`
+Personnummer  | `r sampledata$personnummer`
+Prov-ID       | `r params$sampleid`
+Ankomstdatum  | `r sampledata$ankomstdatum`
+Rapportdatum  | `r format(Sys.time(), "%Y-%m-%d")`
+Ingångsmaterial    | RNA
+Koncentration  | `r sampledata$koncentration` ng/ul
+Analysmetod   | NGS-/MPS-analys med RNA-seq
+Analys genomförd av  | Centrum för Translationell Genomik (CTG), Lunds Universitet
+Rapportversion  | 1.01 - Reviderad 2019-04-26
+
+***
+
+### Slutsats
+
+På grund av otillräcklig mängd RNA och/eller för dålig RNA-kvalitet kunde molekylär subtypning ej utföras.
+
+
+### Analysbeskrivning
+
+RNA har extraherats från insänt prov (tumörbiopsi från TURB) och analyserats med massivt parallell sekvensering (MPS, även kallat NGS). budbärar-RNA selekterades från 200 ng total-ribonukleinsyror med hjälp av polyA-rening, fragmenterades och amplifierades med slumpmässiga startmolekyler med hjälp av "TruSeq Stranded mRNA"-kittet från Illumina. Efter DNA-ändsreparation, cDNA-syntes och ligering av sekvenseringsadaptorer sekvenserades provet på en NextSeq 500 med en läslängd av 2 x 150.
+
+Resulterande läsningar sekvensinpassades (STAR) samt kvantifierades (RSEM) mot det human genomet version b37. För klassificering används en ensemblklassificareare med en "top scoring pair classifier"-del och en "random forest"-del implementerad i R och utvecklad och tränad av Mattias Höglund med kollegor.
+
+### Referenser
+* Li et al 2013: https://arxiv.org/abs/1303.3997
+* A framework for variation discovery and genotyping using next-generation DNA sequencing dataDePristo M, Banks E, Poplin R, Garimella K, Maguire J, Hartl C, Philippakis A, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell T, Kernytsky A, Sivachenko A, Cibulskis K, Gabriel S, Altshuler D, Daly M, 2011 NATURE GENETICS 43:491-498
+* From FastQ Data to High-Confidence Variant Calls: The Genome Analysis Toolkit Best Practices Pipeline Van der Auwera GA, Carneiro M, Hartl C, Poplin R, del Angel G, Levy-Moonshine A, Jordan T, Shakir K, Roazen D, Thibault J, Banks E, Garimella K, Altshuler D, Gabriel S, DePristo M, 2013 CURRENT PROTOCOLS IN BIOINFORMATICS 43:11.10.1-11.10.33
+

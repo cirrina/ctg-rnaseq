@@ -1,0 +1,744 @@
+#!/bin/bash
+
+#!/bin/bash
+
+## NoteL The script may be initiated in either Illumina Runfolder OR the project work folder with same name as the project id specified in SampleSheet
+## A STANDARD RUN -- for which Demux is True -- should be initialted within the illumina runfolder. A project work folder is then created. The script will move to this folder and initialte the nextflow pipeline
+## ALT. In cases of re-running the complete pipeline without re-running the demux - start in the projectfolder. The script will then not re-run the initial steps of Sample sheet check etc.  Also, iff using fastq files from other sources.
+### ALT 1 regquires:
+#### 1. That the pipeline files are present in work folder, incliuding the project speciic nextflow config file, nextflow scripts and regular config.
+#### 2. Paramtera are imported from the the Sheet in ctg format AND the  project specific file.
+
+
+
+### 1/ Runfolder mode (runfolder_mode = true)
+# generate project folder
+# overwerites everything in project folder if exists (warns if exists)
+
+# check if initiated in a runfolder
+
+
+## 2. Project folder mode (runfolder_mode = false)
+### Require samplesheet must be same requirements as for 1. get project id from here and check pipeline parameter
+
+# 2.a . resume - false -
+# 2.a.1 skip demux  = false
+
+
+# 2.a.2 skip demcux = true
+
+
+# 2.b . resume - true -
+# check that all expected files are present - including nf log files
+# initiate nextflow with resume flag
+
+
+### RESUME MODE - THEN NO OTHER AHTN
+
+
+#######################################
+# ctg driver for uroscan rnaseq pipeline
+#######################################
+
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CHANGE WHEN DEPOLYT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# scriptsdir='/projects/fs1/shared/ctg-dev/pipelines/uroscan/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
+# scripts_root='/Users/david/scripts' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
+scripts_root="/projects/fs1/shared/ctg-dev/pipelines"
+# if DEVELOPMENT MODE, established pipelines are '/projects/fs1/shared/ctg-pieplines/pipelines/'
+# scriptsdir will be generated with this as base
+nf_pipe="uroscan-main.nf"
+
+ singularity_container='/projects/fs1/shared/ctg-dev/containers/uroscan/v1.4/uroscan.sif'
+#singularity_container='/projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif'
+
+singularity_container_rscript='/projects/fs1/shared/ctg-containers/ctg-rnaseq/ctg-rnaseq-v1.1/ctg-rnaseq-v1.1.sif'
+singcmd="singularity exec --bind /projects/fs1/ ${singularity_container}"
+singcmd_rscript="singularity exec --bind /projects/fs1/ ${singularity_container_rscript}"
+
+## Root directories (based on ourr set folder naming conventions on lsens)
+project_root='/projects/fs1/shared/ctg-projects/uroscan'
+delivery_root='/projects/fs1/nas-sync/ctg-delivery/uroscan'
+ctg_save_root='/projects/fs1/shared/ctg-qc/uroscan'
+#project_root='/Users/david/tasks/nftest/projects' ## '/projects/fs1/shared/ctg-projects/uroscan'
+#delivery_root='/Users/david/tasks/nftest/delivery' ## '/projects/fs1/nas-sync/ctg-delivery/uroscan'
+#ctg_save_root='/Users/david/tasks/nftest/ctg-qc' # '/projects/fs1/shared/ctg-qc/uroscan'
+
+
+
+## Develiopment possibilities / known issues
+# - since the create samples sheet Rscripts are run in the driver, not in the nf workflow, strandness is not yet included in the ctg samplesheet
+# Chmods of generated files and fodlers !! should be full access by all within the lsens4 group. Add chmods to script? What about executables...
+
+## One nmore rscript to check if no deux samplesheet is supplied
+
+#######################################
+# Initiation - Prime the ctg rnaseq pipeline
+#######################################
+force_lane='0'
+force_index=false
+
+
+run_blcl2fastq=true
+fastq_custom=true ## set to false if no fastq_path is supplied (default no path)
+
+resume=false
+execdir=$(pwd)
+
+# usage message
+usage() {
+    echo ""
+    echo ""
+    echo "------------------- "
+    echo " usage : "
+    echo "------------------- "
+    echo " uroscan-driver [ -s samplesheet ] [ -r resume ] [ -f fastq_path ] [ -l force_lane ] [ -i force_index ] [ -h help ] "  1>&2
+    echo ""
+    echo "------------------- "
+    echo " arguments : "
+    echo "------------------- "
+    echo " samplesheet    -s : IEM style laboratory SampleSheet. Project and pipeline specific parameters must be added "
+    echo ""
+    echo " (see https://github.com/cirrina/uroscan/blob/main/README.md for details)"
+    echo ""
+    echo " Required [header] rows for SampleSheet include:"
+    echo ""
+    echo " ProjectId:        CTG project id, e.g. 2021_026. Will define downsteam analysis folder and filenames."
+    echo "                   If a project is run multiple times with different settings. Modify the project id and sample sheet accordingly."
+    echo " RunFolder:        Name (not full path) of Illumina runfolder, e.g. . Set to NA if unknown and custom fastq files are run"
+    echo " PipelineName:     The CTG analysis pipeline. Must match the ctg pipeline naming nomenclature. e.g. uroscan OR ctg-rnaseq"
+    echo " PipelineVersion:  The CTG analysis pipeline version. Must match the ctg pipeline naming nomenclature, e.g. '1.0'"
+    echo " PoolName:         Name of ctg pool, i.e. name of the library pool added to flowcell, e.g. 'CTGpool_0150'"
+    echo " SharedFlowCell:  'true' or 'false'. If the pool/flowcell includes more than one customer projects."
+    echo " Species:          Species for all samples in current sample sheet (species_global), e.g. Homo sapiens. Set to 'Multiple' if multiple species - this assumes that no alignment is performed."
+    echo ""
+    echo ""
+    echo "------------------- "
+    echo " optionals : "
+    echo "------------------- "
+    echo " fastq_path:    -f : Set to a full path where all fastq files are located. individual filenames should be specified in ctg sample sheet. This flag will set 'run_blcl2fastq' to 'false' and all flags related to demux to false "
+    echo " resume         -r : Nextflow-specific. If to resume nextflow run. Can only be used when executing in Project work dir, NOT from Illumina runfolder"
+    echo " force_lane     -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will override the Lane column in sample sheet"
+    echo " force_index:   -i : Set this flag if to force iem samplesheet Rscript to overwrite index id and sequence informations based on index well id. "
+    echo " help           -h : print help message"
+    echo "------------------- "
+    echo ""
+    echo ""
+}
+
+exit_abnormal() {
+  usage
+  echo "";echo "";echo ""
+  echo "----------------------- "
+  echo "  ERROR  "
+  echo "----------------------- "
+  echo "";echo "";echo ""
+  echo "";echo "";echo ""
+  exit 1
+}
+
+# Read and control input arguments
+while getopts ":s:l:f:r:ih" opt; do
+    case $opt in
+      s) samplesheet=$OPTARG
+	     ;;
+      l) force_lane=$OPTARG
+        ;;
+      f) fastq_path=$OPTARG
+            ;;
+      r) resume=true
+       	     ;;
+      i) force_index=true
+          ;;
+      h) exit_abnormal
+        ;;
+      \?) echo echo ""; echo "Error:";"Invalid option -$OPTARG" >&2
+        exit_abnormal ;;
+      :) echo ""; echo "Error:"; echo " -${OPTARG} requires an argument!"
+	     exit_abnormal ;;
+    esac
+done
+
+
+################################################
+# Check input arguments and variables
+################################################
+shift "$(( OPTIND -1 ))"
+
+## Check Sample Sheet. if file is present in work directory.
+if [ -z $samplesheet ]; then
+  echo ""; echo ""; echo "Error:"
+  echo "You must specify sample sheet (in current dir): '-s' flag. "; echo ""
+  exit_abnormal
+fi
+if [ ! -f $samplesheet ]; then
+  echo ""; echo ""; echo "Error:"
+  echo "Sample Sheet does not exist (in current dir)"
+  #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
+  exit_abnormal
+fi
+
+if [ -z $fastq_path ]; then
+  fastq_custom=false
+fi
+
+if [[ ${fastq_custom} == "true" ]]; then
+  fastq_custom=true
+  run_blcl2fastq=false
+  echo ""; echo " Custom fastq mode set to: ${fastq_custom}"; echo ""
+  if [[ ! -d $fastq_path ]]; then
+    echo ""; echo ""; echo "Error:"
+    echo "fastq_path (-f) does not exist: ${fastq_path} "; echo ""
+    exit_abnormal
+  fi
+  echo ""; echo " Custom fastq folder is : ${fastq_path}"; echo ""
+fi
+
+
+################################################
+## Check Sample sheet variables
+################################################
+
+echo " Reading SampleSheet:"
+echo "  ... samplesheet: $samplesheet"
+
+## Read PROJECT ID from samplesheet
+## ----------------------------------------------
+projectid=$(awk -F, '$1 == "ProjectId"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... project id: $projectid"
+
+if [ -z "$projectid" ]; then
+  echo ""; echo "Error: "
+  echo " ProjectId is not properly supplied in samplesheet."
+  echo " CTG Project id must be given as 'ProjectId' within the [Header] section of sample sheet"; echo""; echo ""
+  exit_abnormal
+fi
+
+if [[ $projectid =~ ' ' ]]; then
+  echo ""; echo ""; echo "Error: "
+  echo " Warning: project id must not inlude white space ' '"; echo""; echo ""
+  exit_abnormal
+fi
+
+if [[ $projectid =~ \\. ]]; then
+  echo ""; echo ""; echo "Error: "
+  echo " Warning: project id must not inlude a dot '.'"; echo""; echo ""
+  exit_abnormal
+fi
+
+
+
+
+# Define variables
+################################################
+
+# set project work dir
+projectdir=${project_root}/${projectid}
+
+# project specific config file
+nf_conf="${projectdir}/nextflow.config.project.${projectid}"
+
+## Fastq paths should be defined even if demux is not run
+fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output. includes the fastq directory as well as
+fastqdir="${fastqdir_bcl2fastq}/${projectid}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
+if [[ ${fastq_custom} == "true" ]]; then
+  fastqdir=${fastq_custom}
+fi
+
+# Samplesheet names - outputed from samplesheet rscript
+samplesheet_demux="${projectdir}/SampleSheet-${projectid}-demux.csv"
+samplesheet_ctg="${projectdir}/SampleSheet-${projectid}-ctg.csv"
+samplesheet_original="${projectdir}/SampleSheet-${projectid}-original.csv"
+
+
+
+## Read CTG PIPELINE parameters from samplesheet.
+## ----------------------------------------------
+pipelineName=$(awk -F, '$1 == "PipelineName"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... pipelineName: $pipelineName"
+pipelineVersion=$(awk -F, '$1 == "PipelineVersion"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... pipelineVersion: $pipelineVersion"
+
+
+if [ -z "$pipelineName" ]; then
+  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+  echo "Warning: 'PiepelineName' is not properly supplied in samplesheet. \
+ Must be given as 'PipelineName, uroscan' within the [Header] section of sample sheet"; echo""; echo ""
+  exit_abnormal
+fi
+if [ -z "$pipelineVersion" ]; then
+  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
+  echo "Warning: 'PiepelineVersion' is not properly supplied in samplesheet. \
+ Must be given as 'PipelineVersion, 1.0' within the [Header] section of sample sheet"; echo""; echo ""
+  exit_abnormal
+fi
+# generate pipeline path from what is specified im sample sheet
+pipeline="${pipelineName} ${pipelineVersion}"
+scriptsdir="${scripts_root}/${pipelineName}/v${pipelineVersion}"
+
+if [[ ! -d $scriptsdir ]]; then
+  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+  echo " scriptsdir does not exist: ${scriptsdir} "; echo ""
+  echo " Make sure PipelineName and PipelineVersion are correctly supplied in SampleSheet"; echo " AND that they match a directory whtin the scripts_root folder: ${scripts_root}."
+  exit_abnormal
+fi
+
+
+
+## Read RunFolder from samplesheet
+## ----------------------------------------------
+## check if executed in rundfolder - RunFolder in sampleSheet must match folder in which script is executed. If not applicble set to NA
+# A standard 1st time execution should be perfomrmed within the runfolder. This will set `runfolder_mode` to true.
+#  If a re-run or a run with already generated fastq files, then execute within roject directry. The runfolder_mode is set to false. In this case you need to manually copy releveant pipeline files to the project directory
+
+runfolder=$(awk -F, '$1 == "RunFolder"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... Illumina runfolder: $runfolder"
+if [ -z "$runfolder" ]; then
+  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+  echo " RunFolder is not properly supplied in samplesheet."
+  echo " Must be supplied as 'RunFolder' within the [Header] section of sample sheet";
+  echo " RunFolder may be a proper runfolder and the same as sctipt is executed within OR set to 'NA'"; echo""; echo ""
+  exit_abnormal
+fi
+
+
+if [[ -d "${execdir}/Data/Intensities/BaseCalls" ]]; then
+  ## EXECUTED WITHIN RUNFOLDER
+  # runfolderdir=$execdir # note that by default runfolder will be set to same as execution dir. Script should be initiated in runFolder if demux shpuld be included
+  # runfolder=$(basename $runfolderdir) #
+  runfolderdir=$execdir
+  if [[ $(basename $runfolderdir) != $runfolder ]]; then
+    echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+    echo " RunFolder is not properly supplied in samplesheet."
+    echo " Must be supplied as 'RunFolder' within the [Header] section of sample sheet";
+    echo " If this script is executed within a Illumina runfolder, the RunFolder must match the name of the Illumina folder."; echo""; echo ""
+    exit_abnormal
+  fi
+  runfolder_mode=true
+  echo "  ... ... execdir is an Illumina runfolder matching supplied: $runfolderdir"
+  echo "  ... ... runfolder_mode: $runfolder_mode"
+else
+  ## NOT EXECUTED WITHIN RUNFOLDER. ThEN THIS MUST BE PROJECT WORK DIR
+  echo "  ... ... execdir is NOT a RunFolder: $exexdir"
+  echo "  ... ... expecting fastq_custom dir through -f flag ... "
+  if [[ "$fastq_custom" == "true" ]]; then
+    # echo "  ... ... ... OK, fastq_custom is set to: $fastq_custom"
+    runfolder_mode=false
+    runfolderdir='none'
+  else
+
+    echo " RunFolder is not properly supplied in samplesheet."
+    echo " Must be supplied as 'RunFolder' within the [Header] section of sample sheet";
+    echo " If set to 'NA', then fastq_path (-f) must be supplied."; echo""; echo ""
+    exit_abnormal
+  fi
+  echo "  ... ... expect exection within in project work dir ...."
+  if [[ "$execdir" != "$projectdir" ]]; then
+    echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+    echo " Trying to execute script outside Illumina Runfolder."
+    echo " If so, you must execute within the proper project id worlfolder.";
+    echo " In this case:  ${projectdir}"; echo""; echo ""
+    exit_abnormal
+  fi
+  # echo "  ... ... runfolder_mode: $runfolder_mode"
+fi
+
+
+## Read PoolName from samplesheet
+## ----------------------------------------------
+poolname=$(awk -F, '$1 == "PoolName"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... PoolName: $poolname"
+
+## Read PoolType from samplesheet
+## ----------------------------------------------
+sharedflowcell=$(awk -F, '$1 == "SharedFlowCell"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... SharedFlowCell: $sharedflowcell"
+if [ -z "$sharedflowcell" ]; then
+  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+  echo " SharedFlowCell is not properly supplied in samplesheet."
+  echo " Must be supplied as 'SharedFlowCell' 'true' OR 'false' within the [Header] section of sample sheet"; echo""; echo ""
+  exit_abnormal
+fi
+
+if [[ $sharedflowcell == "true" ]]; then
+  pooled=true
+elif [[ $sharedflowcell == "false" ]]; then
+    pooled=false
+else
+  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+  echo " SharedFlowCell is not properly supplied in samplesheet. \
+  Must be supplied as 'SharedFlowCell' 'true' OR 'false' within the [Header] section of sample sheet"; echo" This to indicate wether multiple customer projects are present within the runfolder data"; echo ""
+  exit_abnormal
+fi
+
+
+
+
+
+
+# #############################################################################
+#  1. IF RESUME FLAG - Try initiate Nextflow Pipeline using RESUME
+# #############################################################################
+if [[ $resume == "true" ]]; then
+  if [[ $runfolder_mode == "true" ]]; then
+    echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+    echo " Nextflow resume flag -r must not be used while executing sctipt in Illumina runfolder."
+    echo " Move to project directory and initiate resume"
+    echo""; echo ""
+    exit_abnormal
+  fi
+  echo " RESUME mode"
+  echo " ... trying to resume nextflow"
+  echo " ... Hail mary !!! "
+  nohup nextflow run $nf_pipe -c $nf_conf --resume > log.nextflow.uroscan &
+  echo " ... :  nextflow run $nf_pipe -c $nf_conf --resume"
+fi
+
+
+
+###################################################################
+# 1. IF `runfolder_mode` - Prime Project Work folder & chek sample sheet
+###################################################################
+#
+if [[ $runfolder_mode == "true" ]]; then
+
+
+
+  echo ""
+  echo ""
+  echo " runfolder_mode (executiondir is same as runfolder dir)"
+  echo "  ... executiondir:  ${execdir}"
+  echo "  ... scriptsdir:  $scriptsdir"
+  echo "  ... project workfolder:  $projectdir "
+  echo ""
+# Prompt user to approve running in current directory and input
+  read -p "
+  proceed? (y/n)
+   ... " prompt
+
+  if [[ $prompt != "y" ]]; then
+      echo ""; echo " Exiting!! "
+      exit 0
+  fi
+  echo ""
+
+  if [[ -d ${projectdir} ]]; then
+    echo ""
+    read -p "  ... Warning!!
+  ... ... project work folder already exists:
+  ... ... sample sheets and scripts will be overwritten
+
+  proceed? (y/n)
+   ... " prompt
+    if [[ $prompt != "y" ]]; then
+        echo ""; echo "Exiting!! "
+        exit 0
+    fi
+  fi
+  echo ""
+  echo ""
+
+  mkdir -p $projectdir
+  cp -r ${scriptsdir}/* ${projectdir}/ # rsync nextflow foles. Will overwrite configs
+  chmod -R 775 ${projectdir}
+  cp ${samplesheet}  ${samplesheet_original}
+
+
+
+
+  # parse and generate sample sheets using Rscript in singularity container
+  #########################################################################
+  echo ""
+  echo ""
+  echo " Running Rscript: iem-SampleSheet-processor "
+  # echo " -------------------------------------------  "
+  echo " ... force_lane            : $force_lane";
+  echo " ... force_index           : $force_index";
+
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CHANGE WHEN DEPOLY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  #${projectdir}/bin/iem-samplesheet-processor.R \
+  $singcmd_rscript ${projectdir}/bin/iem-samplesheet-processor.R \
+        --project_id ${projectid} \
+        --sample_sheet ${samplesheet} \
+        --output_demux_sheet ${samplesheet_demux}  \
+        --output_ctg_sheet ${samplesheet_ctg} \
+        --bin_dir "${projectdir}/bin/" \
+        --force_lane ${force_lane} \
+        --force_replace_index ${force_index}
+  #echo " -------------------------------------------  "
+
+
+  if [ ! -f "${execdir}/log.rscript.samplesheet" ]; then
+    echo ""; echo "Error:"
+    echo " R script 'bin/iem-samplesheet-processor.R' did not produce log.rscript.samplesheet"; echo ""; echo ""
+    exit_abnormal
+    # echo "'${projectdir}' already exists. Overwriting this folder."
+  fi
+
+  ## copy logdfile from runfolder to projectdir
+  chmod 770 ${execdir}/log.rscript.samplesheet
+  cp ${execdir}/log.rscript.samplesheet ${projectdir}
+
+
+  echo ""
+  echo ""
+  echo " Parsing rscript logfile "
+  echo ""
+
+  logfile_iem="${execdir}/log.rscript.samplesheet" ## path and file suffix 'log.rscript.samplesheet' is dedfined within 'iem-samplesheet-processor.R'.
+  assay=$(cat ${logfile_iem} | grep 'Assay' |  cut -f2 -d",")
+  echo "  ... Assay:  ${assay}"
+  instrument_type=$(cat ${logfile_iem} | grep 'Instrument_type' |  cut -f2 -d",")
+  echo "  ... Instrument_type:  ${instrument_type}"
+  index_adapters=$(cat ${logfile_iem} | grep 'Index_Adapters' |  cut -f2 -d",")
+  echo "  ... Index_Adapters:  ${index_adapters}"
+  strandness=$(cat ${logfile_iem} | grep 'Strandness' |  cut -f2 -d",")
+  echo "  ... strandness:  ${strandness}"
+  paired=$(cat ${logfile_iem} | grep 'Paired' |  cut -f2 -d",")
+  echo "  ... paired:  ${paired}"
+  n_samples=$(cat ${logfile_iem} | grep 'number_samples' |  cut -f2 -d",")
+  echo "  ... n_samples:  ${n_samples}"
+  echo ""
+
+
+  #  End with Warning if samplesheet was not accepted
+  #######################################################################
+  echo " Checking validity of samplesheet"
+  samplesheet_accepted=$(cat ${logfile_iem} | grep 'samplesheet_accepted' |  cut -f2 -d",")
+
+  if [ $samplesheet_accepted == "FALSE" ]; then
+    echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+    echo " ... IEM Sample Sheet was NOT accepted"
+    echo " ... Please check logfile for details: "
+    echo " ... ... ${logfile_iem}"
+    echo ""; echo ""
+    cat ${logfile_iem}
+    echo ""
+    #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
+    exit_abnormal
+  fi
+  echo "  ...  OK!"
+
+
+
+  # Prime nextflow configuration file -- nextflow.params_${projectid} --
+  #######################################################################
+  echo ""
+  echo " Writing nextflow parameters to project config"
+
+  ## Write nextflow params to file
+  echo ""  > $nf_conf
+  echo "//  nextflow configuration file"                              >> $nf_conf
+  echo "//  Project:  ${projectid}"                                   >> $nf_conf
+  echo ""                                                             >> $nf_conf
+  echo "//  project specific parameters"                              >> $nf_conf
+  echo "//  will override params in 'nextflow.config' "               >> $nf_conf
+  echo "//"                                                           >> $nf_conf
+  echo ""                                                             >> $nf_conf
+  echo " params {"                                                      >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo "  // Pipeline & container                                     " >> $nf_conf
+  echo "  scriptsdir        =  '${scriptsdir}'                        " >> $nf_conf
+  echo "  container         =  '${singularity_container}'             " >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo "  // Project & assay specififc                                " >> $nf_conf
+  echo "  projectid           =  '${projectid}'                       " >> $nf_conf
+  echo "  projectdir          =  '${projectdir}'                      " >> $nf_conf
+  echo "  runfolder           =  '${runfolder}'                       " >> $nf_conf
+  echo "  fastqdir            =  '${fastqdir}'                        " >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo "  pooled_run          =  ${pooled}                          " >> $nf_conf
+  echo "  species_global      =  '${species}'                         " >> $nf_conf
+  echo "  n_samples           =  '${n_samples}'                       " >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo "  assay               =  '${assay}'                           " >> $nf_conf
+  echo "  instrument_type     =  '${instrument_type}'                 " >> $nf_conf
+  echo "  index_adapters      =  '${index_adapters}'                  " >> $nf_conf
+  echo "  paired              =   ${paired}                           " >> $nf_conf
+  echo "  strandness          =  '${strandness}'                      " >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo "  //  samplesheets                                            " >> $nf_conf
+  echo "  samplesheet           =  '${samplesheet_ctg}'               " >> $nf_conf
+  echo "  samplesheet_demux     =  '${samplesheet_demux}'             " >> $nf_conf
+  echo "  samplesheet_original  =  '${samplesheet_original}'          " >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo "  // bcl2fastq specific                                       " >> $nf_conf
+  echo "  runfolderdir        =  '${runfolderdir}'                    " >> $nf_conf
+  echo "  fastqdir_bcl2fastq  =  '${fastqdir_bcl2fastq}'              " >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo "  // root directories                                         " >> $nf_conf
+  echo "  project_root        =  '${project_root}'                    " >> $nf_conf
+  echo "  delivery_root       =  '${delivery_root}'                   " >> $nf_conf
+  echo "  ctg_save_root       =  '${ctg_save_root}'                   " >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo "  // Flags for individual nexflow processes                     " >> $nf_conf
+  echo "  //   NOTE! debugging only                                     " >> $nf_conf
+  echo "  //   'fastq_custom' flag will determine the run bcl2fastq flag   " >> $nf_conf
+  echo "  //   All other modules are 'true' by default                  " >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo "  run_blcl2fastq          =  ${run_blcl2fastq}                 " >> $nf_conf
+  # echo "  run_checkfiles_fastq        =  'true'                         " >> $nf_conf
+  # echo "  run_star                    =  'true'                         " >> $nf_conf
+  # echo "  run_checkfiles_bam          =  'true'                         " >> $nf_conf
+  # echo "  run_rsem                    =  'true'                         " >> $nf_conf
+  # echo "  run_rnaseqmetrics           =  'true'                         " >> $nf_conf
+  # echo "  run_featurecounts           =  'true'                         " >> $nf_conf
+  # echo "  run_index_bam               =  'true'                         " >> $nf_conf
+  # echo "  run_qualimap                =  'true'                         " >> $nf_conf
+  # echo "  run_rseqc                   =  'true'                         " >> $nf_conf
+  # echo "  run_markdups                =  'true'                         " >> $nf_conf
+  # echo "  run_collect_align           =  'true'                         " >> $nf_conf
+  # echo "  run_fastqScreen             =  'true'                         " >> $nf_conf
+  # echo "  run_bladderreport           =  'true'                         " >> $nf_conf
+  # echo "  run_publish_bladderreport   =  'true'                         " >> $nf_conf
+  # echo "  run_fastqc                  =  'true'                         " >> $nf_conf
+  # echo "  run_postaln_qc_rna          =  'true'                         " >> $nf_conf
+  # echo "  run_multiqc_ctg             =  'true'                         " >> $nf_conf
+  # echo "  run_setup_deliverytemp      =  'true'                         " >> $nf_conf
+  # echo "  run_move_fastq              =  'true'                         " >> $nf_conf
+  # echo "  run_multiqc_delivery        =  'true'                         " >> $nf_conf
+  # echo "  run_md5sum_delivery         =  'true'                         " >> $nf_conf
+  # echo "  run_setup_ctg_save          =  'true'                         " >> $nf_conf
+  # echo "  run_checkfiles_rscript_predelivery          =  'true'                         " >> $nf_conf
+  # echo "  run_finalize_delivery       =  'true'                         " >> $nf_conf
+  # echo "  checkfiles_rscript_postdelivery          =  'true'                         " >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  echo " }"                                                             >> $nf_conf
+  echo ""                                                               >> $nf_conf
+  ## Singularity container depending on uroscan or rnaseq
+  echo " // Define SLURM specs                                        " >> $nf_conf
+  echo " process {                                                    " >> $nf_conf
+  echo "  executor = 'slurm'                                          " >> $nf_conf
+  echo "  container = '${singularity_container}'                      " >> $nf_conf
+  echo "  time = '48h'                                                " >> $nf_conf
+  echo "  cpus = '16'                                                 " >> $nf_conf
+  echo "  memory = '100 GB'                                           " >> $nf_conf
+  echo " } " >> $nf_conf
+
+
+
+  #  Priming of project folder complete
+  ## --------------------------------
+  echo ""
+  echo ""
+  echo ""
+  echo "  Project primed"
+  echo "  ... Project dir        :  ${projectdir}"
+  echo "  ... Nextflow config    :  ${nf_conf}"
+  echo "  ... samplesheet-ctg    :  $samplesheet_ctg" ;
+  echo "  ... samplesheet-demux  :  $samplesheet_demux"         ;
+  echo "  ... Pipeline        :   ${pipeline}"
+
+
+  echo ""
+
+  chmod 770 ${projectdir}
+  cd ${projectdir}
+
+
+fi ## end priming section -  if runfolder_mode is true
+
+
+
+###################################################################
+# 2. `runfolder_mode` FALSE
+###################################################################
+## NOTE: THIS IS NOTE SAME AS -RESUME. resume mode is only to try re-starting a faulty nextflow run.
+# if script is not initiated in Illumina runfolder - assume project is already proimed and ready to start.
+# This will include:
+# i. samplesheets
+# ii. nextflow sctipts, configs and bins
+# iii. fastq file path supplied
+# This
+
+if [[ $runfolder_mode == "false" ]]; then
+  echo ""
+  echo " runfolder_mode is FALSE "
+  echo " ... executiondir is same as ProjectId in SampleSheet"
+  echo " ... assuming all configuration and sctipt files are present "
+  echo " ... assuming valid ctg-style sample sheet is supplied in project config : $nf_conf "
+
+  # If skip demox flag is FALSE- override the config file
+  #################################################
+  # If skip demux flag is given in execution.
+  if [[ ${run_blcl2fastq} == "false" ]]; then
+    echo " ... forcing 'run_blcl2fastq' to 'false'"
+    sed "s/run_blcl2fastq.*/run_blcl2fastq            =  false/g" $nf_conf > tmp.txt ; mv tmp.txt $nf_conf
+  fi
+fi
+
+
+
+###################################################################
+# 3. Final Check if all expected f\les are present
+###################################################################
+## Check if nextflow config files are present
+cd ${projectdir}
+if [ ! -f ${nf_conf} ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
+  echo ""; echo "Error:"
+  echo "'${nf_conf}' does not exist in current dir. Generate this in runfolder_mode or crete one from template."; echo ""; echo ""
+  exit_abnormal
+  # echo "'${projectdir}' already exists. Overwriting this folder."
+fi
+if [ ! -f "${projectdir}/nextflow.config" ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
+  echo ""; echo "Error:"
+  echo "'nextflow.config' file does not exist in project work directory"; echo ""; echo ""
+  exit_abnormal
+  # echo "'${projectdir}' already exists. Overwriting this folder."
+fi
+
+
+
+
+
+
+###################################################################
+# 4. Nextflow pipeline section
+###################################################################
+
+
+echo ""
+echo ""
+echo " Initiating nextflow pipeline"
+echo " ... pipeline      : $pipeline";
+echo " ... project id    : $projectid";
+echo " ... project dir   : $execdir";
+
+echo "";
+echo "";
+
+#echo ""
+#echo " Project specific nextflow config"
+# cat ${nf_conf}
+# Prompt user to approve running in current directory and input
+echo "";
+read -p "
+
+  proceed? (y/n)
+   ... " prompt
+
+if [[ $prompt != "y" ]]
+then
+    echo ""; echo "Exiting!! "
+    exit 0
+fi
+echo "";echo ""
+
+
+
+
+# #############################
+#  Initiate Nextflow Pipeline
+# #############################
+
+# nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.uroscan &
+cd ${projectdir}
+nextflow run $nf_pipe -c $nf_conf > log.nextflow.progress &
+echo "  Running :   nextflow run $nf_pipe -c $nf_conf"
+echo "  Singularity container:  ${singularity_container}"
+echo "";
+echo "  ########################## "
+echo "      S U B M I T T E D "
+echo "  ########################## "
+echo "  Logfile :  ${projectdir}/log.nextflow.progress "
+echo ""

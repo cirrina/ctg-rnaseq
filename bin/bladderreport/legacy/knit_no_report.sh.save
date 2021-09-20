@@ -1,0 +1,2 @@
+Rscript -e 'library(rmarkdown); rmarkdown::render("/data/bnf/scripts/bladderreport/bladderreport_ctg_no_results.Rmd", params = list(clarity_id = "ALL509A15",sampleid="20KFU0006-CTG"), "html_document")'
+chromium-browser --headless --disable-gpu --print-to-pdf=20KFU0005-CTG.STAR.bladderreport.pdf bladderreport_ctg_no_results.html
