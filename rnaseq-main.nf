@@ -804,8 +804,8 @@ process rnaseqmetrics {
 
 process featurecounts {
   tag "$projectid"
-  cpus 28
-  memory '300 GB'
+  cpus 20
+  memory '100 GB'
   time '36h'
   echo debug_mode
 

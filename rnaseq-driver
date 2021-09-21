@@ -297,22 +297,22 @@ fi
 
 
 ## Profile uroscan or rnaseq
-profileName=$(awk -F, '$1 == "PipelineProfile"' ${samplesheet} | awk -F, '{print $2}')
+pipelineProfile=$(awk -F, '$1 == "PipelineProfile"' ${samplesheet} | awk -F, '{print $2}')
 
-if [ -z "$profileName" ]; then
+if [ -z "$pipelineProfile" ]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
-  echo "Warning: 'profileName' is not properly supplied in samplesheet. \
+  echo "Warning: 'pipelineProfile' is not properly supplied in samplesheet. \
  Must be given as 'uroscan or rnaseq' within the [Header] section of sample sheet"; echo""; echo ""
   exit_abnormal
 fi
 
-if [[ $profileName == "rnaseq" ]]; then
-  echo "  ... profileName: $profileName"
-elif [[ $profileName == "uroscan"  ]]; then
-  echo "  ... profileName: $profileName"
+if [[ $pipelineProfile == "rnaseq" ]]; then
+  echo "  ... pipelineProfile: $pipelineProfile"
+elif [[ $pipelineProfile == "uroscan"  ]]; then
+  echo "  ... pipelineProfile: $pipelineProfile"
 else
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
-  echo "Warning: 'profileName' is not properly supplied in samplesheet. \
+  echo "Warning: 'pipelineProfile' is not properly supplied in samplesheet. \
  Must be given as 'uroscan or rnaseq' within the [Header] section of sample sheet"; echo""; echo ""
   exit_abnormal
 fi
@@ -423,7 +423,7 @@ if [[ $resume == "true" ]]; then
   echo " RESUME mode"
   echo " ... trying to resume nextflow"
   echo " ... Hail mary !!! "
-  nohup nextflow run $nf_pipe -c $nf_conf -profile ${profileName} --resume > log.nextflow.rnaseq &
+  nohup nextflow run $nf_pipe -c $nf_conf -profile ${pipelineProfile} --resume > log.nextflow.rnaseq &
   echo " ... :  nextflow run $nf_pipe -c $nf_conf --resume"
 fi
 
@@ -782,9 +782,9 @@ echo "";echo ""
 
 # nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.rnaseq &
 cd ${projectdir}
-nohup nextflow run $nf_pipe -c $nf_conf -profile ${profileName} > log.nextflow.progress &
+nohup nextflow run $nf_pipe -c $nf_conf -profile ${pipelineProfile} > log.nextflow.progress &
 
-echo "  Running :   nextflow run $nf_pipe -c $nf_conf -profile ${profileName}"
+echo "  Running :   nextflow run $nf_pipe -c $nf_conf -profile ${pipelineProfile}"
 echo "  Singularity container:  ${singularity_container}"
 echo "";
 echo "  ########################## "
