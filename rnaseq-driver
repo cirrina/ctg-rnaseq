@@ -376,13 +376,18 @@ else
   # echo "  ... ... runfolder_mode: $runfolder_mode"
 fi
 
+## Read PoolName from samplesheet
+## ----------------------------------------------
+species_global=$(awk -F, '$1 == "Species"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... species_global: $species_global"
+
 
 ## Read PoolName from samplesheet
 ## ----------------------------------------------
 poolname=$(awk -F, '$1 == "PoolName"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... PoolName: $poolname"
 
-## Read PoolType from samplesheet
+## Read SharedFlowCell from samplesheet
 ## ----------------------------------------------
 sharedflowcell=$(awk -F, '$1 == "SharedFlowCell"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... SharedFlowCell: $sharedflowcell"
@@ -657,11 +662,15 @@ if [[ $runfolder_mode == "true" ]]; then
 echo " ... profile set to: ${pipelineProfile}'"
   if [[ ${pipelineProfile} == "rnaseq" ]]; then
     echo " ... ... forcing 'run_rsem' to 'false'"
-    sed "s/run_blcl2fastq.*/run_rsem            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
+    sed "s/run_rsem.*/run_rsem            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
     echo " ... ... forcing 'run_bladderreport' to 'false'"
-    sed "s/run_blcl2fastq.*/run_bladderreport            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
+    sed "s/run_bladderreport.*/run_bladderreport            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
   fi
 
+  if [[ ${pipelineProfile} == "uroscan" ]]; then
+    echo " ... ... forcing 'run_featurecounts' to 'false'"
+    sed "s/run_featurecounts.*/run_featurecounts            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
+  fi
 
 
   #  Priming of project folder complete

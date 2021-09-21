@@ -88,6 +88,7 @@ fastqcdir = deliverytemp+'/fastqc'
 featurecountsdir = deliverytemp+'/featurecounts'
 
 bladderreportdir = deliverytemp+'/bladderreport'
+bladderreportscript= projectdir+'/bin/bladderreport/bladderreport-ctg-1.1.0.Rmd'
 
 markdupsdir = outputdir+'/markdups_bam_tmp'
 markdupsqcdir = outputdir+'/markdups'
@@ -647,7 +648,6 @@ process rsem {
   cpus 20
   memory '100 GB'
   time '36h'
-  echo debug_mode
   //publishDir "${stardir}", mode: 'copy', overwrite: true
 
   input:
@@ -658,8 +658,6 @@ process rsem {
   val "x" into rsem_complete_ch
   val "x" into rsem_complete_report_ch
   // file "${sid}_Aligned.sortedByCoord.out.bam" into bam_featurecounts_ch // channel defined start instead
-
-  when: params.run_rsem
 
   script:
   if ( species == "Homo sapiens" ){
@@ -1012,6 +1010,7 @@ process markdups {
 
   output:
   val "x" into markdups_complete_ch
+  val "x" into markdups_complete_report_ch
   // val "x" into move
 
   // when: params.run_markdups
@@ -1048,33 +1047,33 @@ process markdups {
 
 
 
-// Collect processes and prepare for MultiQC
-// MArks the end of STAR/BAM alignment and stages for downstream stuff.
-process collect_align {
-  tag "$projectid"
-  cpus 1
-  memory '8 GB'
-  time '3h'
-  // echo true
-
-  input:
-  val x from markdups_complete_ch.collect()
-
-  output:
-  val "x" into align_complete_ch
-  val "x" into align_complete_report_ch
-
-
-  script:
-  if ( params.run_collect_align)
-  """
-  """
-  else
-  """
-  echo "run_collect_align skipped"
-  """
-
-}
+// // Collect processes and prepare for MultiQC
+// // MArks the end of STAR/BAM alignment and stages for downstream stuff.
+// process collect_align {
+//   tag "$projectid"
+//   cpus 1
+//   memory '8 GB'
+//   time '3h'
+//   // echo true
+//
+//   input:
+//   val x from markdups_complete_ch.collect()
+//
+//   output:
+//   val "x" into align_complete_ch
+//   val "x" into align_complete_report_ch
+//
+//
+//   script:
+//   if ( params.run_collect_align )
+//   """
+//   """
+//   else
+//   """
+//   echo "run_collect_align skipped"
+//   """
+//
+// }
 
 
 
@@ -1099,8 +1098,6 @@ process fastqScreen {
 
     output:
     val "x" into fastqscreen_complete_ch
-
-    // when: params.run_fastqScreen
 
     script:
     if ( params.paired ){
@@ -1147,7 +1144,7 @@ process bladderreport {
   echo debug_mode
 
   input:
-  val x from align_complete_report_ch.collect()
+  val x from markdups_complete_report_ch.collect()
   val x from rsem_complete_report_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_bladderreport_ch
 
@@ -1160,9 +1157,8 @@ process bladderreport {
   if ( params.run_bladderreport )
   """
   mkdir -p ${bladderreportdir}
-  bladderreportscript=${projectdir}/bin/bladderreport/bladderreport-ctg-1.1.0..Rmd
 
-  /usr/bin/Rscript -e "library('rmarkdown'); \\
+  Rscript -e "library('rmarkdown'); \\
     rmarkdown::render( \\
       '${bladderreportscript}',  \\
       params = list(   \\
@@ -1174,7 +1170,7 @@ process bladderreport {
         clarity_id='${sid}'),  \\
         output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
 
-  chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sample_id}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
+  chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
 
   ${projectdir}/bin/bladderreport/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
 
@@ -1332,7 +1328,7 @@ process multiqc_ctg {
 
   input:
   val x from fastqc_complete_ch.collect()
-  val x from align_complete_ch.collect()
+  val x from markdups_complete_ch.collect()
   val x from fastqscreen_complete_ch.collect()
   val x from rsem_complete_ch.collect()
   val x from bladderreport_complete_ch.collect()
