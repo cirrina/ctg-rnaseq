@@ -1172,13 +1172,12 @@ process bladderreport {
         RIN='${RIN}', \\
         concentration='${concentration}', \\
         clarity_id='${sid}'),  \\
+        output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
 
-      output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
+  chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sample_id}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
 
-  chromium-browser --headless --disable-gpu --print-to-pdf=${sample_id}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
-
-  /data/bnf/scripts/bladderreport/bladder_noreport2txt.pl bladderreport_ctg_no_results.html > ${sample_id}.STAR.bladderreport.txt
-      chmod 664 ${sample_id}.STAR.bladderreport.pdf ${sample_id}.STAR.bladderreport.txt
+  # /data/bnf/scripts/bladderreport/bladder_noreport2txt.pl bladderreport_ctg_no_results.html > ${sample_id}.STAR.bladderreport.txt
+  #    chmod 664 ${sample_id}.STAR.bladderreport.pdf ${sample_id}.STAR.bladderreport.txt
 
   """
   else

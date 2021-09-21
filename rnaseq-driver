@@ -238,6 +238,7 @@ projectdir=${project_root}/${projectid}
 
 # project specific config file
 nf_conf="${projectdir}/nextflow.config.project.${projectid}"
+nf_config_default="${projectdir}/nextflow.config"
 
 ## Fastq paths should be defined even if demux is not run
 fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output. includes the fastq directory as well as
@@ -565,6 +566,7 @@ if [[ $runfolder_mode == "true" ]]; then
   echo " params {"                                                      >> $nf_conf
   echo ""                                                               >> $nf_conf
   echo "  // Pipeline & container                                     " >> $nf_conf
+  echo "  pipelineProfile   =  '${pipelineProfile}'              " >> $nf_conf
   echo "  scriptsdir        =  '${scriptsdir}'                        " >> $nf_conf
   echo "  container         =  '${singularity_container}'             " >> $nf_conf
   echo ""                                                               >> $nf_conf
@@ -643,6 +645,18 @@ if [[ $runfolder_mode == "true" ]]; then
   # echo "  memory = '100 GB'                                           " >> $nf_conf
   # echo " } " >> $nf_conf
 
+
+  # If skip demox flag is FALSE- override the config file
+  #################################################
+  # If skip demux flag is given in execution.
+echo " ... profile set to: ${pipelineProfile}'"
+  if [[ ${pipelineProfile} == "rnaseq" ]]; then
+    echo " ... ... forcing 'run_rsem' to 'false'"
+    sed "s/run_blcl2fastq.*/run_rsem            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
+    echo " ... ... forcing 'run_bladderreport' to 'false'"
+    sed "s/run_blcl2fastq.*/run_bladderreport            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
+  fi
+fi
 
 
   #  Priming of project folder complete
@@ -728,7 +742,9 @@ fi
 echo ""
 echo ""
 echo " Initiating nextflow pipeline"
-echo " ... pipeline      : $pipeline";
+echo " ... pipelineName      : $pipelineName";
+echo " ... pipelineVersion   : $pipelineVersion";
+echo " ... pipelineProfile   : $pipelineProfile";
 echo " ... project id    : $projectid";
 echo " ... project dir   : $execdir";
 
