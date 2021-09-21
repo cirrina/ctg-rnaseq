@@ -1176,8 +1176,8 @@ process bladderreport {
 
   chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sample_id}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
 
-  # /data/bnf/scripts/bladderreport/bladder_noreport2txt.pl bladderreport_ctg_no_results.html > ${sample_id}.STAR.bladderreport.txt
-  #    chmod 664 ${sample_id}.STAR.bladderreport.pdf ${sample_id}.STAR.bladderreport.txt
+  ${projectdir}/bin/bladderreport/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
+  
 
   """
   else
