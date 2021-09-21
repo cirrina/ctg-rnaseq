@@ -310,7 +310,7 @@ Channel
 Channel
   .fromPath(samplesheet_ctg)
   .splitCsv(header:true)
-  .map { row -> tuple( row.Sample_ID, row.bam, row.Strandness, row.Species, row.concentration, row.RIN) }
+  .map { row -> tuple( row.Sample_ID, row.bam, row.Strandness, row.Species, row.RIN, row.concentration ) }
   .tap { infobam }
   .into { bam_checkbam_ch; bam_indexbam_ch; bam_rnaseqmetrics_ch; bam_markdups_ch; bam_qualimap_ch; bam_rseqc_ch;  bam_bladderreport_ch }
 
@@ -612,7 +612,7 @@ process checkfiles_bam {
 
   input:
   val x from star_complete_ch.collect() // checkbam_ch - when star is completed
-  set sid, bam, strand, species, concentration, RIN from bam_checkbam_ch
+  set sid, bam, strand, species, RIN, concentration from bam_checkbam_ch
 
   output:
   val "x" into checkfiles_bam_complete_ch
@@ -720,7 +720,7 @@ process rnaseqmetrics {
 
   input:
   val x from checkfiles_bam_complete_ch.collect()
-  set sid, bam, strand, species, concentration, RIN from bam_rnaseqmetrics_ch
+  set sid, bam, strand, species, RIN, concentration from bam_rnaseqmetrics_ch
 
   output:
   val "x" into rnaseqmetrics_complete_ch
@@ -887,7 +887,7 @@ process index_bam {
 
   input:
   val x from featurecounts_complete_ch.collect()
-  set sid, bam, strand, species, concentration, RIN from bam_indexbam_ch
+  set sid, bam, strand, species, RIN, concentration from bam_indexbam_ch
 
   output:
   val "x" into indexbam_complete_ch
@@ -925,7 +925,7 @@ process qualimap {
 
   input:
   val x from indexbam_complete_ch.collect()
-  set sid, bam, strand, species, concentration, RIN from bam_qualimap_ch
+  set sid, bam, strand, species, RIN, concentration from bam_qualimap_ch
 
   output:
   val "x" into qualimap_complete_ch
@@ -963,7 +963,7 @@ process rseqc {
 
   input:
   val x from qualimap_complete_ch.collect()
-  set sid, bam, strand, species, concentration, RIN from bam_rseqc_ch
+  set sid, bam, strand, species, RIN, concentration from bam_rseqc_ch
 
   output:
   val "x" into rseqc_complete_ch
@@ -1008,7 +1008,7 @@ process markdups {
   input:
   //val x from markdups_ch.collect()
   val x from rseqc_complete_ch.collect()
-  set sid, bam, strand, species, concentration, RIN from bam_markdups_ch
+  set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
 
   output:
   val "x" into markdups_complete_ch
@@ -1149,7 +1149,7 @@ process bladderreport {
   input:
   val x from align_complete_report_ch.collect()
   val x from rsem_complete_report_ch.collect()
-  set sid, bam, strand, species, concentration, RIN from bam_bladderreport_ch
+  set sid, bam, strand, species, RIN, concentration from bam_bladderreport_ch
 
   output:
   val "x" into bladderreport_complete_ch
