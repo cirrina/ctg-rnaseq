@@ -50,10 +50,10 @@ nf_pipe="rnaseq-main.nf"
 
 #  singularity_container='/projects/fs1/shared/ctg-dev/containers/uroscan/v1.4/uroscan.sif'
 
-singularity_container='/projects/fs1/shared/ctg-containers/rnaseq/singularity-ctg-rnaseq-1.0.2.sif'
+# singularity_container='/projects/fs1/shared/ctg-containers/rnaseq/singularity-ctg-rnaseq-1.0.2.sif'
 singularity_container_rscript='/projects/fs1/shared/ctg-containers/rnaseq/singularity-ctg-rnaseq-1.0.2.sif'
 
-singcmd="singularity exec --bind /projects/fs1/ ${singularity_container}"
+# singcmd="singularity exec --bind /projects/fs1/ ${singularity_container}"
 singcmd_rscript="singularity exec --bind /projects/fs1/ ${singularity_container_rscript}"
 
 ## Root directories (based on ourr set folder naming conventions on lsens)
@@ -103,13 +103,18 @@ usage() {
     echo ""
     echo " Required [header] rows for SampleSheet include:"
     echo ""
-    echo " ProjectId:        CTG project id, e.g. 2021_026. Will define downsteam analysis folder and filenames."
+    echo " ProjectId:        CTG project id, e.g. '2021_026'. Will define downstream analysis folder and filenames."
     echo "                   If a project is run multiple times with different settings. Modify the project id and sample sheet accordingly."
     echo " RunFolder:        Name (not full path) of Illumina runfolder, e.g. . Set to NA if unknown and custom fastq files are run"
-    echo " PipelineName:     The CTG analysis pipeline. Must match the ctg pipeline naming nomenclature. e.g. rnaseq OR ctg-rnaseq"
-    echo " PipelineVersion:  The CTG analysis pipeline version. Must match the ctg pipeline naming nomenclature, e.g. '1.0'"
-    echo " PoolName:         Name of ctg pool, i.e. name of the library pool added to flowcell, e.g. 'CTGpool_0150'"
+    echo " PipelineName:     The CTG analysis pipeline, e.g. ctg-rnaseq"
+    echo " PipelineVersion:  The CTG analysis pipeline version. Must match the ctg pipeline naming nomenclature, e.g. '2.0.0'"
+    echo " PipelineProfile:  Determines the --proile flag of nextflow execution. Currently 'rnaseq' or 'uroscan' is supported."
+    echo " Barcode:          Illumina flowcell barcode"
+    echo " Runfolder:        Name of the runfolder directory (dirname not full path)"
+    echo " Instrument:       Name of instrument and chemistry vesrsion, NovaSeq1.5 or NovaSeq1.0"
+    echo " FlowCell:         What flowcell is used"
     echo " SharedFlowCell:  'true' or 'false'. If the pool/flowcell includes more than one customer projects."
+    echo " PoolName:         Name of ctg pool, i.e. name of the library pool added to flowcell, e.g. 'CTGpool_0150'"
     echo " Species:          Species for all samples in current sample sheet (species_global), e.g. Homo sapiens. Set to 'Multiple' if multiple species - this assumes that no alignment is performed."
     echo ""
     echo ""
@@ -656,7 +661,7 @@ echo " ... profile set to: ${pipelineProfile}'"
     echo " ... ... forcing 'run_bladderreport' to 'false'"
     sed "s/run_blcl2fastq.*/run_bladderreport            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
   fi
-fi
+
 
 
   #  Priming of project folder complete
@@ -777,7 +782,7 @@ echo "";echo ""
 
 # nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.rnaseq &
 cd ${projectdir}
-nextflow run $nf_pipe -c $nf_conf -profile ${profileName} > log.nextflow.progress &
+nohup nextflow run $nf_pipe -c $nf_conf -profile ${profileName} > log.nextflow.progress &
 
 echo "  Running :   nextflow run $nf_pipe -c $nf_conf -profile ${profileName}"
 echo "  Singularity container:  ${singularity_container}"
