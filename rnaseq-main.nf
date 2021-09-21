@@ -350,7 +350,7 @@ process bcl2fastq {
   // -w must be lower than number of samples
   // publishDir "${fastqdir}", mode: 'copy', overwrite: 'true'
   cpus 4
-  tag "$id"
+  tag "$projectid"
   memory '110 GB'
   time '36h'
 
@@ -387,7 +387,7 @@ process bcl2fastq {
 
 process checkfiles_fastq {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
-  tag "$id"
+  tag "$sid"
   cpus 1
   memory '5 GB'
   time '3h'
@@ -469,7 +469,7 @@ process checkfiles_fastq {
 //    .set{ salmon_complete_ch }
 // }
 process salmon  {
-  tag "$id"
+  tag "$sid"
   cpus 8
   memory '100 GB'
   time '36h'
@@ -535,7 +535,7 @@ process salmon  {
 //    .set{ star_complete_ch }
 // }
 process star  {
-  tag "$id"
+  tag "$sid"
   cpus 16
   memory '100 GB'
   time '36h'
@@ -604,7 +604,7 @@ process star  {
 // }
 process checkfiles_bam {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
-  tag "$id"
+  tag "$sid"
   cpus 1
   memory '1 GB'
   time '1h'
@@ -643,7 +643,7 @@ process checkfiles_bam {
 // }
 
 process rsem {
-  tag "$id"
+  tag "$sid"
   cpus 20
   memory '100 GB'
   time '36h'
@@ -712,7 +712,7 @@ process rsem {
 // }
 
 process rnaseqmetrics {
-  tag "$id"
+  tag "$sid"
   cpus 8
   memory '48 GB'
   time '24h'
@@ -803,7 +803,7 @@ process rnaseqmetrics {
 // }
 
 process featurecounts {
-  tag "$id"
+  tag "$projectid"
   cpus 28
   memory '300 GB'
   time '36h'
@@ -880,7 +880,7 @@ process featurecounts {
 // }
 
 process index_bam {
-  tag "$id"
+  tag "$sid"
   cpus 4
   memory '32 GB'
   time '3h'
@@ -917,7 +917,7 @@ process index_bam {
 //    .set{ qualimap_complete_ch }
 // }
 process qualimap {
-  tag "$id"
+  tag "$sid"
   cpus 4
   memory '32 GB'
   time '3h'
@@ -955,7 +955,7 @@ process qualimap {
 //    .set{ rseqc_complete_ch }
 // }
 process rseqc {
-  tag "$id"
+  tag "$sid"
   cpus 4
   memory '32 GB'
   time '3h'
@@ -999,7 +999,7 @@ process rseqc {
 //    .set{ markdups_complete_ch }
 // }
 process markdups {
-  tag "$id"
+  tag "$sid"
   cpus 4
   memory '32 GB'
   time '24h'
@@ -1051,7 +1051,7 @@ process markdups {
 // Collect processes and prepare for MultiQC
 // MArks the end of STAR/BAM alignment and stages for downstream stuff.
 process collect_align {
-  tag "$id"
+  tag "$projectid"
   cpus 1
   memory '8 GB'
   time '3h'
@@ -1089,7 +1089,7 @@ process collect_align {
 //    .set{ fastqscreen_complete_ch }
 // }
 process fastqScreen {
-    tag "$id"
+    tag "$sid"
     cpus 16
     memory '32 GB'
     time '24h'
@@ -1140,7 +1140,7 @@ process fastqScreen {
 //    .set{ bladderreport_complete_ch }
 // }
 process bladderreport {
-  tag "$id"
+  tag "$sid"
   cpus 4
   memory '32 GB'
   time '3h'
@@ -1194,7 +1194,7 @@ process bladderreport {
 // //    .set{ publish_bladderreport_complete_ch }
 // // }
 // process publish_bladderreport {
-//   tag "$id"
+//   tag "$sid"
 //   cpus 4
 //   memory '32 GB'
 //   time '3h'
@@ -1236,7 +1236,7 @@ process bladderreport {
 
 process fastqc {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
-  tag "$id"
+  tag "$sid"
   cpus 6
   memory '32 GB'
   time '3h'
@@ -1279,7 +1279,7 @@ process fastqc {
   =============================================================== */
 
 // process postaln_qc_rna {
-//   tag "$id"
+//   tag "$sid"
 //   cpus 4
 //   memory '32 GB'
 //   time '3h'
@@ -1325,7 +1325,7 @@ process fastqc {
 
 process multiqc_ctg {
   //publishDir "${multiqcctgdir}", mode: 'copy', overwrite: 'true'
-  tag "$id"
+  tag "$projectid"
   cpus 6
   memory '32 GB'
   time '3h'
@@ -1382,7 +1382,7 @@ process multiqc_ctg {
 // }
 process setup_deliverytemp {
   cpus 8
-  tag "$id"
+  tag "$projectid"
   memory '64 GB'
   time '3h'
 
@@ -1421,7 +1421,7 @@ process setup_deliverytemp {
 process move_fastq {
 
   cpus 8
-  tag "$id"
+  tag "$projectid"
   memory '64 GB'
   time '3h'
   echo debug_mode
@@ -1472,7 +1472,7 @@ process move_fastq {
 // }
 process multiqc_delivery {
 
-  tag "$id"
+  tag "$projectid"
   cpus 6
   memory '32 GB'
   time '3h'
@@ -1522,7 +1522,7 @@ process multiqc_delivery {
 // }
 process md5sum_delivery {
   cpus 8
-  tag "$id"
+  tag "$projectid"
   memory '64 GB'
   time '3h'
 
@@ -1578,7 +1578,7 @@ process md5sum_delivery {
 // }
 process setup_ctg_save {
   cpus 4
-  tag "$id"
+  tag "$projectid"
   memory '32 GB'
   time '3h'
 
@@ -1650,7 +1650,7 @@ process setup_ctg_save {
 // }
 process checkfiles_rscript_predelivery {
   cpus 4
-  tag "$id"
+  tag "$projectid"
   memory '32 GB'
   time '3h'
 
@@ -1692,7 +1692,7 @@ process checkfiles_rscript_predelivery {
 // }
 process finalize_delivery {
   cpus 2
-  tag "$id"
+  tag "$projectid"
   memory '16 GB'
   time '3h'
 
@@ -1734,7 +1734,7 @@ process finalize_delivery {
 process checkfiles_rscript_postdelivery {
 
   cpus 4
-  tag "$id"
+  tag "$projectid"
   memory '32 GB'
   time '3h'
 
