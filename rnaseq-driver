@@ -81,7 +81,7 @@ force_index=false
 
 run_blcl2fastq=true
 fastq_custom=true ## set to false if no fastq_path is supplied (default no path)
-
+prime_run=false
 resume=false
 execdir=$(pwd)
 
@@ -92,7 +92,7 @@ usage() {
     echo "------------------- "
     echo " usage : "
     echo "------------------- "
-    echo " rnaseq-driver [ -s samplesheet ] [ -r resume ] [ -f fastq_path ] [ -l force_lane ] [ -i force_index ] [ -h help ] "  1>&2
+    echo " rnaseq-driver [ -s samplesheet ] [ -p prime_run_only ] [ -r resume ] [ -f fastq_path ] [ -l force_lane ] [ -i force_index ] [ -h help ] "  1>&2
     echo ""
     echo "------------------- "
     echo " arguments : "
@@ -121,11 +121,12 @@ usage() {
     echo "------------------- "
     echo " optionals : "
     echo "------------------- "
-    echo " fastq_path:    -f : Set to a full path where all fastq files are located. individual filenames should be specified in ctg sample sheet. This flag will set 'run_blcl2fastq' to 'false' and all flags related to demux to false "
-    echo " resume         -r : Nextflow-specific. If to resume nextflow run. Can only be used when executing in Project work dir, NOT from Illumina runfolder"
-    echo " force_lane     -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will override the Lane column in sample sheet"
-    echo " force_index:   -i : Set this flag if to force iem samplesheet Rscript to overwrite index id and sequence informations based on index well id. "
-    echo " help           -h : print help message"
+    echo " prime_run_only:  -p : Set if do not start nextflow. A dry run that will generate project folder, config files etc but will not initiate nextflow."
+    echo " fastq_path:      -f : Set to a full path where all fastq files are located. individual filenames should be specified in ctg sample sheet. This flag will set 'run_blcl2fastq' to 'false' and all flags related to demux to false "
+    echo " resume           -r : Nextflow-specific. If to resume nextflow run. Can only be used when executing in Project work dir, NOT from Illumina runfolder"
+    echo " force_lane       -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will override the Lane column in sample sheet"
+    echo " force_index:     -i : Set this flag if to force iem samplesheet Rscript to overwrite index id and sequence informations based on index well id. "
+    echo " help             -h : print help message"
     echo "------------------- "
     echo ""
     echo ""
@@ -143,7 +144,7 @@ exit_abnormal() {
 }
 
 # Read and control input arguments
-while getopts ":s:l:f:r:ih" opt; do
+while getopts ":s:l:f:r:p:ih" opt; do
     case $opt in
       s) samplesheet=$OPTARG
 	     ;;
@@ -153,6 +154,8 @@ while getopts ":s:l:f:r:ih" opt; do
             ;;
       r) resume=true
        	     ;;
+      p) prime_run=true
+            ;;
       i) force_index=true
           ;;
       h) exit_abnormal
@@ -791,7 +794,8 @@ echo "";echo ""
 
 # nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.rnaseq &
 cd ${projectdir}
-nohup nextflow run $nf_pipe -c $nf_conf -profile ${pipelineProfile} > log.nextflow.progress &
+if [[ $prime_run == "false" ]]; then
+  nohup nextflow run $nf_pipe -c $nf_conf -profile ${pipelineProfile} > log.nextflow.progress &
 
 echo "  Running :   nextflow run $nf_pipe -c $nf_conf -profile ${pipelineProfile}"
 echo "  Singularity container:  ${singularity_container}"
@@ -801,3 +805,10 @@ echo "      S U B M I T T E D "
 echo "  ########################## "
 echo "  Logfile :  ${projectdir}/log.nextflow.progress "
 echo ""
+fi
+if [[ $prime_run == "true" ]]; then
+  echo ""
+  echo " prime_run is TRUE "
+  echo " ... exiting without submitting nextflow run"
+  echo " ... go to runfolder and edit your configs, then start run using rnaseq-driver"
+fi
