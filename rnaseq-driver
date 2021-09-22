@@ -590,7 +590,7 @@ if [[ $runfolder_mode == "true" ]]; then
   echo "  fastqdir            =  '${fastqdir}'                        " >> $nf_conf
   echo ""                                                               >> $nf_conf
   echo "  pooled_run          =  ${pooled}                          " >> $nf_conf
-  echo "  species_global      =  '${species}'                         " >> $nf_conf
+  echo "  species_global      =  '${species_global}'                         " >> $nf_conf
   echo "  n_samples           =  '${n_samples}'                       " >> $nf_conf
   echo ""                                                               >> $nf_conf
   echo "  assay               =  '${assay}'                           " >> $nf_conf
@@ -800,7 +800,7 @@ read -p "
   echo "  Logfile :  ${projectdir}/log.nextflow.progress "
   echo ""
   fi
-  
+
 if [[ $prime_run == "true" ]]; then
   echo ""
   echo " prime_run is TRUE "

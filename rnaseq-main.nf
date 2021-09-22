@@ -805,7 +805,6 @@ process featurecounts {
   cpus 20
   memory '100 GB'
   time '96h'
-  echo debug_mode
 
 	input:
   //val x from featurecounts_ch.collect()
