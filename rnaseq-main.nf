@@ -88,7 +88,6 @@ fastqcdir = deliverytemp+'/fastqc'
 featurecountsdir = deliverytemp+'/featurecounts'
 
 bladderreportdir = deliverytemp+'/bladderreport'
-bladderreportscript= projectdir+'/bin/bladderreport/bladderreport-ctg-1.1.0.Rmd'
 
 markdupsdir = outputdir+'/markdups_bam_tmp'
 markdupsqcdir = outputdir+'/markdups'
@@ -318,7 +317,7 @@ Channel
 Channel
     .fromPath(samplesheet_ctg)
     .splitCsv(header:true)
-    .map { row -> tuple( row.bam) }
+    .map { row -> tuple( row.bam ) }
     .tap{ infoallfcounts }
     .set { bam_featurecounts_ch }
 
@@ -807,17 +806,14 @@ process featurecounts {
   time '96h'
 
 	input:
-  //val x from featurecounts_ch.collect()
   val x from rnaseqmetrics_complete_ch.collect()
 	val bams from bam_featurecounts_ch.collect()
 
   output:
 	val "x" into featurecounts_complete_ch
 
-  // when: params.run_featurecounts
 
   script:
-  // Global settings - for ALL Samples
   if( params.strandness == "forward" )
     strand_numeric = 1
   else if ( params.strandness == "reverse" )
@@ -840,7 +836,7 @@ process featurecounts {
     mkdir -p ${featurecountsdir}
     cd ${stardir}
     bamstring=\$(echo $bams | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
-    echo \$bamstring
+    echo \${bamstring}
 
     echo "gtf: ${gtf}"
     featureCounts -T ${task.cpus} \\
@@ -931,12 +927,24 @@ process qualimap {
   // when: params.run_qualimap
 
   script:
+  // gtf used for featurecounts
+  if ( params.species_global == "Homo sapiens" ){
+    gtf = params.gtf_hs}
+  else if  ( params.species_global == "Mus musculus" ){
+    gtf = params.gtf_mm}
+  else if  ( params.species_global == "Rattus norvegicus" ){
+      gtf = params.gtf_rn}
+  else{
+    gtf=""}
+
   if ( params.run_qualimap )
     """
     mkdir -p ${qualimapdir}
 
     ## export JAVA_OPTS="-Djava.io.tmpdir=/data/tmp"
     ## /data/bnf/sw/qualimap_v2.2.1/qualimap --java-mem-size=12G rnaseq -bam /data/bnf/bam/rnaseq/21KF00020.STAR.sort.bam -gtf /data/bnf/ref/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /data/bnf/postmap/rnaseq/21KF00020.STAR.qualimap.folder
+    # qualimap --java-mem-size=12G rnaseq -bam /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/star/21KF00082_Aligned.sortedByCoord.out.bam -gtf /projects/fs1/shared/uroscan/references/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/qualimap/21KF00082.STAR.qualimap.folder
+    qualimap --java-mem-size=12G rnaseq -bam ${stardir}/${bam} -gtf ${gtf} -pe -outdir ${qualimapdir}/${sid}.STAR.qualimap.folder
 
     """
   else
@@ -1154,16 +1162,22 @@ process bladderreport {
   // when: params.run_bladderreport
 
   script:
+  bladderreport_scriptsdir = projectdir+'/bin/bladderreport'
+  bladderreport_scriptname= params.bladderreport_scriptname
+
+
   if ( params.run_bladderreport )
   """
-  mkdir -p ${bladderreportdir}
+  mkdir -p ${bladderreportdir}/tmp_${sid}
+  cp ${bladderreport_scriptsdir} ${bladderreportdir}/${sid}/
+  cd ${bladderreportdir}/tmp_${sid}/bladderreport
 
   Rscript -e "library('rmarkdown'); \\
     rmarkdown::render( \\
-      '${bladderreportscript}',  \\
+      '${bladderreportdir}/tmp_${sid}/${bladderreport_scriptname}',  \\
       params = list(   \\
         sampleid='${sid}', \\
-        rsem_in='${rsemdir}/${sid}.rsem', \\
+        rsem_in='${rsemdir}/${sid}.rsem.genes.results', \\
         star_qc='${stardir}/${sid}_Log.final.out', \\
         RIN='${RIN}', \\
         concentration='${concentration}', \\
@@ -1172,8 +1186,9 @@ process bladderreport {
 
   chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
 
-  ${projectdir}/bin/bladderreport/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
+  ${bladderreportdir}/tmp_${sid}/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
 
+  rm -rf ${bladderreportdir}/tmp_${sid}
 
   """
   else

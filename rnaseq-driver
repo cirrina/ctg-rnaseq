@@ -581,7 +581,6 @@ if [[ $runfolder_mode == "true" ]]; then
   echo "  // Pipeline & container                                     " >> $nf_conf
   echo "  pipelineProfile   =  '${pipelineProfile}'              " >> $nf_conf
   echo "  scriptsdir        =  '${scriptsdir}'                        " >> $nf_conf
-  echo "  container         =  '${singularity_container}'             " >> $nf_conf
   echo ""                                                               >> $nf_conf
   echo "  // Project & assay specififc                                " >> $nf_conf
   echo "  projectid           =  '${projectid}'                       " >> $nf_conf
