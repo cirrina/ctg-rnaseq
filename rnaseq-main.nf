@@ -804,7 +804,7 @@ process featurecounts {
   tag "$projectid"
   cpus 20
   memory '100 GB'
-  time '36h'
+  time '96h'
   echo debug_mode
 
 	input:
@@ -851,6 +851,7 @@ process featurecounts {
       -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
       -p \\
       -s ${strand_numeric} \${bamstring}
+
 
     """
   else
