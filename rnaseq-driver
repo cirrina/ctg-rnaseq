@@ -755,6 +755,9 @@ fi
 # 4. Nextflow pipeline section
 ###################################################################
 
+# nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.rnaseq &
+cd ${projectdir}
+if [[ $prime_run == "false" ]]; then
 
 echo ""
 echo ""
@@ -778,34 +781,26 @@ read -p "
   proceed? (y/n)
    ... " prompt
 
-if [[ $prompt != "y" ]]
-then
-    echo ""; echo "Exiting!! "
-    exit 0
-fi
-echo "";echo ""
+  if [[ $prompt != "y" ]]
+  then
+      echo ""; echo "Exiting!! "
+      exit 0
+  fi
+  echo "";echo ""
 
 
-
-
-# #############################
-#  Initiate Nextflow Pipeline
-# #############################
-
-# nohup nextflow run $nf_pipe -c $nf_conf > log.nextflow.rnaseq &
-cd ${projectdir}
-if [[ $prime_run == "false" ]]; then
   nohup nextflow run $nf_pipe -c $nf_conf -profile ${pipelineProfile} > log.nextflow.progress &
 
-echo "  Running :   nextflow run $nf_pipe -c $nf_conf -profile ${pipelineProfile}"
-echo "  Singularity container:  ${singularity_container}"
-echo "";
-echo "  ########################## "
-echo "      S U B M I T T E D "
-echo "  ########################## "
-echo "  Logfile :  ${projectdir}/log.nextflow.progress "
-echo ""
-fi
+  echo "  Running :   nextflow run $nf_pipe -c $nf_conf -profile ${pipelineProfile}"
+  echo "  Singularity container:  ${singularity_container}"
+  echo "";
+  echo "  ########################## "
+  echo "      S U B M I T T E D "
+  echo "  ########################## "
+  echo "  Logfile :  ${projectdir}/log.nextflow.progress "
+  echo ""
+  fi
+  
 if [[ $prime_run == "true" ]]; then
   echo ""
   echo " prime_run is TRUE "
