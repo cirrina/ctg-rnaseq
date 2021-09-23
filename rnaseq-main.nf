@@ -109,22 +109,6 @@ interopdir_ctg = runfolderdir + '/ctg-interop'
 
 
 
-/* ===============================================================
-  *      UROSCAN SPECIFIC
-  =============================================================== */
-
-// rsem
-
-// qualimap
-
-// rseqc
-
-// bladderreport
-
-
-
-
-
 
 
 /* ===============================================================
@@ -659,27 +643,43 @@ process rsem {
   // file "${sid}_Aligned.sortedByCoord.out.bam" into bam_featurecounts_ch // channel defined start instead
 
   script:
+
+  // species and references (bowtie2 refs)
   if ( species == "Homo sapiens" ){
-    genome=params.rsem_genome_hs }
+    genome=params.rsem_bowtie2_genome_hs }
   else if ( species == "Mus musculus" ){
     genome=params.star_genome_mm }
   else if ( species == "Rattus norvegicus" ){
       genome=params.star_genome_rn }
   else{
     genome = ""
-    println( "Warning: Species not recognized." )}
+    println( "Warning: Species not recognized." )
+  }
 
+  // paired end
   if ( params.paired ){
-      rsemfiles = "${fastqdir}/${read1} ${fastqdir}/${read2}" }
+    rsemfiles = "${fastqdir}/${read1} ${fastqdir}/${read2}"
+    paired='--paired-end'}
   else{
-      rsemfiles = "${fastqdir}/${read1}" }
+    rsemfiles = "${fastqdir}/${read1}"
+    paired=''}
+
+  // strand
+  if( params.strandness == "forward" )
+    strand = 'forward'
+  else if ( params.strandness == "reverse" )
+    strand = 'reverse'
+  else
+    strand = 'none'
 
 
-  if ( params.run_rsem )
+
+    //the uroscan pipe is run without strandness flag.
+  if ( params.run_rsem & params.pipelineProfile == "uroscan" )
   """
   mkdir -p ${rsemdir}
   rsem-calculate-expression \\
-      -p ${task.cpus} \\
+      --num-threads ${task.cpus} \\
       --paired-end \\
       --bowtie2 \\
       --bowtie2-path /opt/software/uroscan_env/bin \\
@@ -691,6 +691,22 @@ process rsem {
       ${rsemdir}/${sid}.rsem
 
   # mv /data/bnf/premap/rnaseq/21KF00020_0.rsem.genes.results /data/bnf/premap/rnaseq/21KF00020_0.rsem
+  """
+  else if ( params.run_rsem & params.pipelineProfile == "uroscan" )
+  """
+  mkdir -p ${rsemdir}
+  rsem-calculate-expression \\
+      --num-threads ${task.cpus} \\
+      ${paired} \\
+      --strandedness ${strand} \\
+      --bowtie2 \\
+      --bowtie2-path /opt/software/uroscan_env/bin \\
+      --estimate-rspd \\
+      --append-names \\
+      --no-bam-output \\
+      ${rsemfiles} \\
+      ${genome} \\
+      ${rsemdir}/${sid}.rsem
   """
   else
   """
@@ -944,6 +960,7 @@ process qualimap {
     ## export JAVA_OPTS="-Djava.io.tmpdir=/data/tmp"
     ## /data/bnf/sw/qualimap_v2.2.1/qualimap --java-mem-size=12G rnaseq -bam /data/bnf/bam/rnaseq/21KF00020.STAR.sort.bam -gtf /data/bnf/ref/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /data/bnf/postmap/rnaseq/21KF00020.STAR.qualimap.folder
     # qualimap --java-mem-size=12G rnaseq -bam /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/star/21KF00082_Aligned.sortedByCoord.out.bam -gtf /projects/fs1/shared/uroscan/references/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/qualimap/21KF00082.STAR.qualimap.folder
+
     qualimap --java-mem-size=12G rnaseq -bam ${stardir}/${bam} -gtf ${gtf} -pe -outdir ${qualimapdir}/${sid}.STAR.qualimap.folder
 
     """
@@ -1169,12 +1186,12 @@ process bladderreport {
   if ( params.run_bladderreport )
   """
   mkdir -p ${bladderreportdir}/tmp_${sid}
-  cp ${bladderreport_scriptsdir} ${bladderreportdir}/${sid}/
+  cp -r ${bladderreport_scriptsdir} ${bladderreportdir}/tmp_${sid}/
   cd ${bladderreportdir}/tmp_${sid}/bladderreport
 
   Rscript -e "library('rmarkdown'); \\
     rmarkdown::render( \\
-      '${bladderreportdir}/tmp_${sid}/${bladderreport_scriptname}',  \\
+      '${bladderreportdir}/tmp_${sid}/bladderreport/${bladderreport_scriptname}',  \\
       params = list(   \\
         sampleid='${sid}', \\
         rsem_in='${rsemdir}/${sid}.rsem.genes.results', \\
@@ -1184,9 +1201,10 @@ process bladderreport {
         clarity_id='${sid}'),  \\
         output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
 
+  cd ${bladderreportdir}/
   chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
 
-  ${bladderreportdir}/tmp_${sid}/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
+  ${bladderreportdir}/tmp_${sid}/bladderreport/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
 
   rm -rf ${bladderreportdir}/tmp_${sid}
 
