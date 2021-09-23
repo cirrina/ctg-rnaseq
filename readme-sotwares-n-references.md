@@ -11,13 +11,25 @@ https://deweylab.github.io/RSEM/rsem-calculate-expression.html
 
 rsem can use multiple aligners, e.g. bowtie2, star etc. Uroscan uses bowtie2 as aligner.
 
+Preparing references for uoscan / shell script CMD
+
+```
+/data/bnf/sw/RSEM-1.3.0/rsem-prepare-reference --gtf Homo_sapiens.GRCh37.75.gtf --bowtie2 --bowtie2-path /data/bnf/sw/bowtie2/2.3.3/ /data/bnf/ref/b37/human_g1k_v37.fasta  /data/bnf/ref/rsem/GRCh37
+```
+
+Prepare bowtie2 rsem reference for hg38 on lsens
+
+
+
+
+
 ### uroscan
 `--bowtie2` Uses bowtie2 aligner with reference genome GRCh37: `/projects/fs1/shared/uroscan/references/rsem/GRCh37/GRCh37`.
 
 Flags:
 `--no-bam-output`: No bam output is produced using the aligneer (bowtie2)
 `--paired-end` : hardcoded as is - SHOULD BE CHANGED ACCORDING TO PROTOCOL
-`--strandness`: For Illumina TruSeq Stranded protocols, please use 'reverse'. (Default: 'none'). NOT USED AS IS
+`--stranddcness`: For Illumina TruSeq Stranded protocols, please use 'reverse'. (Default: 'none'). NOT USED AS IS
 `--estimate-rspd` : Set this option if you want to estimate the read start position distribution (RSPD) from data.
 
 ## last working nextflow script. hanging
