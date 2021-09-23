@@ -60,6 +60,18 @@ rnaseq:  ``
 
 
 ## salmon
+https://salmon.readthedocs.io/en/latest/salmon.html
+
+`> ./bin/salmon index -t transcripts.fa -i transcripts_index --decoys decoys.txt -k 31`
+
+
+but there is a point beyond which allocating more threads will not speed up alignment-based quantification. We find that allocating 8 — 12 threads results in the maximum speed, threads allocated above this limit will likely spend most of their time idle / sleeping.
+
+
+he first is to compute a set of decoy sequences by mapping the annotated transcripts you wish to index against a hard-masked version of the organism’s genome. This can be done with e.g. MashMap2, and we provide some simple scripts to greatly simplify this whole process. Specifically, you can use the generateDecoyTranscriptome.sh script, whose instructions you can find in this README.
+
+http://refgenomes.databio.org/
+
 
 
 ## featurecounts

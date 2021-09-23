@@ -579,7 +579,7 @@ if [[ $runfolder_mode == "true" ]]; then
   echo " params {"                                                      >> $nf_conf
   echo ""                                                               >> $nf_conf
   echo "  // Pipeline & container                                     " >> $nf_conf
-  echo "  pipelineProfile   =  '${pipelineProfile}'              " >> $nf_conf
+  echo "  pipelineProfile   =  '${pipelineProfile}'                   " >> $nf_conf
   echo "  scriptsdir        =  '${scriptsdir}'                        " >> $nf_conf
   echo ""                                                               >> $nf_conf
   echo "  // Project & assay specififc                                " >> $nf_conf
@@ -588,7 +588,7 @@ if [[ $runfolder_mode == "true" ]]; then
   echo "  runfolder           =  '${runfolder}'                       " >> $nf_conf
   echo "  fastqdir            =  '${fastqdir}'                        " >> $nf_conf
   echo ""                                                               >> $nf_conf
-  echo "  pooled_run          =  ${pooled}                          " >> $nf_conf
+  echo "  pooled_run          =  ${pooled}                            " >> $nf_conf
   echo "  species_global      =  '${species_global}'                         " >> $nf_conf
   echo "  n_samples           =  '${n_samples}'                       " >> $nf_conf
   echo ""                                                               >> $nf_conf
@@ -619,31 +619,6 @@ if [[ $runfolder_mode == "true" ]]; then
   echo "  //   All other modules are 'true' by default                  " >> $nf_conf
   echo ""                                                               >> $nf_conf
   echo "  run_blcl2fastq          =  ${run_blcl2fastq}                 " >> $nf_conf
-  # echo "  run_checkfiles_fastq        =  'true'                         " >> $nf_conf
-  # echo "  run_star                    =  'true'                         " >> $nf_conf
-  # echo "  run_checkfiles_bam          =  'true'                         " >> $nf_conf
-  # echo "  run_rsem                    =  'true'                         " >> $nf_conf
-  # echo "  run_rnaseqmetrics           =  'true'                         " >> $nf_conf
-  # echo "  run_featurecounts           =  'true'                         " >> $nf_conf
-  # echo "  run_index_bam               =  'true'                         " >> $nf_conf
-  # echo "  run_qualimap                =  'true'                         " >> $nf_conf
-  # echo "  run_rseqc                   =  'true'                         " >> $nf_conf
-  # echo "  run_markdups                =  'true'                         " >> $nf_conf
-  # echo "  run_collect_align           =  'true'                         " >> $nf_conf
-  # echo "  run_fastqScreen             =  'true'                         " >> $nf_conf
-  # echo "  run_bladderreport           =  'true'                         " >> $nf_conf
-  # echo "  run_publish_bladderreport   =  'true'                         " >> $nf_conf
-  # echo "  run_fastqc                  =  'true'                         " >> $nf_conf
-  # echo "  run_postaln_qc_rna          =  'true'                         " >> $nf_conf
-  # echo "  run_multiqc_ctg             =  'true'                         " >> $nf_conf
-  # echo "  run_setup_deliverytemp      =  'true'                         " >> $nf_conf
-  # echo "  run_move_fastq              =  'true'                         " >> $nf_conf
-  # echo "  run_multiqc_delivery        =  'true'                         " >> $nf_conf
-  # echo "  run_md5sum_delivery         =  'true'                         " >> $nf_conf
-  # echo "  run_setup_ctg_save          =  'true'                         " >> $nf_conf
-  # echo "  run_checkfiles_rscript_predelivery          =  'true'                         " >> $nf_conf
-  # echo "  run_finalize_delivery       =  'true'                         " >> $nf_conf
-  # echo "  checkfiles_rscript_postdelivery          =  'true'                         " >> $nf_conf
   echo ""                                                               >> $nf_conf
   echo " }"                                                             >> $nf_conf
   echo ""                                                               >> $nf_conf
