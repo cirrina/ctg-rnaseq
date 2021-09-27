@@ -1024,7 +1024,7 @@ process markdups {
   cpus 6
   memory '32 GB'
   time '24h'
-  
+
   input:
   //val x from markdups_ch.collect()
   val x from rseqc_complete_ch.collect()
@@ -1200,8 +1200,8 @@ process bladderreport {
         output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
 
   cd ${bladderreportdir}/
-  chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
-
+  # chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
+  chromium --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
   ${bladderreportdir}/tmp_${sid}/bladderreport/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
 
   rm -rf ${bladderreportdir}/tmp_${sid}
