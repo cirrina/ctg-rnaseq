@@ -1048,7 +1048,7 @@ process markdups {
   mkdir -p ${markdupsqcdir}
 
   echo "markdupsdir: ${markdupsdir}/${bam}"
-    java -jar /usr/local/bin/picard.jar MarkDuplicates \\
+  java -jar picard MarkDuplicates \\
       INPUT=${stardir}/${bam} \\
       OUTPUT=${markdupsdir}/${bam} \\
       METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
