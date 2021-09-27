@@ -91,7 +91,7 @@ bladderreportdir = deliverytemp+'/bladderreport'
 
 markdupsdir = outputdir+'/markdups_bam_tmp'
 markdupsqcdir = outputdir+'/markdups'
-rnaseqmetricsdir = outputdir+'/rnaseqmetrics'
+etricsdir = outputdir+'/rnaseqmetrics'
 multiqcctgdir = outputdir+'/multiqc-ctg'
 fastqscreendir = outputdir+'/fastqscreen'
 
@@ -928,10 +928,9 @@ process index_bam {
 // }
 process qualimap {
   tag "$sid"
-  cpus 4
+  cpus 6
   memory '32 GB'
   time '3h'
-  echo debug_mode
 
   input:
   val x from indexbam_complete_ch.collect()
@@ -979,10 +978,9 @@ process qualimap {
 // }
 process rseqc {
   tag "$sid"
-  cpus 4
+  cpus 6
   memory '32 GB'
   time '3h'
-  echo debug_mode
 
   input:
   val x from qualimap_complete_ch.collect()
@@ -1023,11 +1021,10 @@ process rseqc {
 // }
 process markdups {
   tag "$sid"
-  cpus 4
+  cpus 6
   memory '32 GB'
   time '24h'
-  echo debug_mode
-
+  
   input:
   //val x from markdups_ch.collect()
   val x from rseqc_complete_ch.collect()
