@@ -1049,7 +1049,7 @@ process markdups {
 
   echo "markdupsdir: ${markdupsdir}/${bam}"
   # java -jar picard MarkDuplicates \\
-  piard MarkDuplicates \\
+  picard MarkDuplicates \\
       INPUT=${stardir}/${bam} \\
       OUTPUT=${markdupsdir}/${bam} \\
       METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
