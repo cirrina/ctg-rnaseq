@@ -455,7 +455,7 @@ process checkfiles_fastq {
 process salmon  {
   tag "$sid"
   cpus 8
-  memory '100 GB'
+  memory '48 GB'
   time '36h'
   echo debug_mode
   //publishDir "${stardir}", mode: 'copy', overwrite: true
@@ -520,7 +520,7 @@ process salmon  {
 // }
 process star  {
   tag "$sid"
-  cpus 16
+  cpus 20
   memory '100 GB'
   time '36h'
   echo debug_mode
@@ -726,8 +726,8 @@ process rsem {
 
 process rnaseqmetrics {
   tag "$sid"
-  cpus 8
-  memory '48 GB'
+  cpus 6
+  memory '36 GB'
   time '24h'
   echo debug_mode
 
@@ -818,7 +818,7 @@ process rnaseqmetrics {
 process featurecounts {
   tag "$projectid"
   cpus 20
-  memory '100 GB'
+  memory '350 GB'
   time '96h'
 
 	input:
@@ -1202,7 +1202,8 @@ process bladderreport {
   cd ${bladderreportdir}/
   # chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
   chromium --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
-  ${bladderreportdir}/tmp_${sid}/bladderreport/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
+
+  # ${bladderreportdir}/tmp_${sid}/bladderreport/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
 
   rm -rf ${bladderreportdir}/tmp_${sid}
 
