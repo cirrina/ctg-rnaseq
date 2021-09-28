@@ -241,7 +241,7 @@ RNA-kvalitet: <b>godkänd</b>
 ```{r, results_classifier, include=T, echo=F}
 
 results <- suppressWarnings(LundClassifier(SampleData = sample))
-saveRDS(results, file=paste0(sampleid,".LundClassifier.rds"))
+saveRDS(object=results, file=paste0(sampleid,".LundClassifier.rds"))
 #results$Report$Main_subtype<-"Urotel-lik"
 #results$Report$Subtype<-"Urotel-lik A"
 if(grepl("Uro",results$Report$Subtype)){ ReportSubtype<<-results$Report$Subtype}else{ReportSubtype<<-"-"}
