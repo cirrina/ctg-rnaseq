@@ -1189,9 +1189,8 @@ process bladderreport {
           rsem_in='${rsemdir}/${sid}.rsem.genes.results', \\
           star_qc='${stardir}/${sid}_Log.final.out', \\
           RIN='${RIN}', \\
-          concentration='${concentration}', \\
-          clarity_id='${sid}'),  \\
-          output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
+          concentration='${concentration}'),  \\
+        output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
 
     cd ${bladderreportdir}
     # chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
