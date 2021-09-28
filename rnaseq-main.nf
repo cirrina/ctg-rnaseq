@@ -77,7 +77,7 @@ outputdir =  projectdir+'/nf-output' // main ooutput directory for files genetat
 file(outputdir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
 
 deliverydir  =  delivery_root + '/' + projectid  // final delivery dir (on ... /nas-sync/. Note that delivery is prepared in "deliverytemp" is used in projectfolder)
-ctg_save_dir        =  ctg_save_root + '/' + projectid
+ctg_save_dir =  ctg_save_root + '/' + projectid
 
 
 
@@ -110,7 +110,7 @@ qualimapdir = qcdir+'/qualimap'
 rseqcdir = qcdir+'/rseqc'
 featurecountsdir = qcdir+'/featurecounts'
 
-markdupsdir = qcdir+'/markdups_bam_tmp'
+markdupstempdir = qcdir+'/markdups_bam_tmp'
 markdupsqcdir = qcdir+'/markdups'
 rnaseqmetricsdir = qcdir+'/rnaseqmetrics'
 multiqcctgdir = qcdir+'/multiqc-ctg'
@@ -122,6 +122,7 @@ ctg_save_samplesheets = ctg_save_dir+'/samplesheets'
 ctg_save_scripts = ctg_save_dir+'/scripts'
 ctg_save_configs = ctg_save_dir+'/configs'
 ctg_save_logs =  ctg_save_dir+'/logs'
+
 
 // Illumina runfolder stats
 interopdir_ilm = runfolderdir + '/InterOp'
@@ -139,16 +140,6 @@ interopdir_ctg = runfolderdir + '/ctg-interop'
 // log file for nextflow .onComplete
 logfile   =  file( projectdir + '/' + 'log.nextflow.complete' )
 // logfile_sav          =  file( ctg_save_dir + '/' + 'log.nextflow.complete' )
-
-
-
-
-/* ===============================================================
-  *       Module flags -- Debugging
-  =============================================================== */
-// These flags are primarily used for debugging.
-// each nextflow processs will have a 'run_' flag which can determine if to run module or not
-// Note: all provesses will be initated - but a non-action sctipt will be executed
 
 
 
@@ -1062,14 +1053,14 @@ process markdups {
   if ( params.run_markdups )
     """
     echo "bam: ${bam}"
-    mkdir -p ${markdupsdir}
+    mkdir -p ${markdupstempdir}
     mkdir -p ${markdupsqcdir}
 
-    echo "markdupsdir: ${markdupsdir}/${bam}"
+    echo "markdupstempdir: ${markdupstempdir}/${bam}"
     # java -jar picard MarkDuplicates \\
     picard MarkDuplicates \\
         INPUT=${stardir}/${bam} \\
-        OUTPUT=${markdupsdir}/${bam} \\
+        OUTPUT=${markdupstempdir}/${bam} \\
         METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
         TAGGING_POLICY=All \\
         REMOVE_DUPLICATES=false \\
@@ -1078,7 +1069,7 @@ process markdups {
         QUIET=true \\
         VERBOSITY=WARNING
 
-    mv -f ${markdupsdir}/${bam} ${stardir}/${bam}
+    mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
 
     chmod -R g+rw ${projectdir}
     """
@@ -1306,6 +1297,7 @@ process multiqc_ctg {
       multiqc -n ${projectid}_multiqc_report \\
         --interactive \\
         -o ${multiqcctgdir} . ${runfolderdir}
+
       chmod -R g+rw ${projectdir}
     """
   else
@@ -1334,6 +1326,10 @@ process multiqc_ctg {
 // 	 .from("x")
 //    .set{ setup_deliverytemp_complete_ch }
 // }
+
+
+
+
 process stage_delivery {
   cpus 4
   tag "$projectid"
@@ -1353,7 +1349,7 @@ process stage_delivery {
   // move fastq
 
   script:
-  if ( params.run_setup_deliverytemp )
+  if ( params.run_stage_delivery )
     """
 
     ##  sample sheets
@@ -1563,12 +1559,12 @@ process md5sum_delivery {
 //  - Nextflow scripts, nextflow.config.project., rnaseq-main, nextflow.config, drivers, ./bin files etc (./scripts)
 
 //  - logs,  (the final nextflow genereated onComplee is copied in that segion)
-// if ( params.run_setup_ctg_save == false ) {
+// if ( params.run_stage_ctg_save == false ) {
 //    Channel
 // 	 .from("x")
-//    .set{ setup_ctg_save_complete_ch }
+//    .set{ stage_ctg_save_complete_ch }
 // }
-process setup_ctg_save {
+process stage_ctg_save {
   cpus 4
   tag "$projectid"
   memory '32 GB'
@@ -1579,13 +1575,13 @@ process setup_ctg_save {
   val x from move_fastq_complete_2_ch.collect()
 
   output:
-  val "x" into setup_ctg_save_complete_ch
+  val "x" into stage_ctg_save_complete_ch
 
-  // when: params.run_setup_ctg_save
+  // when: params.run_stage_ctg_save
 
 
   script:
-  if (params.run_setup_ctg_save)
+  if (params.run_stage_ctg_save)
   """
 
   ##  sample sheets
@@ -1593,96 +1589,59 @@ process setup_ctg_save {
   cd ${projectdir}
 
   if [ -f ${samplesheet_ctg} ]; then
-    cp ${samplesheet_ctg} ${ctg_save_dir}/samplesheets
+    cp ${samplesheet_ctg} ctg_save_samplesheets
   fi
   if [[ -f ${samplesheet_demux} ]]; then
-    cp ${samplesheet_demux} ${ctg_save_dir}/samplesheets
+    cp ${samplesheet_demux} ctg_save_samplesheets
   fi
   if [ -f ${samplesheet_original} ]; then
-    cp ${samplesheet_original} ${ctg_save_dir}/samplesheets
+    cp ${samplesheet_original} ctg_save_samplesheets
   fi
 
 
   ##  logs
   ##   -----------------
-  mkdir -p ${deliverylogs}
+  mkdir -p ${ctg_save_logs}
 
 
   ## scripts dir (executables bins etc, version specific) and configs (project specific)
   ##   --------------------------------------------------------------
-  mkdir -p ${deliveryscripts}
+  mkdir -p ${ctg_save_scripts}
 
   if [[ -d "${params.scriptsdir}" ]]; then
-    cp -r ${params.scriptsdir} ${deliveryscripts}
+    cp -r ${params.scriptsdir} ${ctg_save_scripts}
   fi
 
 
   ## configs (project specific) as well as the rscript log config
   ##   --------------------------------------------------------------
   if [[ -f "${projectdir}/nextflow.config.project.${projectid}" ]]; then
-    cp ${projectdir}/nextflow.config.project.${projectid} ${deliveryconfigs}
+    cp ${projectdir}/nextflow.config.project.${projectid} ${ctg_save_configs}
   fi
 
   if [[ -f "${projectdir}/nextflow.config" ]]; then
-    cp ${projectdir}/nextflow.config ${deliveryconfigs}
+    cp ${projectdir}/nextflow.config ${ctg_save_configs}
   fi
   if [[ -f "${runfolderdir}/log.rscript.samplesheet" ]]; then
-    cp ${runfolderdir}/log.rscript.samplesheet ${deliveryconfigs}
+    cp ${runfolderdir}/log.rscript.samplesheet ${ctg_save_configs}
   fi
 
 
-  ##  Move delivery temp dir from project folder to delivery location
+  ##  duplicate the fastqc analyses from delivery dir
+  ## -----------------------------------------
+  cp -r ${deliverydir}/qc/fastqc ${qcdir}
+
+
+  ##  Move ctg qc dir from project folder to delivery location
   ##   --------------------------------------------------------------
-  mv ${deliverytemp} ${deliverydir}
+  mv ${qcdir} ${ctg_save_qc}
 
-  chmod -R g+rw ${deliverydir}
+  chmod -R g+rw ${ctg_save_dir}
 
-
-
-
-
-    mkdir -p ${ctg_save_dir}/samplesheets
-    mkdir -p ${ctg_save_dir}/scripts
-
-    cd ${projectdir}
-
-    ## ctg specific multiQC and fastQCs
-    if [ -d ${multiqcctgdir} ]; then
-      cp -r ${multiqcctgdir} ${ctg_save_dir}
-    fi
-    if [ -d ${fastqcdir} ]; then
-      cp -r ${fastqcdir} ${ctg_save_dir}
-    fi
-
-    ## all sample sheets
-    if [ -f ${samplesheet_ctg} ]; then
-      cp ${samplesheet_ctg} ${ctg_save_dir}/samplesheets
-    fi
-    if [[ -f ${samplesheet_demux} ]]; then
-      cp ${samplesheet_demux} ${ctg_save_dir}/samplesheets
-    fi
-    if [ -f ${samplesheet_original} ]; then
-      cp ${samplesheet_original} ${ctg_save_dir}/samplesheets
-    fi
-
-    ##  samplesheet check rscript output
-    if [[ -f "${runfolderdir}/log.rscript.samplesheet" ]]; then
-      cp ${runfolderdir}/log.rscript.samplesheet ${ctg_save_dir}
-    fi
-
-    ## project specic parameters file
-    if [[ -f "${projectdir}/nextflow.config.project.${projectid}" ]]; then
-      cp ${projectdir}/nextflow.config.project.${projectid} ${ctg_save_dir}/scripts
-    fi
-
-    ## copy the entire scripts dir into the ctg save dir
-    if [[ -d "${params.scriptsdir}" ]]; then
-      cp -r ${params.scriptsdir} ${ctg_save_dir}/scripts
-    fi
   """
   else
   """
-    echo "skipping run_setup_ctg_save"
+    echo "skipping run_stage_ctg_save"
   """
 }
 
@@ -1702,7 +1661,7 @@ process checkfiles_rscript_predelivery {
   time '3h'
 
   input:
-  val x from setup_ctg_save_complete_ch.collect()
+  val x from stage_ctg_save_complete_ch.collect()
 
   output:
   val "x" into checkfiles_rscript_predelivery_ch
@@ -1762,10 +1721,9 @@ process finalize_pipeline {
     echo "Project:   ${projectid}"             >> $readme
     du -ch -d 0 . | grep 'total'               >> $readme
 
-    # chmod -R 770 ${deliverydir}
     chmod -R g+rw ${deliverydir}
     chmod -R g+rw ${projectdir}
-
+    chmod -R g+rw ${ctg_save_dir}
 
   """
   else

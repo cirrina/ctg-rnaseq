@@ -56,12 +56,18 @@ deliveryscripts
 deliveryconfigs
 deliverylogs
 
+deliveryqc
 
 COPY THESE TO CTG SAVE
 
 
 THEN
 setup_ctg_save
+
+ctg_save_samplesheets = ctg_save_dir+'/samplesheets'
+ctg_save_scripts = ctg_save_dir+'/scripts'
+ctg_save_configs = ctg_save_dir+'/configs'
+ctg_save_logs =  ctg_save_dir+'/logs'
 
 
 
