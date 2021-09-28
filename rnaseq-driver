@@ -698,6 +698,10 @@ if [[ $runfolder_mode == "false" ]]; then
     echo " ... forcing 'run_blcl2fastq' to 'false'"
     sed "s/run_blcl2fastq.*/run_blcl2fastq            =  false/g" $nf_conf > tmp.txt ; mv tmp.txt $nf_conf
   fi
+  if [[ ${fastq_custom} == "true" ]]; then
+    echo " ... custom fastq dir. setting this fastqdir in config file ${nf_conf}"
+    sed "s/fastqdir .*/fastqdir            =  ${fastqdir}/g" $nf_conf > tmp.txt ; mv tmp.txt $nf_conf
+  fi
 fi
 
 
