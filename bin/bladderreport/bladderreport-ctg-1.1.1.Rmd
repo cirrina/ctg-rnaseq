@@ -1,7 +1,7 @@
 ---
 title: 'bladderreport-ctg-1.1.1'
 params:
-  clarity_id: R09_T1
+  #clarity_id: R09_T1
   rsem_in: ./uroscan_data/R09_T1.rsem
   sampleid: R09_T1_rsem
   star_qc: ./uroscan_data/R09_T1_Log.final.out
@@ -35,9 +35,9 @@ font-size: 14px
 ```{r debug,  eval=FALSE, include=FALSE}
 ## DEBUG ONLY
 params <- list(
-  clarity_id="R09_T1",
+  sampleid="R09_T1",
   rsem_in= "/Users/david/tasks/blrep_test/uroscan_data/R09_T1.rsem.genes.results",
-  sampleid = "R09_T1_rsem",
+  # sampleid = "R09_T1_rsem",
   star_qc = "/Users/david/tasks/blrep_test/uroscan_data/R09_T1_Log.final.out",
   anonymous = "yes",
   RIN= "9.5",
@@ -113,23 +113,23 @@ names(sample)<-symbol
 sample <- as.matrix(sample)
 
 #######################################################
-# Extract patient and sample information from clarity if on region skÂne server
+# Extract patient and sample information from clarity if on region sk√•ne server
 #######################################################
 
-clarity_id<-params$clarity_id
+# clarity_id<-params$clarity_id
 
 sampledata<-data.frame(
-  patientnamn="Ej tillg‰nglig",
-  personnummer = "Ej tillg‰nglig",
-  ankomstdatum = "Ej tillg‰nglig",
-  koncentration = "Ej tillg‰nglig",
-  dv200 = "Ej tillg‰nglig",
-  RIN = "Ej tillg‰nglig")
+  patientnamn="Ej tillg√§nglig",
+  personnummer = "Ej tillg√§nglig",
+  ankomstdatum = "Ej tillg√§nglig",
+  koncentration = "Ej tillg√§nglig",
+  dv200 = "Ej tillg√§nglig",
+  RIN = "Ej tillg√§nglig")
 
 #
 #
 # #######################################################
-# # Extract patient and sample information from clarity if on region skÂne server
+# # Extract patient and sample information from clarity if on region sk√•ne server
 # #######################################################
 #
 # if( Sys.info()["nodename"] == "MTLUCMDS1"){
@@ -202,7 +202,7 @@ qc.data<-data.frame(uppmatt=c(sampledata$RIN,sampledata$dv200,
 
 #qc.data<-rbind(qc.data,c(as.integer(as.numeric(qc.data$uppmatt[5])/as.numeric(qc.data$uppmatt[6])),">100"))
 
-qc.data$variabel =  c("RIN", "DV200", "Unikt inpassade l‰sningar (M)","Unikt inpassade l‰sningar (%)", "Multiinpassade l‰sningar (%)","Missmatchratio per bas (%)", "Kanoniska splitsningar (n)", "Icke-kanoniska splitsningar (n)")
+qc.data$variabel =  c("RIN", "DV200", "Unikt inpassade l√§sningar (M)","Unikt inpassade l√§sningar (%)", "Multiinpassade l√§sningar (%)","Missmatchratio per bas (%)", "Kanoniska splitsningar (n)", "Icke-kanoniska splitsningar (n)")
 
 
 
@@ -212,7 +212,7 @@ qc.data$variabel =  c("RIN", "DV200", "Unikt inpassade l‰sningar (M)","Unikt inp
 
 `r knitr::include_graphics("lu-logo.png")`
 
-## Analysrapport inom ramen fˆr forskningsstudien UROSCANSEQ - Expressionsdriven klassificering av blÂscancer
+## Analysrapport inom ramen f√∂r forskningsstudien UROSCANSEQ - Expressionsdriven klassificering av bl√•scancer
 
 
 
@@ -224,52 +224,54 @@ Personnummer  | `r sampledata$personnummer`
 Prov-ID       | `r params$sampleid`
 Ankomstdatum  | `r sampledata$ankomstdatum`
 Rapportdatum  | `r format(Sys.time(), "%Y-%m-%d")`
-IngÂngsmaterial    | RNA
+Ing√•ngsmaterial    | RNA
 Koncentration  | `r sampledata$koncentration` ng/ul
-RNA-kvalitet | Godk‰nd
+RNA-kvalitet | Godk√§nd
 Analysmetod   | NGS-/MPS-analys med RNA-seq
 Indatafil     | `r params$rsem_in`
-Analys genomfˆrd av  | Centrum fˆr Translationell Genomik (CTG), Lunds Universitet
+Analys genomf√∂rd av  | Centrum f√∂r Translationell Genomik (CTG), Lunds Universitet
 Rapportversion  | 1.1.0 - Reviderad 2021-09-17
 
 ***
 
 ### Slutsats
 
-RNA-kvalitet: <b>godk‰nd</b>
+RNA-kvalitet: <b>godk√§nd</b>
 
 ```{r, results_classifier, include=T, echo=F}
 
 results <- suppressWarnings(LundClassifier(SampleData = sample))
+saveRDS(results, file=paste0(sampleid,".LundClassifier.rds"))
 #results$Report$Main_subtype<-"Urotel-lik"
 #results$Report$Subtype<-"Urotel-lik A"
 if(grepl("Uro",results$Report$Subtype)){ ReportSubtype<<-results$Report$Subtype}else{ReportSubtype<<-"-"}
+)
 
 ```
 
 
-#### Molekyl‰r Subtyp
-Expressionsprofilen tyder pÂ att tumˆren ‰r av subtypskategorin: <b>`r results$Report$Main_subtype`</b>
+#### Molekyl√§r Subtyp
+Expressionsprofilen tyder p√• att tum√∂ren √§r av subtypskategorin: <b>`r results$Report$Main_subtype`</b>
 
-Undergrupp av "Urotel-lik" (om bedˆmbart): <b>`r ReportSubtype`</b>
+Undergrupp av "Urotel-lik" (om bed√∂mbart): <b>`r ReportSubtype`</b>
 
 #### Grad
 ```{r,echo=F}
 
-Grad <- "Ej tillg‰nglig"
+Grad <- "Ej tillg√§nglig"
 if(results$Report$Grade=="grad 3"){
   Grad<-"Grad 3"
 }else{
   Grad <- "Ej Grad 3"
 }
 ```
-Molekyl‰r grad bedˆms som: <b>`r Grad`</b>
+Molekyl√§r grad bed√∂ms som: <b>`r Grad`</b>
 
 ***
 
 ### Analysresultat
 
-Nedan syns algoritm v‰rde fˆr varje subtyp fˆr tumˆren fˆr RandomForestklassificeraren respektive SwitchBoxklassificeraren.
+Nedan syns algoritm v√§rde f√∂r varje subtyp f√∂r tum√∂ren f√∂r RandomForestklassificeraren respektive SwitchBoxklassificeraren.
 
 
 #### Random Forest
@@ -286,10 +288,10 @@ t1<-ttheme_default(core=list(
         ))
 
 
-p1<-ggplot(rf,aes(x=subtyp,y=score,fill=max))+geom_bar(stat="identity",position = "dodge")+ylab("V‰rde")+xlab("")+ylim(0,1)+scale_fill_manual(values = colorPal[c(1,5)])+theme(legend.title=element_blank(),legend.position = "none")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p1<-ggplot(rf,aes(x=subtyp,y=score,fill=max))+geom_bar(stat="identity",position = "dodge")+ylab("V√§rde")+xlab("")+ylim(0,1)+scale_fill_manual(values = colorPal[c(1,5)])+theme(legend.title=element_blank(),legend.position = "none")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 rownames(rf)<-NULL
-colnames(rf)<-c("Typ","V‰rde","Max")
+colnames(rf)<-c("Typ","V√§rde","Max")
 plot_grid(p1,NULL,plot_grid(tableGrob(rf[,-3],theme=t1),NULL,ncol=1,rel_heights =c(0.6,0.4)),rel_widths = c(0.5,0.25,0.25),ncol=3,axis="t")
 
 ```
@@ -314,10 +316,10 @@ sb.main$subtyp <- factor(sb.main$subtyp, levels = sb.main$subtyp)
 sb.uro$subtyp <- factor(sb.uro$subtyp, levels = sb.uro$subtyp)
 
 
-main.p<-ggplot(sb.main,aes(x=subtyp,y=score,fill=max))+geom_bar(stat="identity",position = "dodge")+ylab("V‰rde")+xlab("")+ylim(0,1)+scale_fill_manual(values = colorPal[c(1,5)])+theme(legend.title=element_blank(),legend.position = "none")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
+main.p<-ggplot(sb.main,aes(x=subtyp,y=score,fill=max))+geom_bar(stat="identity",position = "dodge")+ylab("V√§rde")+xlab("")+ylim(0,1)+scale_fill_manual(values = colorPal[c(1,5)])+theme(legend.title=element_blank(),legend.position = "none")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 rownames(sb.main)<-NULL
-colnames(sb.main)<-c("Typ","V‰rde","Max")
+colnames(sb.main)<-c("Typ","V√§rde","Max")
 
 if(results$Report$Main_subtype != "Urotel-lik"){
 plot_grid(plot_grid(main.p,NULL,align="hv",rel_widths=c(0.67,0.33)),plot_grid(tableGrob(sb.main[,-3],theme=t2),NULL,ncol=1,align="v"),rel_widths=c(0.75,0.25))
@@ -329,7 +331,7 @@ plot_grid(plot_grid(main.p,NULL,align="hv",rel_widths=c(0.67,0.33)),plot_grid(ta
     sub.p<-ggplot(sb.uro,aes(x=subtyp,y=score,fill=max))+geom_bar(stat="identity",position = "dodge")+ylab("")+xlab("")+ylim(0,1)+scale_fill_manual(values = colorPal[c(1,5)])+theme(legend.title=element_blank(),legend.position = "none")+ theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
   rownames(sb.uro)<-NULL
-  colnames(sb.uro)<-c("Typ","V‰rde","Max")
+  colnames(sb.uro)<-c("Typ","V√§rde","Max")
 
   t3<-ttheme_default(core=list(
         fg_params=list(fontface=setNames(c("plain","bold"),c("N","Y"))[sb.uro[,3]])
@@ -342,16 +344,16 @@ plot_grid(plot_grid(main.p,NULL,align="hv",rel_widths=c(0.67,0.33)),plot_grid(ta
 
 ```
 
-#### Molekyl‰r grad
+#### Molekyl√§r grad
 
 
 ```{r, results_classifier_table_grader, include=T,echo=F,fig.width=2,fig.height=2}
 grade_score <-data.frame(score=results$SwitchBox$Scores[9])
 
 if(grade_score>0.5){
-  cat(paste0("Expressionsprofilen tyder pÂ att tumˆren ‰r av grad 3 (v‰rde: ",prettyNum(grade_score,digits=2), ")."))
+  cat(paste0("Expressionsprofilen tyder p√• att tum√∂ren √§r av grad 3 (v√§rde: ",prettyNum(grade_score,digits=2), ")."))
 }else{
-  cat(paste0("Expressionsprofilen tyder pÂ att tumˆren EJ ‰r av grad 3 (v‰rde: ",prettyNum(grade_score,digits=2), ")."))
+  cat(paste0("Expressionsprofilen tyder p√• att tum√∂ren EJ √§r av grad 3 (v√§rde: ",prettyNum(grade_score,digits=2), ")."))
 }
 
 
@@ -373,9 +375,9 @@ samplename <- params$sampleid
 #
 # if(as.numeric(qc.data$uppmatt[1]) > 20 & as.numeric(substr(qc.data$uppmatt[2],1,2)) > 80 & as.numeric(substr(qc.data$uppmatt[3],1,2))< 10
 #    & as.numeric(substr(qc.data$uppmatt[4],1,4))< 3){
-#   cat(paste0("Provet uppfyller av CTG uppst‰llda kvalitetskriterier."))
+#   cat(paste0("Provet uppfyller av CTG uppst√§llda kvalitetskriterier."))
 # }else{
-#   cat(paste0("Provet uppfyller EJ av CTG uppst‰llda kvalitetskriterier."))
+#   cat(paste0("Provet uppfyller EJ av CTG uppst√§llda kvalitetskriterier."))
 # }
 
 
@@ -400,12 +402,12 @@ if (as.numeric(substr(qc.data$uppmatt[6],1,4))> 3 ){
 
 if(sum(fail)>0){
   qc.data[,c(3,2,1)] %>%
-    kable(col.names = c("","Riktv‰rde",samplename)) %>%
+    kable(col.names = c("","Riktv√§rde",samplename)) %>%
     kable_styling() %>% row_spec(fail, bold = T, background = "grey")
 
 }else{
   qc.data[,c(3,2,1)] %>%
-    kable(col.names = c("","Riktv‰rde",samplename)) %>%
+    kable(col.names = c("","Riktv√§rde",samplename)) %>%
     kable_styling()
 }
 
@@ -414,9 +416,9 @@ if(sum(fail)>0){
 
 ### Analysbeskrivning
 
-RNA har extraherats frÂn ins‰nt prov (tumˆrbiopsi frÂn TURB) och analyserats med massivt parallell sekvensering (MPS, ‰ven kallat NGS). budb‰rar-RNA selekterades frÂn 200 ng total-ribonukleinsyror med hj‰lp av polyA-rening, fragmenterades och amplifierades med slumpm‰ssiga startmolekyler med hj‰lp av "TruSeq Stranded mRNA"-kittet frÂn Illumina. Efter DNA-‰ndsreparation, cDNA-syntes och ligering av sekvenseringsadaptorer sekvenserades provet pÂ en NextSeq 500 med en l‰sl‰ngd av 2 x 150.
+RNA har extraherats fr√•n ins√§nt prov (tum√∂rbiopsi fr√•n TURB) och analyserats med massivt parallell sekvensering (MPS, √§ven kallat NGS). budb√§rar-RNA selekterades fr√•n 200 ng total-ribonukleinsyror med hj√§lp av polyA-rening, fragmenterades och amplifierades med slumpm√§ssiga startmolekyler med hj√§lp av "TruSeq Stranded mRNA"-kittet fr√•n Illumina. Efter DNA-√§ndsreparation, cDNA-syntes och ligering av sekvenseringsadaptorer sekvenserades provet p√• en NextSeq 500 med en l√§sl√§ngd av 2 x 150.
 
-Resulterande l‰sningar sekvensinpassades (STAR) samt kvantifierades (RSEM) mot det human genomet version b37. Fˆr klassificering anv‰nds en ensemblklassificareare med en "top scoring pair classifier"-del och en "random forest"-del implementerad i R och utvecklad och tr‰nad av Mattias Hˆglund med kollegor.
+Resulterande l√§sningar sekvensinpassades (STAR) samt kvantifierades (RSEM) mot det human genomet version b37. F√∂r klassificering anv√§nds en ensemblklassificareare med en "top scoring pair classifier"-del och en "random forest"-del implementerad i R och utvecklad och tr√§nad av Mattias H√∂glund med kollegor.
 
 ### Referenser
 * Li et al 2013: https://arxiv.org/abs/1303.3997

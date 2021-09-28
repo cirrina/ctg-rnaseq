@@ -101,6 +101,7 @@ fastqcdir = deliveryqc+'/fastqc'
 
 multiqcdeliverydir  =  deliverydir + '/multiqc'
 mqcreport = multiqcdeliverydir + '/' + projectid + '_multiqc_report'
+readme = deliverydir +'/README_ctg_delivery_' + projectid
 
 
 // output for qc - temp workdirs
@@ -118,7 +119,7 @@ fastqscreendir = qcdir+'/fastqscreen'
 
 /// ctg sav dirs
 ctg_save_samplesheets = ctg_save_dir+'/samplesheets'
-ctg_save_scripts = ctg_save_dir+'/samplesheets'
+ctg_save_scripts = ctg_save_dir+'/scripts'
 ctg_save_configs = ctg_save_dir+'/configs'
 ctg_save_logs =  ctg_save_dir+'/logs'
 
@@ -134,10 +135,9 @@ interopdir_ctg = runfolderdir + '/ctg-interop'
 /* ===============================================================
   *       create output and logdirs
   =============================================================== */
-readme = deliverydir +'/README_ctg_delivery_' + projectid
 
 // log file for nextflow .onComplete
-logfile              =  file( projectdir + '/' + 'log.nextflow.complete' )
+logfile   =  file( projectdir + '/' + 'log.nextflow.complete' )
 // logfile_sav          =  file( ctg_save_dir + '/' + 'log.nextflow.complete' )
 
 
@@ -1198,6 +1198,8 @@ process bladderreport {
     chromium --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
 
     # ${bladderreportdir}/tmp_${sid}/bladderreport/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
+
+    mv ${bladderreportdir}/tmp_${sid}/bladderreport/${sid}.LundClassifier.rds ${bladderreportdir}/${sid}.LundClassifier.rds
 
     rm -rf ${bladderreportdir}/tmp_${sid}
 
