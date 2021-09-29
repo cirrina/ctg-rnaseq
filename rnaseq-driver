@@ -107,7 +107,7 @@ usage() {
     echo "                   If a project is run multiple times with different settings. Modify the project id and sample sheet accordingly."
     echo " RunFolder:        Name (not full path) of Illumina runfolder, e.g. . Set to NA if unknown and custom fastq files are run"
     echo " PipelineName:     The CTG analysis pipeline, e.g. ctg-rnaseq"
-    echo " PipelineVersion:  The CTG analysis pipeline version. Must match the ctg pipeline naming nomenclature, e.g. '2.0.0'"
+    echo " PipelineVersion:  The CTG analysis pipeline version. Must match the ctg pipeline naming nomenclature, e.g. '2.0.0' or 'dev' etc"
     echo " PipelineProfile:  Determines the --proile flag of nextflow execution. Currently 'rnaseq' or 'uroscan' is supported."
     echo " Barcode:          Illumina flowcell barcode"
     echo " Runfolder:        Name of the runfolder directory (dirname not full path)"
@@ -121,7 +121,7 @@ usage() {
     echo "------------------- "
     echo " optionals : "
     echo "------------------- "
-    echo " prime_run_only:  -p : Set if do not start nextflow. A dry run that will generate project folder, config files etc but will not initiate nextflow."
+    echo " prime_run_only:  -p : Set to 'true' if you do not start nextflow. A dry run that will generate project folder, config files etc but will not initiate nextflow."
     echo " fastq_path:      -f : Set to a full path where all fastq files are located. individual filenames should be specified in ctg sample sheet. This flag will set 'run_blcl2fastq' to 'false' and all flags related to demux to false "
     echo " resume           -r : Nextflow-specific. If to resume nextflow run. Can only be used when executing in Project work dir, NOT from Illumina runfolder"
     echo " force_lane       -l : Set to 1 or 2 if to force demux to only run one lane. This if lane divider is used AND if lane is NOT specified in sample sheet. This parameter will override the Lane column in sample sheet"
@@ -252,7 +252,7 @@ nf_config_default="${projectdir}/nextflow.config"
 fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output. includes the fastq directory as well as
 fastqdir="${fastqdir_bcl2fastq}/${projectid}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
 if [[ ${fastq_custom} == "true" ]]; then
-  fastqdir=${fastq_custom}
+  fastqdir=${fastq_path}
 fi
 
 # Samplesheet names - outputed from samplesheet rscript
@@ -658,8 +658,8 @@ echo " ... profile set to: ${pipelineProfile}'"
   echo "  Project primed"
   echo "  ... Project dir        :  ${projectdir}"
   echo "  ... Nextflow config    :  ${nf_conf}"
-  echo "  ... samplesheet-ctg    :  $samplesheet_ctg" ;
-  echo "  ... samplesheet-demux  :  $samplesheet_demux"         ;
+  echo "  ... samplesheet-ctg    :  $samplesheet_ctg" 
+  echo "  ... samplesheet-demux  :  $samplesheet_demux"
   echo "  ... Pipeline        :   ${pipeline}"
 
 
@@ -700,7 +700,7 @@ if [[ $runfolder_mode == "false" ]]; then
   fi
   if [[ ${fastq_custom} == "true" ]]; then
     echo " ... custom fastq dir. setting this fastqdir in config file ${nf_conf}"
-    sed "s/fastqdir .*/fastqdir            =  ${fastqdir}/g" $nf_conf > tmp.txt ; mv tmp.txt $nf_conf
+    sed "s|fastqdir.*|fastqdir            =  $fastqdir|g" $nf_conf > tmp.txt ; mv tmp.txt $nf_conf
   fi
 fi
 

@@ -37,6 +37,10 @@ singularity exec --bind /projects/fs1/  /projects/fs1/shared/ctg-containers/rnas
      VERBOSITY=WARNING
 
 
+ERROR
+Sed cannot use a path that include / 
+sed "s/fastqdir .*/fastqdir            =  ${fastqdir}/g" $nf_conf > tmp.txt ; mv tmp.txt $nf_conf
+
 
 
 
