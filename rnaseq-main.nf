@@ -1131,6 +1131,52 @@ process fastqscreen {
 
 
 
+
+
+/* ===============================================================
+  *      FASTQC
+  =============================================================== */
+
+process fastqc {
+  // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
+  tag "$sid"
+  cpus 6
+  memory '32 GB'
+  time '3h'
+  // echo true
+
+  input:
+  set sid, read1, read2, species from fastqc_ch  // from check fastq
+
+  output:
+  val "x" into fastqc_complete_ch
+
+  // when: params.run_fastqc
+
+  script:
+  if ( params.paired && params.run_fastqc)
+    """
+      mkdir -p ${fastqcdir}
+      echo "running fastqc in paired reads mode"
+      fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
+      chmod -R g+rw ${projectdir}
+  """
+  else if ( !params.paired && params.run_fastqc)
+    """
+      mkdir -p ${fastqcdir}
+      echo "running fastqc in non paired reads mode "
+      fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
+      chmod -R g+rw ${projectdir}
+    """
+  else
+    """
+    echo "run_fastqc skipped"
+    """
+}
+
+
+
+
 /* ===============================================================
   *      BLADDER REPORT
   =============================================================== */
@@ -1191,7 +1237,7 @@ process bladderreport {
 
     mv ${bladderreportdir}/tmp_${sid}/bladderreport/${sid}.LundClassifier.rds ${bladderreportdir}/${sid}.LundClassifier.rds
 
-    rm -rf ${bladderreportdir}/tmp_${sid}
+    # rm -rf ${bladderreportdir}/tmp_${sid} ## bugs out. move to further down
 
     chmod -R g+rw ${projectdir}
   """
@@ -1202,46 +1248,6 @@ process bladderreport {
 }
 
 
-/* ===============================================================
-  *      FASTQC
-  =============================================================== */
-
-process fastqc {
-  // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
-  tag "$sid"
-  cpus 6
-  memory '32 GB'
-  time '3h'
-  // echo true
-
-  input:
-  set sid, read1, read2, species from fastqc_ch  // from check fastq
-
-  output:
-  val "x" into fastqc_complete_ch
-
-  // when: params.run_fastqc
-
-  script:
-  if ( params.paired && params.run_fastqc)
-    """
-      mkdir -p ${fastqcdir}
-      echo "running fastqc in paired reads mode"
-      fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
-      chmod -R g+rw ${projectdir}
-  """
-  else if ( !params.paired && params.run_fastqc)
-    """
-      mkdir -p ${fastqcdir}
-      echo "running fastqc in non paired reads mode "
-      fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
-      chmod -R g+rw ${projectdir}
-    """
-  else
-    """
-    echo "run_fastqc skipped"
-    """
-}
 
 
 
@@ -1351,6 +1357,18 @@ process stage_delivery {
   script:
   if ( params.run_stage_delivery )
     """
+    ## additional cleanups (star and bladderreport)
+    ## -------------------
+    if [ -d ${bladderreportdir} ]; then
+      cd ${bladderreportdir}
+      find . -type d -name "tmp_*" -exec rm -r {} +
+    fi
+
+    if [ -d ${stardir} ]; then
+      cd ${stardir}
+      find . -type d -name "*__STARtmp" -exec rm -r {} +
+    fi
+
 
     ##  sample sheets
     ## -----------------
@@ -1399,6 +1417,11 @@ process stage_delivery {
     ##   --------------------------------------------------------------
     mv ${deliverytemp} ${deliverydir}
 
+
+
+
+    ## chmods
+    ## --------
     chmod -R g+rw ${deliverydir}
 
     """
@@ -1647,55 +1670,45 @@ process stage_ctg_save {
 
 
 
-// Checkfiles using Rscript
-// -----------------------------
-// if ( params.run_checkfiles_rscript_predelivery == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ checkfiles_rscript_predelivery_ch }
+//
+// process checkfiles_rscript_predelivery {
+//   cpus 4
+//   tag "$projectid"
+//   memory '32 GB'
+//   time '3h'
+//
+//   input:
+//   val x from stage_ctg_save_complete_ch.collect()
+//
+//   output:
+//   val "x" into checkfiles_rscript_predelivery_ch
+//
+//   // when: params.run_checkfiles_rscript_predelivery
+//
+//   script:
+//   if( params.run_checkfiles_rscript_predelivery)
+//   """
+//     ## first check output files using rscript. Then move delivery files
+//     ${projectdir}/bin/samplecheck.R \\
+//       --sample_sheet ${samplesheet_ctg} \\
+//       --project_id ${projectid} \\
+//       --check_dir ${projectdir}
+//       --output ${deliverydir}/log.rscript.filecheck.csv
+//
+//   """
+//   else
+//   """
+//     echo "skipping run_checkfiles_rscript_predelivery"
+//   """
+//
 // }
-process checkfiles_rscript_predelivery {
-  cpus 4
-  tag "$projectid"
-  memory '32 GB'
-  time '3h'
-
-  input:
-  val x from stage_ctg_save_complete_ch.collect()
-
-  output:
-  val "x" into checkfiles_rscript_predelivery_ch
-
-  // when: params.run_checkfiles_rscript_predelivery
-
-  script:
-  if( params.run_checkfiles_rscript_predelivery)
-  """
-    ## first check output files using rscript. Then move delivery files
-    ${projectdir}/bin/samplecheck.R \\
-      --sample_sheet ${samplesheet_ctg} \\
-      --project_id ${projectid} \\
-      --check_dir ${projectdir}
-      --output ${deliverydir}/log.rscript.filecheck.csv
-
-  """
-  else
-  """
-    echo "skipping run_checkfiles_rscript_predelivery"
-  """
-
-}
 
 
 // Finalize deliverydir
 // -----------------------------
 // provess add README with dir size
 
-// if ( params.run_finalize_delivery == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ checkfiles_rscript_predelivery_ch }
-// }
+
 process finalize_pipeline {
   cpus 2
   tag "$projectid"
@@ -1704,15 +1717,17 @@ process finalize_pipeline {
 
   input:
   val x from md5sum_complete_ch.collect()
-  val x from checkfiles_rscript_predelivery_ch.collect()
+  val x from stage_ctg_save_complete_ch.collect()
+
+  //val x from checkfiles_rscript_predelivery_ch.collect()
 
   output:
   val "x" into finalize_pipeline_ch
 
-  // when: params.run_finalize_delivery
+
 
   script:
-  if (params.run_finalize_delivery)
+  if (params.run_finalize_pipeline)
   """
     cd ${deliverydir}
 
@@ -1728,55 +1743,51 @@ process finalize_pipeline {
   """
   else
   """
-    echo "skipping run_finalize_delivery"
+    echo "skipping run_finalize_pipeline"
   """
 }
 
 
-// if ( params.checkfiles_rscript_postdelivery_ch == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ checkfiles_rscript_predelivery_ch }
+
+// process checkfiles_rscript_postdelivery {
+//
+//   cpus 4
+//   tag "$projectid"
+//   memory '32 GB'
+//   time '3h'
+//
+//   input:
+//   val x from finalize_pipeline_ch.collect()
+//
+//   output:
+//   val "x" into checkfiles_rscript_postdelivery_ch
+//
+//   // when: params.checkfiles_rscript_postdelivery_ch
+//
+//   script:
+//   if( params.run_checkfiles_rscript_postdelivery)
+//   """
+//     cd ${deliverydir}
+//
+//     ## check output files using rscript
+//     ${projectdir}/bin/samplecheck.R \\
+//       --sample_sheet ${samplesheet_ctg} \\
+//       --project_id ${projectid} \\
+//       --check_dir ${ctg_save_dir}
+//       --output ${ctg_save_dir}/log.rscript.filecheck.csv
+//
+//     cd ${ctg_save_dir}
+//
+//       ## check output files using rscript
+//       ${projectdir}/bin/samplecheck.R \\
+//         --sample_sheet ${samplesheet_ctg} \\
+//         --project_id ${projectid} \\
+//         --check_dir ${deliverydir}
+//         --output ${deliverydir}/log.rscript.filecheck.csv
+//
+//   """
+//   else
+//   """
+//     echo "skipping checkfiles_rscript_postdelivery"
+//   """
 // }
-process checkfiles_rscript_postdelivery {
-
-  cpus 4
-  tag "$projectid"
-  memory '32 GB'
-  time '3h'
-
-  input:
-  val x from finalize_pipeline_ch.collect()
-
-  output:
-  val "x" into checkfiles_rscript_postdelivery_ch
-
-  // when: params.checkfiles_rscript_postdelivery_ch
-
-  script:
-  if( params.run_checkfiles_rscript_postdelivery)
-  """
-    cd ${deliverydir}
-
-    ## check output files using rscript
-    ${projectdir}/bin/samplecheck.R \\
-      --sample_sheet ${samplesheet_ctg} \\
-      --project_id ${projectid} \\
-      --check_dir ${ctg_save_dir}
-      --output ${ctg_save_dir}/log.rscript.filecheck.csv
-
-    cd ${ctg_save_dir}
-
-      ## check output files using rscript
-      ${projectdir}/bin/samplecheck.R \\
-        --sample_sheet ${samplesheet_ctg} \\
-        --project_id ${projectid} \\
-        --check_dir ${deliverydir}
-        --output ${deliverydir}/log.rscript.filecheck.csv
-
-  """
-  else
-  """
-    echo "skipping checkfiles_rscript_postdelivery"
-  """
-}
