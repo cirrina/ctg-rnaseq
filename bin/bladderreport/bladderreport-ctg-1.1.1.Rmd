@@ -245,7 +245,7 @@ saveRDS(object=results, file=paste0(sampleid,".LundClassifier.rds"))
 #results$Report$Main_subtype<-"Urotel-lik"
 #results$Report$Subtype<-"Urotel-lik A"
 if(grepl("Uro",results$Report$Subtype)){ ReportSubtype<<-results$Report$Subtype}else{ReportSubtype<<-"-"}
-)
+
 
 ```
 
