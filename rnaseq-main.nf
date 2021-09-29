@@ -1369,6 +1369,10 @@ process stage_delivery {
       find . -type d -name "*__STARtmp" -exec rm -r {} +
     fi
 
+    if [ -d ${markdupstempdir} ]; then
+      rm -rf ${markdupstempdir}
+    fi
+
 
     ##  sample sheets
     ## -----------------

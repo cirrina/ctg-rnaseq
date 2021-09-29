@@ -38,9 +38,9 @@ singularity exec --bind /projects/fs1/  /projects/fs1/shared/ctg-containers/rnas
 
 
 ERROR
-Sed cannot use a path that include / 
+Sed cannot use a path that include /
 sed "s/fastqdir .*/fastqdir            =  ${fastqdir}/g" $nf_conf > tmp.txt ; mv tmp.txt $nf_conf
-
+sed "s|fastqdir .*|fastqdir|g"
 
 
 
@@ -84,3 +84,17 @@ Final
 finalize_delivery
 copy to nas sync
 chmods etc
+
+
+
+RANDOM error
+processing file: bladderreport-ctg-1.1.1.Rmd
+output file: bladderreport-ctg-1.1.1.knit.md
+
+
+Output created: /projects/fs1/shared/ctg-projects/rnaseq/2021_024/nf-output/delivery/bladderreport/21KF00103.STAR.bladderreport_anonymous.html
+[0929/123841.331119:ERROR:bus.cc(393)] Failed to connect to the bus: Failed to connect to socket /var/run/dbus/system_bus_socket: No such file or directory
+[0929/123841.360704:WARNING:headless_browser_main_parts.cc(83)] Cannot create Pref Service with no user data dir.
+[0929/123841.368472:ERROR:gpu_init.cc(426)] Passthrough is not supported, GL is disabled
+[0929/123922.183096:INFO:headless_shell.cc(620)] Written to file 21KF00103.STAR.bladderreport.pdf.
+chmod: cannot access '/projects/fs1/shared/ctg-projects/rnaseq/2021_024/nf-output/delivery/bladderreport/tmp_21KF00081': No such file or directory
