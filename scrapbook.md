@@ -1,4 +1,13 @@
 
+Bug Error when starting run to resume with flags, sample sheet is specified but forgot to specify fastq FILES
+i.e. runfolder mode ... but f is not supplied ...
+wanrs about
+
+... ... expecting fastq_custom dir through -f flag ...
+RunFolder is not properly supplied in samplesheet.
+Must be supplied as 'RunFolder' within the [Header] section of sample sheet
+If set to 'NA', then fastq_path (-f) must be supplied.
+
 
 ## CTG save
 
