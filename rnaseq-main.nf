@@ -1661,7 +1661,7 @@ process stage_ctg_save {
 
   ##  Move ctg qc dir from project folder to delivery location
   ##   --------------------------------------------------------------
-  mv ${qcdir} ${ctg_save_qc}
+  mv ${qcdir} ${ctg_save_dir}
 
   chmod -R g+rw ${ctg_save_dir}
 
