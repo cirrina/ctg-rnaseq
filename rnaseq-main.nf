@@ -1379,13 +1379,13 @@ process stage_delivery {
     mkdir -p ${deliverysamplesheets}
 
     if [ -f ${samplesheet_ctg} ]; then
-      cp ${samplesheet_ctg} ${deliverysamplesheets}
+      cp ${samplesheet_ctg} ${deliverysamplesheets}/
     fi
     if [[ -f ${samplesheet_demux} ]]; then
-      cp ${samplesheet_demux} ${deliverysamplesheets}
+      cp ${samplesheet_demux} ${deliverysamplesheets}/
     fi
     if [ -f ${samplesheet_original} ]; then
-      cp ${samplesheet_original} ${deliverysamplesheets}
+      cp ${samplesheet_original} ${deliverysamplesheets}/
     fi
 
 
@@ -1405,15 +1405,16 @@ process stage_delivery {
 
     ## configs (project specific) as well as the rscript log config
     ##   --------------------------------------------------------------
+    mkdir -p ${deliveryconfigs}
     if [[ -f "${projectdir}/nextflow.config.project.${projectid}" ]]; then
-      cp ${projectdir}/nextflow.config.project.${projectid} ${deliveryconfigs}/
+      cp ${projectdir}/nextflow.config.project.${projectid} ${deliveryconfigs}
     fi
 
     if [[ -f "${projectdir}/nextflow.config" ]]; then
-      cp ${projectdir}/nextflow.config ${deliveryconfigs}/
+      cp ${projectdir}/nextflow.config ${deliveryconfigs}
     fi
     if [[ -f "${runfolderdir}/log.rscript.samplesheet" ]]; then
-      cp ${runfolderdir}/log.rscript.samplesheet ${deliveryconfigs}/
+      cp ${runfolderdir}/log.rscript.samplesheet ${deliveryconfigs}
     fi
 
 
