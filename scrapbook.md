@@ -1,3 +1,12 @@
+MAJOR IMPROVEMENTS
+
+Fix prime mode to accept not run in runfolder. Also the samplesheet should have less stringent critearia and not have to run rsctipt check. This IF project folder mode and if fastq is supplied?
+
+
+
+
+
+
 
 Bug Error when starting run to resume with flags, sample sheet is specified but forgot to specify fastq FILES
 i.e. runfolder mode ... but f is not supplied ...
