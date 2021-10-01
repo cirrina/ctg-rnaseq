@@ -1420,6 +1420,7 @@ process stage_delivery {
 
     ##  Move delivery temp dir from project folder to delivery location
     ##   --------------------------------------------------------------
+    mkdir -p ${deliverydir}
     mv ${deliverytemp}/* ${deliverydir}
 
 
