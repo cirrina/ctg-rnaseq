@@ -1406,20 +1406,20 @@ process stage_delivery {
     ## configs (project specific) as well as the rscript log config
     ##   --------------------------------------------------------------
     if [[ -f "${projectdir}/nextflow.config.project.${projectid}" ]]; then
-      cp ${projectdir}/nextflow.config.project.${projectid} ${deliveryconfigs}
+      cp ${projectdir}/nextflow.config.project.${projectid} ${deliveryconfigs}/
     fi
 
     if [[ -f "${projectdir}/nextflow.config" ]]; then
-      cp ${projectdir}/nextflow.config ${deliveryconfigs}
+      cp ${projectdir}/nextflow.config ${deliveryconfigs}/
     fi
     if [[ -f "${runfolderdir}/log.rscript.samplesheet" ]]; then
-      cp ${runfolderdir}/log.rscript.samplesheet ${deliveryconfigs}
+      cp ${runfolderdir}/log.rscript.samplesheet ${deliveryconfigs}/
     fi
 
 
     ##  Move delivery temp dir from project folder to delivery location
     ##   --------------------------------------------------------------
-    mv ${deliverytemp} ${deliverydir}
+    mv ${deliverytemp}/* ${deliverydir}
 
 
 
