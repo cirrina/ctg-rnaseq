@@ -64,8 +64,8 @@ samplesheet_original  =  params.samplesheet_original  // Name of The original (n
 //  demux specific params
 runfolderdir        =  params.runfolderdir        // illumina raw data runfolder (full path)
 runfolder           =  params.runfolder           // illumina raw data runfolder (folder name only)
-fastqdir_bcl2fastq  =  params.fastqdir_bcl2fastq  // base directry where blc2fastq will write its output to (including undetermined fastq and stats folder).
-fastqdir            =  params.fastqdir            // subdirectory where blc2fastq will write fastq files to. fastq-files will be read according to sample sheet. Defaults to <fastqdir_bcl2fastq>/<projectid>
+bcl2fastq_dir  =  params.bcl2fastq_dir  // base directry where blc2fastq will write its output to (including undetermined fastq and stats folder).
+fastqdir            =  params.fastqdir            // subdirectory where blc2fastq will write fastq files to. fastq-files will be read according to sample sheet. Defaults to <bcl2fastq_dir>/<projectid>
 // NOTE: if skip_demux is TRUE, then fastq files must FOR NOW be out in ${projectdir}/nf-output/fastq/{projectid}, i.e. the default location for bcl2fastqc
 
 
@@ -361,7 +361,7 @@ process bcl2fastq {
   script:
   if ( params.run_blcl2fastq )
   """
-  mkdir -p ${fastqdir_bcl2fastq}
+  mkdir -p ${bcl2fastq_dir}
 
   bcl2fastq -R ${runfolderdir} \\
             --sample-sheet ${samplesheet_demux} \\
@@ -369,7 +369,7 @@ process bcl2fastq {
             -r 1 \\
             -p ${task.cpus}  \\
             -w 1  \\
-            --output-dir ${fastqdir_bcl2fastq}
+            --output-dir ${bcl2fastq_dir}
 
   chmod -R g+rw ${projectdir}
    """
@@ -1466,11 +1466,11 @@ process move_fastq {
       """
     else if ( !params.pooled_run &&  params.run_move_fastq )
       """
-      if [ -d ${fastqdir_bcl2fastq} ]; then
+      if [ -d ${bcl2fastq_dir} ]; then
         echo "non pooled data. moving comlplete bcl2fastq output foldler."
-        mv -f ${fastqdir_bcl2fastq} ${deliverydir}
+        mv -f ${bcl2fastq_dir} ${deliverydir}
       elif [ -d ${fastqdir} ]; then
-        echo "non pooled run but cannot locate fastqdir_bcl2fastq. moving fastq foldler only."
+        echo "non pooled run but cannot locate bcl2fastq_dir. moving fastq foldler only."
         mkdir -p ${deliverydir}/fastq
         mv -f ${fastqdir} ${deliverydir}/fastq
       fi
