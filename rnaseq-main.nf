@@ -1617,14 +1617,16 @@ process stage_ctg_save {
   ## -----------------
   cd ${projectdir}
 
+  mkdir -p ${ctg_save_samplesheets}
+
   if [ -f ${samplesheet_ctg} ]; then
-    cp ${samplesheet_ctg} ctg_save_samplesheets
+    cp ${samplesheet_ctg} ${ctg_save_samplesheets}
   fi
   if [[ -f ${samplesheet_demux} ]]; then
-    cp ${samplesheet_demux} ctg_save_samplesheets
+    cp ${samplesheet_demux} ${ctg_save_samplesheets}
   fi
   if [ -f ${samplesheet_original} ]; then
-    cp ${samplesheet_original} ctg_save_samplesheets
+    cp ${samplesheet_original} ${ctg_save_samplesheets}
   fi
 
 
@@ -1644,6 +1646,7 @@ process stage_ctg_save {
 
   ## configs (project specific) as well as the rscript log config
   ##   --------------------------------------------------------------
+  mkdir -p ${ctg_save_configs}
   if [[ -f "${projectdir}/nextflow.config.project.${projectid}" ]]; then
     cp ${projectdir}/nextflow.config.project.${projectid} ${ctg_save_configs}
   fi
@@ -1658,7 +1661,7 @@ process stage_ctg_save {
 
   ##  duplicate the fastqc analyses from delivery dir
   ## -----------------------------------------
-  cp -r ${deliverydir}/qc/fastqc ${qcdir}
+  cp -r ${deliverydir}/fastqc ${qcdir}
 
 
   ##  Move ctg qc dir from project folder to delivery location
