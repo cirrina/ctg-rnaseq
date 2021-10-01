@@ -250,8 +250,8 @@ nf_conf="${projectdir}/nextflow.config.project.${projectid}"
 nf_config_default="${projectdir}/nextflow.config"
 
 ## Fastq paths should be defined even if demux is not run
-fastqdir_bcl2fastq="${projectdir}/nf-output/fastq" # only used for blc2fastq output. includes the fastq directory as well as
-fastqdir="${fastqdir_bcl2fastq}/${projectid}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
+bcl2fastq_dir="${projectdir}/nf-output/fastq" # only used for blc2fastq output. includes the fastq directory as well as
+fastqdir="${bcl2fastq_dir}/${projectid}" # fastq dir (bcl2fastq demux dir) will be set to /projectdir/fastq
 if [[ ${fastq_custom} == "true" ]]; then
   fastqdir=${fastq_path}
 fi
@@ -605,7 +605,7 @@ if [[ $resume == "false" ]]; then
     echo ""                                                               >> $nf_conf
     echo "  // bcl2fastq specific                                       " >> $nf_conf
     echo "  runfolderdir        =  '${runfolderdir}'                    " >> $nf_conf
-    echo "  fastqdir_bcl2fastq  =  '${fastqdir_bcl2fastq}'              " >> $nf_conf
+    echo "  bcl2fastq_dir       =  '${bcl2fastq_dir}'              " >> $nf_conf
     echo ""                                                               >> $nf_conf
     echo "  // root directories                                         " >> $nf_conf
     echo "  project_root        =  '${project_root}'                    " >> $nf_conf
