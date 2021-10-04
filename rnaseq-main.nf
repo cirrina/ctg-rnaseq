@@ -99,7 +99,7 @@ deliverylogs = deliverytemp+'/logs'
 deliveryqc = deliverytemp+'/qc'
 fastqcdir = deliveryqc+'/fastqc'
 
-multiqcdeliverydir  =  deliverydir + '/multiqc'
+multiqcdeliverydir  =  deliveryqc + '/multiqc'
 mqcreport = multiqcdeliverydir + '/' + projectid + '_multiqc_report'
 readme = deliverydir +'/README_ctg_delivery_' + projectid
 
@@ -1121,7 +1121,7 @@ process fastqscreen {
           --outdir ${fastqscreendir} \\
           ${fqsfiles}
 
-      chmod -R g+rw ${projectdir}
+
       """
     else
       """
