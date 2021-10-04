@@ -577,14 +577,13 @@ process star  {
   mkdir -p ${stardir}
 
   ### added genomeLoad remove - star crashes if not for version 2.5x uroscan pipeline
-  STAR  --genomeDir ${genome} --genomeLoad Remove
+  ## STAR  --genomeDir ${genome} --genomeLoad Remove
 
   STAR --genomeDir ${genome} \\
     --readFilesIn ${starfiles} \\
     --runThreadN ${task.cpus}  \\
     --readFilesCommand zcat \\
     --outSAMtype BAM SortedByCoordinate \\
-    --genomeLoad LoadAndKeep \\
     --limitBAMsortRAM 10000000000 \\
     --outFileNamePrefix ${stardir}/${sid}_
 
