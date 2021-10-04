@@ -371,7 +371,8 @@ process bcl2fastq {
             -w 1  \\
             --output-dir ${bcl2fastq_dir}
 
-  chmod -R g+rw ${projectdir}
+  #chmod -R g+rw ${projectdir}
+  find ${projectdir} -user $USER -exec chmod g+rw {} +
    """
    else
    """
@@ -506,7 +507,9 @@ process salmon  {
       -o  ${salmondir}/${sid}_0.salmon.salmon \\
       --no-version-check
 
-    chmod -R g+rw ${projectdir}
+    #chmod -R g+rw ${projectdir}
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
+
     """
   else if ( !params.paired && params.run_salmon )
     """
@@ -517,7 +520,8 @@ process salmon  {
       -o  ${salmondir}/${sid}_0.salmon.salmon \\
       --no-version-check
 
-    chmod -R g+rw ${projectdir}
+    #hmod -R g+rw ${projectdir}
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -585,7 +589,8 @@ process star  {
     --limitBAMsortRAM 10000000000 \\
     --outFileNamePrefix ${stardir}/${sid}_
 
-  chmod -R g+rw ${projectdir}
+  # chmod -R g+rw ${projectdir}
+  find ${projectdir} -user $USER -exec chmod g+rw {} +
   """
   else
   """
@@ -709,7 +714,8 @@ process rsem {
         ${genome} \\
         ${rsemdir}/${sid}.rsem
 
-    chmod -R g+rw ${projectdir}
+    #chmod -R g+rw ${projectdir}
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
     """
   else if ( params.run_rsem & params.pipelineProfile == "uroscan" )
     """
@@ -727,7 +733,8 @@ process rsem {
         ${genome} \\
         ${rsemdir}/${sid}.rsem
 
-    chmod -R g+rw ${projectdir}
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    #chmod -R g+rw ${projectdir}
     """
   else
     """
@@ -1391,7 +1398,7 @@ process stage_delivery {
 
     ##  logs
     ##   -----------------
-    mkdir -p ${deliverylogs}
+    ## mkdir -p ${deliverylogs}
 
 
     ## scripts dir (executables bins etc, version specific) and configs (project specific)
@@ -1428,7 +1435,9 @@ process stage_delivery {
 
     ## chmods
     ## --------
-    chmod -R g+rw ${deliverydir}
+    # chmod -R g+rw
+    find ${deliverydir} -user $USER -exec chmod g+rw {} +
+
 
     """
   else
@@ -1668,7 +1677,8 @@ process stage_ctg_save {
   ##   --------------------------------------------------------------
   mv ${qcdir} ${ctg_save_dir}
 
-  chmod -R g+rw ${ctg_save_dir}
+  # chmod -R g+rw ${ctg_save_dir}
+  find ${ctg_save_dir} -user $USER -exec chmod g+rw {} +
 
   """
   else
@@ -1745,9 +1755,13 @@ process finalize_pipeline {
     echo "Project:   ${projectid}"             >> $readme
     du -ch -d 0 . | grep 'total'               >> $readme
 
-    chmod -R g+rw ${deliverydir}
-    chmod -R g+rw ${projectdir}
-    chmod -R g+rw ${ctg_save_dir}
+    #chmod -R g+rw ${deliverydir}
+    #chmod -R g+rw ${projectdir}
+    #chmod -R g+rw ${ctg_save_dir}
+    find ${deliverydir} -user $USER -exec chmod g+rw {} +
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    find ${ctg_save_dir} -user $USER -exec chmod g+rw {} +
+
 
   """
   else
