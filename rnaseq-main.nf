@@ -699,7 +699,7 @@ process rsem {
 
 
     //the uroscan pipe is run without strandness flag.
-  if ( params.run_rsem & params.pipelineProfile == "uroscan" )
+  if ( params.run_rsem && params.pipelineProfile == "uroscan" )
     """
     mkdir -p ${rsemdir}
     rsem-calculate-expression \\
@@ -717,7 +717,7 @@ process rsem {
     #chmod -R g+rw ${projectdir}
     find ${projectdir} -user $USER -exec chmod g+rw {} +
     """
-  else if ( params.run_rsem & params.pipelineProfile == "uroscan" )
+  else if ( params.run_rsem && params.pipelineProfile == "uroscan" )
     """
     mkdir -p ${rsemdir}
     rsem-calculate-expression \\
@@ -795,7 +795,7 @@ process rnaseqmetrics {
   // if ( params.run_rnaseqmetrics && species == "Rattus norvegicus" )
   // else if ( pecies == "Rattus norvegicus" )
   // changed to NOT use the rrna file. not working anyway?
-  if ( params.run_rnaseqmetrics )
+  if ( params.run_rnaseqmetrics && params.pipelineProfile == "uroscan")
     """
     echo "strand: ${strand}"
     echo "refflat file: ${refflat}"
@@ -812,20 +812,37 @@ process rnaseqmetrics {
     # chmod -R g+rw ${projectdir}
 
     """
-  // else if ( params.run_rnaseqmetrics )
-  // """
-  //   echo "strand: ${strand}"
-  //   echo "rrna file: ${rrna}"
-  //   echo "refflat file: ${refflat}"
-  //   mkdir -p ${rnaseqmetricsdir}
-  //
-  //   picard CollectRnaSeqMetrics \\
-  //     INPUT=${stardir}/${bam} \\
-  //     OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
-  //     REF_FLAT=${refflat} \\
-  //     STRAND=${strand} \\
-  //     RIBOSOMAL_INTERVALS=${rrna}
-  // """
+  else if ( params.run_rnaseqmetrics && species == "Rattus norvegicus")
+    """
+    echo "strand: ${strand}"
+    echo "refflat file: ${refflat}"
+    mkdir -p ${rnaseqmetricsdir}
+
+    ## java -jar picard.jar CollectRnaSeqMetrics \\ ## old line
+    picard CollectRnaSeqMetrics \\
+        INPUT=${stardir}/${bam} \\
+        OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
+        REF_FLAT=${refflat} \\
+        STRAND=${strand}
+
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    """
+  else if ( params.run_rnaseqmetrics && params.pipelineProfile == "rnaseq")
+    """
+    echo "strand: ${strand}"
+    echo "rrna file: ${rrna}"
+    echo "refflat file: ${refflat}"
+    mkdir -p ${rnaseqmetricsdir}
+
+    picard CollectRnaSeqMetrics \\
+      INPUT=${stardir}/${bam} \\
+      OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
+      REF_FLAT=${refflat} \\
+      STRAND=${strand} \\
+      RIBOSOMAL_INTERVALS=${rrna}
+
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    """
   // temp workaround - ribosomal intervals file for Rat is not workling in v1.0
 
   else
