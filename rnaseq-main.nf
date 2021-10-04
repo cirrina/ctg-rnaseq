@@ -807,7 +807,10 @@ process rnaseqmetrics {
         OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
         REF_FLAT=${refflat} \\
         STRAND=${strand}
-    chmod -R g+rw ${projectdir}
+
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    # chmod -R g+rw ${projectdir}
+
     """
   // else if ( params.run_rnaseqmetrics )
   // """
@@ -883,7 +886,8 @@ process featurecounts {
       -p \\
       -s ${strand_numeric} \${bamstring}
 
-    chmod -R g+rw ${projectdir}
+    # chmod -R g+rw ${projectdir}
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1021,7 +1025,8 @@ process rseqc {
       -r /projects/fs1/shared/uroscan/references/rseqc/hg19.HouseKeepingGenes.bed \\
       -o ${rseqcdir}/${sid}.genebodycov
 
-    chmod -R g+rw ${projectdir}
+    #chmod -R g+rw ${projectdir}
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1078,7 +1083,8 @@ process markdups {
 
     mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
 
-    chmod -R g+rw ${projectdir}
+    #chmod -R g+rw ${projectdir}
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1166,14 +1172,17 @@ process fastqc {
       mkdir -p ${fastqcdir}
       echo "running fastqc in paired reads mode"
       fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
-      chmod -R g+rw ${projectdir}
+      # chmod -R g+rw ${projectdir}
+      find ${projectdir} -user $USER -exec chmod g+rw {} +
+
   """
   else if ( !params.paired && params.run_fastqc)
     """
       mkdir -p ${fastqcdir}
       echo "running fastqc in non paired reads mode "
       fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
-      chmod -R g+rw ${projectdir}
+      #chmod -R g+rw ${projectdir}
+      find ${projectdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1246,7 +1255,9 @@ process bladderreport {
 
     # rm -rf ${bladderreportdir}/tmp_${sid} ## bugs out. move to further down
 
-    chmod -R g+rw ${projectdir}
+    #chmod -R g+rw ${projectdir}
+    find ${projectdir} -user $USER -exec chmod g+rw {} +
+
   """
   else
     """
@@ -1311,7 +1322,8 @@ process multiqc_ctg {
         --interactive \\
         -o ${multiqcctgdir} . ${runfolderdir}
 
-      chmod -R g+rw ${projectdir}
+      # chmod -R g+rw ${projectdir}
+      find ${projectdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
