@@ -85,10 +85,10 @@ ctg_save_dir =  ctg_save_root + '/' + projectid
 
 // output dirs to delivery
 deliverytemp  =  outputdir+'/delivery' // this temp deliverydir is used within the nf workfolder/outputdir to store files that are comitted for delivery. A customer multiqc will be run only on this dir. Upon completion of all analyses this will be moved to delivery dir
+
 stardir = deliverytemp+'/star'
 salmondir = deliverytemp+'/salmon'
 rsemdir = deliverytemp+'/rsem'
-
 bladderreportdir = deliverytemp+'/bladderreport'
 
 deliverysamplesheets = deliverytemp+'/samplesheets'
@@ -97,10 +97,9 @@ deliveryconfigs = deliverytemp+'/configs'
 deliverylogs = deliverytemp+'/logs'
 
 deliveryqc = deliverytemp+'/qc'
-fastqcdir = deliveryqc+'/fastqc'
-
-multiqcdeliverydir  =  deliveryqc + '/multiqc'
-mqcreport = multiqcdeliverydir + '/' + projectid + '_multiqc_report'
+fastqcdir = deliverytemp+'/qc/fastqc'
+multiqcdeliverydir  =  deliverytemp+'/qc/multiqc'
+mqcreport = deliverytemp+'/qc/multiqc' + '/' + projectid + '_multiqc_report'
 readme = deliverydir +'/README_ctg_delivery_' + projectid
 
 
@@ -1198,6 +1197,7 @@ process fastqc {
       mkdir -p ${fastqcdir}
       echo "running fastqc in non paired reads mode "
       fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
+
       #chmod -R g+rw ${projectdir}
       find ${projectdir} -user $USER -exec chmod g+rw {} +
     """
@@ -1454,18 +1454,13 @@ process stage_delivery {
     fi
 
 
-    ##  Move delivery temp dir from project folder to delivery location
-    ##   --------------------------------------------------------------
-    mkdir -p ${deliverydir}
-    mv ${deliverytemp}/* ${deliverydir}
-
 
 
 
     ## chmods
     ## --------
     # chmod -R g+rw
-    find ${deliverydir} -user $USER -exec chmod g+rw {} +
+    find ${deliverytemp} -user $USER -exec chmod g+rw {} +
 
 
     """
@@ -1554,7 +1549,8 @@ process multiqc_delivery {
     ## remove if multiqc is already present from failed run. Will not overwrite ...
     rm -rf ${multiqcdeliverydir}
     mkdir -p ${multiqcdeliverydir}
-    cd ${deliverydir}
+
+    cd ${deliverytemp}
     multiqc -n ${mqcreport} \\
       --interactive \\
       -o ${multiqcdeliverydir} .
@@ -1595,7 +1591,7 @@ process md5sum_delivery {
   // if (! new File( md5sumfile ).exists() && params.run_md5sum_delivery)
   if ( params.run_md5sum_delivery )
   """
-   cd ${deliverydir}
+   cd ${deliverytemp}
    find . -type f -exec md5sum {} \\; > ${md5sumfile} ; echo
   """
   else
@@ -1697,14 +1693,15 @@ process stage_ctg_save {
   fi
 
 
-  ##  duplicate the fastqc analyses from delivery dir
-  ## -----------------------------------------
-  cp -r ${deliverydir}/fastqc ${qcdir}
-
-
   ##  Move ctg qc dir from project folder to delivery location
   ##   --------------------------------------------------------------
   mv ${qcdir} ${ctg_save_dir}
+
+  ##  duplicate the fastqc analyses from delivery dir
+  ## -----------------------------------------
+  cp -r ${fastqcdir} ${ctg_save_dir}/qc/
+
+
 
   # chmod -R g+rw ${ctg_save_dir}
   find ${ctg_save_dir} -user $USER -exec chmod g+rw {} +
@@ -1777,21 +1774,23 @@ process finalize_pipeline {
   script:
   if (params.run_finalize_pipeline)
   """
+
+
+    ##  Move delivery temp dir from project folder to delivery location
+    ##   --------------------------------------------------------------
+    mkdir -p ${deliverydir}
+    mv ${deliverytemp}/* ${deliverydir}
+
+
     cd ${deliverydir}
 
+    ## echo "ctg delivery complete"               > $readme
+    ## echo "Project:   ${projectid}"             >> $readme
+    ## du -ch -d 0 . | grep 'total'               >> $readme
 
-    echo "ctg delivery complete"               > $readme
-    echo "Project:   ${projectid}"             >> $readme
-    du -ch -d 0 . | grep 'total'               >> $readme
-
-    #chmod -R g+rw ${deliverydir}
-    #chmod -R g+rw ${projectdir}
-    #chmod -R g+rw ${ctg_save_dir}
     find ${deliverydir} -user $USER -exec chmod g+rw {} +
     find ${projectdir} -user $USER -exec chmod g+rw {} +
     find ${ctg_save_dir} -user $USER -exec chmod g+rw {} +
-
-
   """
   else
   """
