@@ -1491,21 +1491,21 @@ process move_fastq {
   script:
     if ( params.pooled_run &&  params.run_move_fastq)
       """
-        mkdir -p ${deliverydir}/fastq
+        mkdir -p ${deliverytemp}/fastq
         if [ -d ${fastqdir} ]; then
           echo "pooled run. moving fastq foldler only."
-          mv -f ${fastqdir} ${deliverydir}/fastq
+          mv -f ${fastqdir} ${deliverytemp}/fastq
         fi
       """
     else if ( !params.pooled_run &&  params.run_move_fastq )
       """
       if [ -d ${bcl2fastq_dir} ]; then
         echo "non pooled data. moving comlplete bcl2fastq output foldler."
-        mv -f ${bcl2fastq_dir} ${deliverydir}
+        mv -f ${bcl2fastq_dir} ${deliverytemp}
       elif [ -d ${fastqdir} ]; then
         echo "non pooled run but cannot locate bcl2fastq_dir. moving fastq foldler only."
-        mkdir -p ${deliverydir}/fastq
-        mv -f ${fastqdir} ${deliverydir}/fastq
+        mkdir -p ${deliverytemp}/fastq
+        mv -f ${fastqdir} ${deliverytemp}/fastq
       fi
       """
     else
