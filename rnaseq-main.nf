@@ -77,6 +77,12 @@ outputdir =  projectdir+'/nf-output' // main ooutput directory for files genetat
 file(outputdir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
 
 deliverydir  =  delivery_root + '/' + projectid  // final delivery dir (on ... /nas-sync/. Note that delivery is prepared in "deliverytemp" is used in projectfolder)
+deliverysamplesheets = deliverydir+'/samplesheets'
+deliveryscripts = deliverydir+'/scripts'
+deliveryconfigs = deliverydir+'/configs'
+deliverylogs = deliverydir+'/logs'
+
+
 ctg_save_dir =  ctg_save_root + '/' + projectid
 
 
@@ -91,10 +97,6 @@ salmondir = deliverytemp+'/salmon'
 rsemdir = deliverytemp+'/rsem'
 bladderreportdir = deliverytemp+'/bladderreport'
 
-deliverysamplesheets = deliverytemp+'/samplesheets'
-deliveryscripts = deliverytemp+'/scripts'
-deliveryconfigs = deliverytemp+'/configs'
-deliverylogs = deliverytemp+'/logs'
 
 deliveryqc = deliverytemp+'/qc'
 fastqcdir = deliverytemp+'/qc/fastqc'
