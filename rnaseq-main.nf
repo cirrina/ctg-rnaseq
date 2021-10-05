@@ -1545,7 +1545,7 @@ process multiqc_delivery {
 
   script:
   // if (! new File( mqcreport+'.html' ).exists() && params.run_multiqc_delivery)
- if ( params.run_multiqc_delivery )
+ if ( params.run_multiqc_delivery  && !params.run_bladderreport )
   """
     ## remove if multiqc is already present from failed run. Will not overwrite ...
     rm -rf ${multiqcdeliverydir}
@@ -1555,6 +1555,11 @@ process multiqc_delivery {
     multiqc -n ${mqcreport} \\
       --interactive \\
       -o ${multiqcdeliverydir} .
+  """
+  else if ( params.run_multiqc_delivery  && params.run_bladderreport )
+  """
+    mkdir -p ${multiqcdeliverydir}
+    cp -r ${multiqcctgdir}/* ${multiqcdeliverydir}
   """
   else
   """
