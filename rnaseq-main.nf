@@ -195,36 +195,6 @@ debug_mode = false // will turn echo to true
 
 def msg_deliverymail = """\
 
-  CTG Delivery ${projectid}
-  --------------------------
-
-  Hi,
-
-The sequencing, QC and alignment for project project $projectid is now complete. Please find attached multiQC report and CTG delivery report.
-
-The data can be downloaded from our delivery server lfs603.
-
-  Userid:
-  Password:
-
-  Total file size:
-
-
-We avoid sending passwords through mail. Also, we need to activate for your IP address. So please reply to this mail with a phone number to which I can sms text the password and the IP adress of the computer that you will download the data from.
-
-Data is downloaded from our server using SCP (Secure Copy Protocol) protocol. This can be performed either using terminal or using a file transfer software that support SCP file transfers, e.g. FileZilla. Detailed instructions on how to download data, and how to obtain your computer IP adress is depicted in the 'CTG Data Delivery Guide' attached to this mail.
-
-Data will be kept by us for a maximum of 3 months and subsequently deleted. After download, we recommend you to check data integrity using the md5sum-files provided. We strongly recommend you to backup your data, i.e.that have at least two copies. CTG can not help you if your data gets corrupt or lost!
-
-Please do not hesitate to get back to us if you have any questions. Also, please let us know when the data is successfully downloaded.
-
-
-
-Kind regards
-
-David Lindgren
-
-
 
  """
 
@@ -1545,7 +1515,7 @@ process multiqc_delivery {
 
   script:
   // if (! new File( mqcreport+'.html' ).exists() && params.run_multiqc_delivery)
- if ( params.run_multiqc_delivery  && !params.run_bladderreport )
+ if ( params.run_multiqc_delivery  && params.pipelineProfile == "rnaseq"  )
   """
     ## remove if multiqc is already present from failed run. Will not overwrite ...
     rm -rf ${multiqcdeliverydir}
@@ -1556,10 +1526,15 @@ process multiqc_delivery {
       --interactive \\
       -o ${multiqcdeliverydir} .
   """
-  else if ( params.run_multiqc_delivery  && params.run_bladderreport )
+  else if ( params.run_multiqc_delivery  && params.pipelineProfile == "uroscan"  )
   """
     mkdir -p ${multiqcdeliverydir}
-    cp -r ${multiqcctgdir}/* ${multiqcdeliverydir}
+
+    if [[ -d "${multiqcctgdir}" ]]; then
+        cp -r ${multiqcctgdir}/* ${multiqcdeliverydir}
+    elif [[ -d "${ctg_save_dir}/qc/multiqc-ctg" ]]; then
+        cp -r ${ctg_save_dir}/qc/multiqc-ctg/* ${multiqcdeliverydir}
+    fi
   """
   else
   """
