@@ -342,8 +342,7 @@ process bcl2fastq {
             -w 1  \\
             --output-dir ${bcl2fastq_dir}
 
-  #chmod -R g+rw ${projectdir}
-  find ${projectdir} -user $USER -exec chmod g+rw {} +
+  find ${bcl2fastq_dir} -user $USER -exec chmod g+rw {} +
    """
    else
    """
@@ -478,8 +477,7 @@ process salmon  {
       -o  ${salmondir}/${sid}_0.salmon.salmon \\
       --no-version-check
 
-    #chmod -R g+rw ${projectdir}
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    find ${salmondir} -user $USER -exec chmod g+rw {} +
 
     """
   else if ( !params.paired && params.run_salmon )
@@ -492,7 +490,7 @@ process salmon  {
       --no-version-check
 
     #hmod -R g+rw ${projectdir}
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    find ${salmondir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -559,8 +557,7 @@ process star  {
     --limitBAMsortRAM 10000000000 \\
     --outFileNamePrefix ${stardir}/${sid}_
 
-  # chmod -R g+rw ${projectdir}
-  find ${projectdir} -user $USER -exec chmod g+rw {} +
+  find ${stardir} -user $USER -exec chmod g+rw {} +
   """
   else
   """
@@ -684,8 +681,7 @@ process rsem {
         ${genome} \\
         ${rsemdir}/${sid}.rsem
 
-    #chmod -R g+rw ${projectdir}
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    find ${rsemdir} -user $USER -exec chmod g+rw {} +
     """
   else if ( params.run_rsem && params.pipelineProfile == "uroscan" )
     """
@@ -703,8 +699,8 @@ process rsem {
         ${genome} \\
         ${rsemdir}/${sid}.rsem
 
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
-    #chmod -R g+rw ${projectdir}
+    find ${rsemdir} -user $USER -exec chmod g+rw {} +
+
     """
   else
     """
@@ -778,8 +774,7 @@ process rnaseqmetrics {
         REF_FLAT=${refflat} \\
         STRAND=${strand}
 
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
-    # chmod -R g+rw ${projectdir}
+    find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
 
     """
   else if ( params.run_rnaseqmetrics && species == "Rattus norvegicus")
@@ -795,7 +790,7 @@ process rnaseqmetrics {
         REF_FLAT=${refflat} \\
         STRAND=${strand}
 
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
     """
   else if ( params.run_rnaseqmetrics && params.pipelineProfile == "rnaseq")
     """
@@ -811,7 +806,7 @@ process rnaseqmetrics {
       STRAND=${strand} \\
       RIBOSOMAL_INTERVALS=${rrna}
 
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
     """
   // temp workaround - ribosomal intervals file for Rat is not workling in v1.0
 
@@ -873,8 +868,7 @@ process featurecounts {
       -p \\
       -s ${strand_numeric} \${bamstring}
 
-    # chmod -R g+rw ${projectdir}
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    find ${featurecountsdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1012,8 +1006,7 @@ process rseqc {
       -r /projects/fs1/shared/uroscan/references/rseqc/hg19.HouseKeepingGenes.bed \\
       -o ${rseqcdir}/${sid}.genebodycov
 
-    #chmod -R g+rw ${projectdir}
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    find ${rseqcdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1070,8 +1063,8 @@ process markdups {
 
     mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
 
-    #chmod -R g+rw ${projectdir}
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    find ${stardir} -user $USER -exec chmod g+rw {} +
+    find ${markdupstempdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1159,8 +1152,8 @@ process fastqc {
       mkdir -p ${fastqcdir}
       echo "running fastqc in paired reads mode"
       fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
-      # chmod -R g+rw ${projectdir}
-      find ${projectdir} -user $USER -exec chmod g+rw {} +
+
+      find ${fastqcdir} -user $USER -exec chmod g+rw {} +
 
   """
   else if ( !params.paired && params.run_fastqc)
@@ -1169,8 +1162,7 @@ process fastqc {
       echo "running fastqc in non paired reads mode "
       fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
 
-      #chmod -R g+rw ${projectdir}
-      find ${projectdir} -user $USER -exec chmod g+rw {} +
+      find ${fastqcdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1234,17 +1226,11 @@ process bladderreport {
         output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
 
     cd ${bladderreportdir}
-    # chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
     chromium --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
-
-    # ${bladderreportdir}/tmp_${sid}/bladderreport/bladder_noreport2txt.pl ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html > ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.txt
 
     mv ${bladderreportdir}/tmp_${sid}/bladderreport/${sid}.LundClassifier.rds ${bladderreportdir}/${sid}.LundClassifier.rds
 
-    # rm -rf ${bladderreportdir}/tmp_${sid} ## bugs out. move to further down
-
-    #chmod -R g+rw ${projectdir}
-    find ${projectdir} -user $USER -exec chmod g+rw {} +
+    find ${bladderreportdir} -user $USER -exec chmod g+rw {} +
 
   """
   else
@@ -1310,8 +1296,7 @@ process multiqc_ctg {
         --interactive \\
         -o ${multiqcctgdir} . ${runfolderdir}
 
-      # chmod -R g+rw ${projectdir}
-      find ${projectdir} -user $USER -exec chmod g+rw {} +
+      find ${multiqcctgdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1430,7 +1415,6 @@ process stage_delivery {
 
     ## chmods
     ## --------
-    # chmod -R g+rw
     find ${deliverytemp} -user $USER -exec chmod g+rw {} +
 
 
@@ -1683,8 +1667,7 @@ process stage_ctg_save {
   cp -r ${fastqcdir} ${ctg_save_dir}/qc/
 
 
-
-  # chmod -R g+rw ${ctg_save_dir}
+  ## CHOD
   find ${ctg_save_dir} -user $USER -exec chmod g+rw {} +
 
   """
