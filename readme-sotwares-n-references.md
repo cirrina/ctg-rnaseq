@@ -53,6 +53,18 @@ rnaseq:  ``
 
 
 ## STAR
+Uroscan and rnaseq is run using different versions of star
+
+
+```
+STAR --genomeDir ${genome} \\
+  --readFilesIn ${starfiles} \\
+  --runThreadN ${task.cpus}  \\
+  --readFilesCommand zcat \\
+  --outSAMtype BAM SortedByCoordinate \\
+  --limitBAMsortRAM 10000000000 \\
+  --outFileNamePrefix ${stardir}/${sid}_
+```
 
 
 ## bowtie2

@@ -610,12 +610,6 @@ process checkfiles_bam {
 
 
 
-// RSEM
-// if ( params.run_rsem == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ rsem_complete_ch }
-// }
 
 process rsem {
   tag "$sid"
@@ -710,13 +704,6 @@ process rsem {
 
 
 
-
-// Picard rnaesqmetrixcs
-// if ( params.run_rnaseqmetrics == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ rnaseqmetrics_complete_ch }
-// }
 
 process rnaseqmetrics {
   tag "$sid"
