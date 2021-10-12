@@ -315,10 +315,10 @@ infoall.subscribe { println "Info: $it" }
 process bcl2fastq {
   // -w must be lower than number of samples
   // publishDir "${fastqdir}", mode: 'copy', overwrite: 'true'
+
+  tag  { params.run_blcl2fastq  ? "$projectid" : "blank_run"  }
   cpus 4
-  tag "$projectid"
-  memory '110 GB'
-  time '36h'
+  memory praams.mem_high
 
 
   input:
@@ -331,23 +331,23 @@ process bcl2fastq {
 
   script:
   if ( params.run_blcl2fastq )
-  """
-  mkdir -p ${bcl2fastq_dir}
+    """
+    mkdir -p ${bcl2fastq_dir}
 
-  bcl2fastq -R ${runfolderdir} \\
-            --sample-sheet ${samplesheet_demux} \\
-            --no-lane-splitting  \\
-            -r 1 \\
-            -p ${task.cpus}  \\
-            -w 1  \\
-            --output-dir ${bcl2fastq_dir}
+    bcl2fastq -R ${runfolderdir} \\
+              --sample-sheet ${samplesheet_demux} \\
+              --no-lane-splitting  \\
+              -r 1 \\
+              -p ${task.cpus}  \\
+              -w 1  \\
+              --output-dir ${bcl2fastq_dir}
 
-  find ${bcl2fastq_dir} -user $USER -exec chmod g+rw {} +
-   """
-   else
-   """
-   echo "skipping  blcl2fastq"
-   """
+    find ${bcl2fastq_dir} -user $USER -exec chmod g+rw {} +
+    """
+  else
+    """
+     echo "skipping  blcl2fastq"
+    """
 }
 
 
@@ -355,10 +355,10 @@ process bcl2fastq {
 
 process checkfiles_fastq {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
-  tag "$sid"
+
+  tag  { params.run_checkfiles_fastq  ? "$sid" : "blank_run"  }
   cpus params.cpu_min
   memory params.mem_min
-  time '3h'
 
   input:
   val x from bcl2fastq_complete_ch.collect()
@@ -437,7 +437,7 @@ process checkfiles_fastq {
 //    .set{ salmon_complete_ch }
 // }
 process salmon  {
-  tag "$sid"
+  tag  { params.run_salmon  ? "$sid" : "blank_run"  }
   cpus { params.run_salmon  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_salmon  ?  params.mem_standard : params.mem_min  }
 
@@ -511,8 +511,7 @@ process salmon  {
 //    .set{ star_complete_ch }
 // }
 process star  {
-  tag "$sid"
-
+  tag  { params.run_star  ? "$sid" : "blank_run"  }
   cpus { params.run_star  ? params.cpu_high : params.cpu_min  }
   memory { params.run_star  ?  params.mem_hign : params.mem_min  }
 
@@ -585,11 +584,9 @@ process star  {
 // }
 process checkfiles_bam {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
-  tag "$sid"
+  tag  { params.run_checkfiles_bam  ? "$sid" : "blank_run"  }
   cpus params.cpu_min
   memory params.mem_min
-  time '3h'
-  echo debug_mode
 
   input:
   val x from star_complete_ch.collect() // checkbam_ch - when star is completed
@@ -618,7 +615,7 @@ process checkfiles_bam {
 
 
 process rsem {
-  tag "$sid"
+  tag  { params.run_rsem  ? "$sid" : "blank_run"  }
   cpus { params.run_rsem  ? params.cpu_high : params.cpu_min  }
   memory { params.run_rsem  ?  params.mem_hign : params.mem_min  }
 
@@ -715,11 +712,7 @@ process rsem {
 
 
 process rnaseqmetrics {
-  tag "$sid"
-  // cpus 6
-  // memory '36 GB'
-  // time '24h'
-  // echo debug_mode
+  tag  { params.rnaseqmetrics  ? "$sid" : "blank_run"  }
   cpus { params.run_rnaseqmetrics  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_rnaseqmetrics  ?  params.mem_standard : params.mem_min  }
 
@@ -820,7 +813,7 @@ process rnaseqmetrics {
 
 
 process featurecounts {
-  tag "$projectid"
+  tag  { params.run_featurecounts  ? "$projectid" : "blank_run"  }
   cpus { params.run_featurecounts  ? params.cpu_max : params.cpu_min  }
   memory { params.run_featurecounts  ?  params.mem_max : params.mem_min  }
 
@@ -897,10 +890,7 @@ process featurecounts {
 // }
 
 process index_bam {
-  tag "$sid"
-  // cpus 4
-  // memory '32 GB'
-  // time '3h'
+  tag  { params.run_index_bam  ? "$sid" : "blank_run"  }
   cpus { params.run_index_bam  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_index_bam  ?  params.mem_standard : params.mem_min  }
 
@@ -933,10 +923,8 @@ process index_bam {
 
 
 process qualimap {
-  tag "$sid"
-  // cpus 6
-  // memory '100 GB'
-  // time '3h'
+
+  tag  { params.run_qualimap  ? "$sid" : "blank_run"  }
   cpus { params.run_qualimap  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_qualimap  ?  params.mem_standard : params.mem_min  }
 
@@ -981,10 +969,7 @@ process qualimap {
 
 
 process rseqc {
-  tag "$sid"
-  // cpus 6
-  // memory '32 GB'
-  // time '3h'
+  tag  { params.run_rseqc  ? "$sid" : "blank_run"  }
   cpus { params.run_rseqc  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_rseqc  ?  params.mem_standard : params.mem_min  }
 
@@ -1019,15 +1004,11 @@ process rseqc {
 
 
 process markdups {
-  tag "$sid"
-  cpus 6
-  memory '32 GB'
-  time '24h'
+  tag  { params.run_cmarkdups  ? "$sid" : "blank_run"  }
+  cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
 
   input:
-  //val x from markdups_ch.collect()
-  // val x from rseqc_complete_ch.collect()
-  // set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
   cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
 
@@ -1079,20 +1060,11 @@ process markdups {
   *      FASTQSCREEN
   =============================================================== */
 
-// fastq_screen
-// if ( params.run_fastqscreen == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ fastqscreen_complete_ch }
-// }
 process fastqscreen {
-    tag "$sid"
-    // cpus 16
-    // memory '32 GB'
-    // time '24h'
+
+    tag  { params.run_fastqscreen  ? "$sid" : "blank_run"  }
     cpus { params.run_fastqscreen  ? params.cpu_standard : params.cpu_min  }
     memory { params.run_fastqscreen  ?  params.mem_standard : params.mem_min  }
-
 
 
     input:
@@ -1135,11 +1107,7 @@ process fastqscreen {
 
 process fastqc {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
-  tag "$sid"
-  // cpus 6
-  // memory '32 GB'
-  // time '3h'
-  // // echo true
+  tag  { params.run_fastqc  ? "$sid" : "blank_run"  }
   cpus { params.run_fastqc  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_fastqc  ?  params.mem_standard : params.mem_min  }
 
@@ -1193,11 +1161,8 @@ process fastqc {
 //    .set{ bladderreport_complete_ch }
 // }
 process bladderreport {
-  tag "$sid"
-  // cpus 4
-  // memory '32 GB'
-  // time '3h'
-  // echo debug_mode
+
+  tag  { params.run_bladderreport  ? "$sid" : "blank_run"  }
   cpus { params.run_bladderreport  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_bladderreport  ?  params.mem_standard : params.mem_min  }
 
@@ -1277,7 +1242,7 @@ process bladderreport {
 
 process multiqc_ctg {
   //publishDir "${multiqcctgdir}", mode: 'copy', overwrite: 'true'
-  tag "$projectid"
+  tag  { params.run_multiqc_ctg  ? "$projectid" : "blank_run"  }
   // cpus 8
   // memory '64 GB'
   // time '3h'
@@ -1344,7 +1309,7 @@ process multiqc_ctg {
 
 process stage_delivery {
   // cpus 4
-  tag "$projectid"
+  tag  { params.run_stage_delivery  ? "$projectid" : "blank_run"  }
   // memory '64 GB'
   // time '3h'
   cpus { params.run_stage_delivery  ? params.cpu_standard : params.cpu_min  }
@@ -1450,7 +1415,7 @@ process stage_delivery {
 process move_fastq {
 
   //cpus 6
-  tag "$projectid"
+  tag  { params.run_move_fastq  ? "$projectid" : "blank_run"  }
   // memory '64 GB'
   // time '3h'
   // echo debug_mode
@@ -1504,7 +1469,7 @@ process move_fastq {
 // }
 process multiqc_delivery {
 
-  tag "$projectid"
+  tag  { params.run_multiqc_delivery  ? "$projectid" : "blank_run"  }
   // cpus 6
   // memory '32 GB'
   // time '3h'
@@ -1563,7 +1528,7 @@ process multiqc_delivery {
 // }
 process md5sum_delivery {
   //cpus 8
-  tag "$projectid"
+  tag  { params.run_md5sum_delivery  ? "$projectid" : "blank_run"  }
   // memory '64 GB'
   // time '3h'
   cpus { params.run_md5sum_delivery  ? params.cpu_high : params.cpu_min  }
@@ -1750,10 +1715,10 @@ process stage_ctg_save {
 
 
 process finalize_pipeline {
-  cpus 2
-  tag "$projectid"
-  memory '16 GB'
-  time '3h'
+
+  tag  { params.run_finalize_pipeline  ? "$projectid" : "blank_run"  }
+  memory params.mem_min
+  cpus cpu_min
 
   input:
   val x from md5sum_complete_ch.collect()
