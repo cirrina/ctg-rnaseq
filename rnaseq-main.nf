@@ -356,8 +356,8 @@ process bcl2fastq {
 process checkfiles_fastq {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
   tag "$sid"
-  cpus 1
-  memory '5 GB'
+  cpus params.cpu_min
+  memory params.mem_min
   time '3h'
 
   input:
@@ -438,11 +438,14 @@ process checkfiles_fastq {
 // }
 process salmon  {
   tag "$sid"
-  cpus 6
-  memory '48 GB'
-  time '36h'
-  echo debug_mode
-  //publishDir "${stardir}", mode: 'copy', overwrite: true
+  cpus { params.run_salmon  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_salmon  ?  params.mem_standard : params.mem_min  }
+
+  // cpus 6
+  // memory '48 GB'
+  // time '36h'
+  // echo debug_mode
+  // //publishDir "${stardir}", mode: 'copy', overwrite: true
 
   input:
   val x from run_salmon_ch.collect()
@@ -477,7 +480,7 @@ process salmon  {
       -o  ${salmondir}/${sid}_0.salmon.salmon \\
       --no-version-check
 
-    find ${salmondir} -user $USER -exec chmod g+rw {} +
+    ## find ${salmondir} -user $USER -exec chmod g+rw {} +
 
     """
   else if ( !params.paired && params.run_salmon )
@@ -489,8 +492,7 @@ process salmon  {
       -o  ${salmondir}/${sid}_0.salmon.salmon \\
       --no-version-check
 
-    #hmod -R g+rw ${projectdir}
-    find ${salmondir} -user $USER -exec chmod g+rw {} +
+    #find ${salmondir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -510,10 +512,14 @@ process salmon  {
 // }
 process star  {
   tag "$sid"
-  cpus 20
-  memory '100 GB'
-  time '36h'
-  echo debug_mode
+
+  cpus { params.run_star  ? params.cpu_high : params.cpu_min  }
+  memory { params.run_star  ?  params.mem_hign : params.mem_min  }
+
+  // cpus 20
+  // memory '100 GB'
+  // time '36h'
+  // echo debug_mode
   //publishDir "${stardir}", mode: 'copy', overwrite: true
 
   input:
@@ -557,7 +563,7 @@ process star  {
     --limitBAMsortRAM 10000000000 \\
     --outFileNamePrefix ${stardir}/${sid}_
 
-  find ${stardir} -user $USER -exec chmod g+rw {} +
+  #find ${stardir} -user $USER -exec chmod g+rw {} +
   """
   else
   """
@@ -580,9 +586,9 @@ process star  {
 process checkfiles_bam {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
   tag "$sid"
-  cpus 1
-  memory '1 GB'
-  time '1h'
+  cpus params.cpu_min
+  memory params.mem_min
+  time '3h'
   echo debug_mode
 
   input:
@@ -613,10 +619,13 @@ process checkfiles_bam {
 
 process rsem {
   tag "$sid"
-  cpus 20
-  memory '100 GB'
-  time '36h'
-  //publishDir "${stardir}", mode: 'copy', overwrite: true
+  cpus { params.run_rsem  ? params.cpu_high : params.cpu_min  }
+  memory { params.run_rsem  ?  params.mem_hign : params.mem_min  }
+
+  // cpus 20
+  // memory '100 GB'
+  // time '36h'
+  // //publishDir "${stardir}", mode: 'copy', overwrite: true
 
   input:
   val x from run_rsem_ch.collect()
@@ -675,7 +684,7 @@ process rsem {
         ${genome} \\
         ${rsemdir}/${sid}.rsem
 
-    find ${rsemdir} -user $USER -exec chmod g+rw {} +
+    #find ${rsemdir} -user $USER -exec chmod g+rw {} +
     """
   else if ( params.run_rsem && params.pipelineProfile == "uroscan" )
     """
@@ -693,7 +702,7 @@ process rsem {
         ${genome} \\
         ${rsemdir}/${sid}.rsem
 
-    find ${rsemdir} -user $USER -exec chmod g+rw {} +
+    #find ${rsemdir} -user $USER -exec chmod g+rw {} +
 
     """
   else
@@ -707,10 +716,13 @@ process rsem {
 
 process rnaseqmetrics {
   tag "$sid"
-  cpus 6
-  memory '36 GB'
-  time '24h'
-  echo debug_mode
+  // cpus 6
+  // memory '36 GB'
+  // time '24h'
+  // echo debug_mode
+  cpus { params.run_rnaseqmetrics  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_rnaseqmetrics  ?  params.mem_standard : params.mem_min  }
+
 
   input:
   val x from checkfiles_bam_complete_ch.collect()
@@ -761,7 +773,7 @@ process rnaseqmetrics {
         REF_FLAT=${refflat} \\
         STRAND=${strand}
 
-    find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
+    #find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
 
     """
   else if ( params.run_rnaseqmetrics && species == "Rattus norvegicus")
@@ -777,7 +789,7 @@ process rnaseqmetrics {
         REF_FLAT=${refflat} \\
         STRAND=${strand}
 
-    find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
+    #find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
     """
   else if ( params.run_rnaseqmetrics && params.pipelineProfile == "rnaseq")
     """
@@ -793,7 +805,7 @@ process rnaseqmetrics {
       STRAND=${strand} \\
       RIBOSOMAL_INTERVALS=${rrna}
 
-    find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
+    #find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
     """
   // temp workaround - ribosomal intervals file for Rat is not workling in v1.0
 
@@ -809,9 +821,12 @@ process rnaseqmetrics {
 
 process featurecounts {
   tag "$projectid"
-  cpus 20
-  memory '350 GB'
-  time '96h'
+  cpus { params.run_featurecounts  ? params.cpu_max : params.cpu_min  }
+  memory { params.run_featurecounts  ?  params.mem_max : params.mem_min  }
+
+  // cpus 20
+  // memory '350 GB'
+  // time '96h'
 
 	input:
   val x from rnaseqmetrics_complete_ch.collect()
@@ -855,7 +870,7 @@ process featurecounts {
       -p \\
       -s ${strand_numeric} \${bamstring}
 
-    find ${featurecountsdir} -user $USER -exec chmod g+rw {} +
+    #find ${featurecountsdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -883,9 +898,13 @@ process featurecounts {
 
 process index_bam {
   tag "$sid"
-  cpus 4
-  memory '32 GB'
-  time '3h'
+  // cpus 4
+  // memory '32 GB'
+  // time '3h'
+  cpus { params.run_index_bam  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_index_bam  ?  params.mem_standard : params.mem_min  }
+
+
 
   input:
   val x from featurecounts_complete_ch.collect()
@@ -912,17 +931,15 @@ process index_bam {
 }
 
 
-// QUALIMAP
-// if ( params.run_qualimap == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ qualimap_complete_ch }
-// }
+
 process qualimap {
   tag "$sid"
-  cpus 6
-  memory '100 GB'
-  time '3h'
+  // cpus 6
+  // memory '100 GB'
+  // time '3h'
+  cpus { params.run_qualimap  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_qualimap  ?  params.mem_standard : params.mem_min  }
+
 
   input:
   val x from indexbam_complete_ch.collect()
@@ -962,17 +979,15 @@ process qualimap {
 }
 
 
-// RSEQC
-// if ( params.run_rseqc == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ rseqc_complete_ch }
-// }
+
 process rseqc {
   tag "$sid"
-  cpus 6
-  memory '32 GB'
-  time '3h'
+  // cpus 6
+  // memory '32 GB'
+  // time '3h'
+  cpus { params.run_rseqc  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_rseqc  ?  params.mem_standard : params.mem_min  }
+
 
   input:
   val x from qualimap_complete_ch.collect()
@@ -993,7 +1008,7 @@ process rseqc {
       -r /projects/fs1/shared/uroscan/references/rseqc/hg19.HouseKeepingGenes.bed \\
       -o ${rseqcdir}/${sid}.genebodycov
 
-    find ${rseqcdir} -user $USER -exec chmod g+rw {} +
+    ## find ${rseqcdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1003,13 +1018,6 @@ process rseqc {
 
 
 
-
-// picard mark duplicates
-// if ( params.run_markdups == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ markdups_complete_ch }
-// }
 process markdups {
   tag "$sid"
   cpus 6
@@ -1018,8 +1026,12 @@ process markdups {
 
   input:
   //val x from markdups_ch.collect()
-  val x from rseqc_complete_ch.collect()
-  set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
+  // val x from rseqc_complete_ch.collect()
+  // set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
+  cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
+
+
 
   output:
   val "x" into markdups_complete_ch
@@ -1050,8 +1062,8 @@ process markdups {
 
     mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
 
-    find ${stardir} -user $USER -exec chmod g+rw {} +
-    find ${markdupstempdir} -user $USER -exec chmod g+rw {} +
+    ## find ${stardir} -user $USER -exec chmod g+rw {} +
+    ## find ${markdupstempdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1075,9 +1087,13 @@ process markdups {
 // }
 process fastqscreen {
     tag "$sid"
-    cpus 16
-    memory '32 GB'
-    time '24h'
+    // cpus 16
+    // memory '32 GB'
+    // time '24h'
+    cpus { params.run_fastqscreen  ? params.cpu_standard : params.cpu_min  }
+    memory { params.run_fastqscreen  ?  params.mem_standard : params.mem_min  }
+
+
 
     input:
     set sid, read1, read2, species from fastqscreen_ch //
@@ -1120,10 +1136,13 @@ process fastqscreen {
 process fastqc {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
   tag "$sid"
-  cpus 6
-  memory '32 GB'
-  time '3h'
-  // echo true
+  // cpus 6
+  // memory '32 GB'
+  // time '3h'
+  // // echo true
+  cpus { params.run_fastqc  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_fastqc  ?  params.mem_standard : params.mem_min  }
+
 
   input:
   set sid, read1, read2, species from fastqc_ch  // from check fastq
@@ -1140,7 +1159,7 @@ process fastqc {
       echo "running fastqc in paired reads mode"
       fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
 
-      find ${fastqcdir} -user $USER -exec chmod g+rw {} +
+      ## find ${fastqcdir} -user $USER -exec chmod g+rw {} +
 
   """
   else if ( !params.paired && params.run_fastqc)
@@ -1149,7 +1168,7 @@ process fastqc {
       echo "running fastqc in non paired reads mode "
       fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
 
-      find ${fastqcdir} -user $USER -exec chmod g+rw {} +
+      ## find ${fastqcdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1175,10 +1194,14 @@ process fastqc {
 // }
 process bladderreport {
   tag "$sid"
-  cpus 4
-  memory '32 GB'
-  time '3h'
-  echo debug_mode
+  // cpus 4
+  // memory '32 GB'
+  // time '3h'
+  // echo debug_mode
+  cpus { params.run_bladderreport  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_bladderreport  ?  params.mem_standard : params.mem_min  }
+
+
 
   input:
   val x from markdups_complete_report_ch.collect()
@@ -1217,7 +1240,7 @@ process bladderreport {
 
     mv ${bladderreportdir}/tmp_${sid}/bladderreport/${sid}.LundClassifier.rds ${bladderreportdir}/${sid}.LundClassifier.rds
 
-    find ${bladderreportdir} -user $USER -exec chmod g+rw {} +
+    ## find ${bladderreportdir} -user $USER -exec chmod g+rw {} +
 
   """
   else
@@ -1255,10 +1278,14 @@ process bladderreport {
 process multiqc_ctg {
   //publishDir "${multiqcctgdir}", mode: 'copy', overwrite: 'true'
   tag "$projectid"
-  cpus 8
-  memory '64 GB'
-  time '3h'
-  echo debug_mode
+  // cpus 8
+  // memory '64 GB'
+  // time '3h'
+  // echo debug_mode
+  cpus { params.run_multiqc_ctg  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_multiqc_ctg  ?  params.mem_standard : params.mem_min  }
+
+
 
   input:
   val x from fastqc_complete_ch.collect()
@@ -1316,10 +1343,14 @@ process multiqc_ctg {
 
 
 process stage_delivery {
-  cpus 4
+  // cpus 4
   tag "$projectid"
-  memory '64 GB'
-  time '3h'
+  // memory '64 GB'
+  // time '3h'
+  cpus { params.run_stage_delivery  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_stage_delivery  ?  params.mem_standard : params.mem_min  }
+
+
 
   input:
   val x from multiqc_ctg_complete_2_ch.collect()
@@ -1418,11 +1449,14 @@ process stage_delivery {
 // -----------------------------
 process move_fastq {
 
-  cpus 6
+  //cpus 6
   tag "$projectid"
-  memory '64 GB'
-  time '3h'
-  echo debug_mode
+  // memory '64 GB'
+  // time '3h'
+  // echo debug_mode
+  cpus { params.run_move_fastq  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_move_fastq  ?  params.mem_standard : params.mem_min  }
+
 
   input:
   val x from stage_delivery_complete_ch.collect()
@@ -1471,10 +1505,14 @@ process move_fastq {
 process multiqc_delivery {
 
   tag "$projectid"
-  cpus 6
-  memory '32 GB'
-  time '3h'
-  echo debug_mode
+  // cpus 6
+  // memory '32 GB'
+  // time '3h'
+  // echo debug_mode
+  cpus { params.run_multiqc_delivery  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_multiqc_delivery  ?  params.mem_standard : params.mem_min  }
+
+
 
   input:
   val x from move_fastq_complete_ch.collect()
@@ -1524,10 +1562,13 @@ process multiqc_delivery {
 //    .set{ md5sum_complete_ch }
 // }
 process md5sum_delivery {
-  cpus 8
+  //cpus 8
   tag "$projectid"
-  memory '64 GB'
-  time '3h'
+  // memory '64 GB'
+  // time '3h'
+  cpus { params.run_md5sum_delivery  ? params.cpu_high : params.cpu_min  }
+  memory { params.run_md5sum_delivery  ?  params.mem_high : params.mem_min  }
+
 
   input:
   val x from multiqc_complete_ch.collect()
@@ -1580,10 +1621,13 @@ process md5sum_delivery {
 //    .set{ stage_ctg_save_complete_ch }
 // }
 process stage_ctg_save {
-  cpus 4
+  //cpus 4
   tag "$projectid"
-  memory '32 GB'
-  time '3h'
+  // memory '32 GB'
+  // time '3h'
+  cpus { params.run_stage_ctg_save  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_stage_ctg_save  ?  params.mem_standard : params.mem_min  }
+
 
   input:
   val x from multiqc_ctg_complete_ch.collect()

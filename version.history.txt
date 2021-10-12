@@ -1,4 +1,21 @@
 
+v2.x updates
+
+DO NOT READ SCRIPT FROM WITHIN Folder
+
+From where is tehe scritp run!!
+change to that it is downloaded each time. (nextflow main)
+what about the config!?
+
+
+Initiate project folder NOT from runfolder
+
+
+Uroscan should be separate folder structure
+
+
+
+
 == ctg-rnaseq v1.3
 Main objective - integrate primer and driver. Add resumue and no-demux functionablility
 
