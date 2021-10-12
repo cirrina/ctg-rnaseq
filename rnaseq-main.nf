@@ -318,7 +318,7 @@ process bcl2fastq {
 
   tag  { params.run_blcl2fastq  ? "$projectid" : "blank_run"  }
   cpus 4
-  memory praams.mem_high
+  memory params.mem_high
 
 
   input:
@@ -922,6 +922,54 @@ process index_bam {
 
 
 
+process markdups {
+  tag  { params.run_markdups  ? "$sid" : "blank_run"  }
+  cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
+
+  input:
+  val x from indexbam_complete_ch.collect()
+
+  output:
+  val "x" into markdups_complete_ch
+  val "x" into markdups_complete_report_ch
+  // val "x" into move
+
+  // when: params.run_markdups
+
+  script:
+  if ( params.run_markdups )
+    """
+    echo "bam: ${bam}"
+    mkdir -p ${markdupstempdir}
+    mkdir -p ${markdupsqcdir}
+
+    echo "markdupstempdir: ${markdupstempdir}/${bam}"
+    # java -jar picard MarkDuplicates \\
+    picard MarkDuplicates \\
+        INPUT=${stardir}/${bam} \\
+        OUTPUT=${markdupstempdir}/${bam} \\
+        METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
+        TAGGING_POLICY=All \\
+        REMOVE_DUPLICATES=false \\
+        ASSUME_SORTED=true \\
+        MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=2000 \\
+        QUIET=true \\
+        VERBOSITY=WARNING
+
+    mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
+
+    ## find ${stardir} -user $USER -exec chmod g+rw {} +
+    ## find ${markdupstempdir} -user $USER -exec chmod g+rw {} +
+    """
+  else
+    """
+    echo "run markdups skipped"
+    """
+}
+
+
+
 process qualimap {
 
   tag  { params.run_qualimap  ? "$sid" : "blank_run"  }
@@ -930,7 +978,7 @@ process qualimap {
 
 
   input:
-  val x from indexbam_complete_ch.collect()
+  val x from markdups_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_qualimap_ch
 
   output:
@@ -1002,55 +1050,6 @@ process rseqc {
 }
 
 
-
-process markdups {
-  tag  { params.run_cmarkdups  ? "$sid" : "blank_run"  }
-  cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
-
-  input:
-  cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
-
-
-
-  output:
-  val "x" into markdups_complete_ch
-  val "x" into markdups_complete_report_ch
-  // val "x" into move
-
-  // when: params.run_markdups
-
-  script:
-  if ( params.run_markdups )
-    """
-    echo "bam: ${bam}"
-    mkdir -p ${markdupstempdir}
-    mkdir -p ${markdupsqcdir}
-
-    echo "markdupstempdir: ${markdupstempdir}/${bam}"
-    # java -jar picard MarkDuplicates \\
-    picard MarkDuplicates \\
-        INPUT=${stardir}/${bam} \\
-        OUTPUT=${markdupstempdir}/${bam} \\
-        METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
-        TAGGING_POLICY=All \\
-        REMOVE_DUPLICATES=false \\
-        ASSUME_SORTED=true \\
-        MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=2000 \\
-        QUIET=true \\
-        VERBOSITY=WARNING
-
-    mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
-
-    ## find ${stardir} -user $USER -exec chmod g+rw {} +
-    ## find ${markdupstempdir} -user $USER -exec chmod g+rw {} +
-    """
-  else
-    """
-    echo "run markdups skipped"
-    """
-}
 
 
 
@@ -1254,7 +1253,8 @@ process multiqc_ctg {
 
   input:
   val x from fastqc_complete_ch.collect()
-  val x from markdups_complete_ch.collect()
+  //val x from markdups_complete_ch.collect()
+  val x from rseqc_complete_ch.collect()
   val x from fastqscreen_complete_ch.collect()
   val x from rsem_complete_ch.collect()
   val x from bladderreport_complete_ch.collect()
@@ -1718,7 +1718,7 @@ process finalize_pipeline {
 
   tag  { params.run_finalize_pipeline  ? "$projectid" : "blank_run"  }
   memory params.mem_min
-  cpus cpu_min
+  cpus params.cpu_min
 
   input:
   val x from md5sum_complete_ch.collect()
