@@ -630,7 +630,7 @@ process rsem {
 
   output:
   val "x" into rsem_complete_ch
-  val "x" into rsem_complete_report_ch
+  //val "x" into rsem_complete_report_ch
   // file "${sid}_Aligned.sortedByCoord.out.bam" into bam_featurecounts_ch // channel defined start instead
 
   script:
@@ -932,7 +932,7 @@ process markdups {
 
   output:
   val "x" into markdups_complete_ch
-  val "x" into markdups_complete_report_ch
+  // val "x" into markdups_complete_report_ch
   // val "x" into move
 
   // when: params.run_markdups
@@ -1168,8 +1168,8 @@ process bladderreport {
 
 
   input:
-  val x from markdups_complete_report_ch.collect()
-  val x from rsem_complete_report_ch.collect()
+  val x from markdups_complete_ch.collect()
+  val x from rsem_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_bladderreport_ch
 
   output:
@@ -1262,7 +1262,7 @@ process multiqc_ctg {
 
   output:
   val "x" into multiqc_ctg_complete_ch
-  val "x" into multiqc_ctg_complete_2_ch
+  // val "x" into multiqc_ctg_complete_2_ch
 
   // when: params.run_multiqc_ctg
 
@@ -1318,7 +1318,7 @@ process stage_delivery {
 
 
   input:
-  val x from multiqc_ctg_complete_2_ch.collect()
+  val x from multiqc_ctg_complete_ch.collect()
 
   output:
   val "x" into stage_delivery_complete_ch
@@ -1428,7 +1428,7 @@ process move_fastq {
 
   output:
   val "x" into move_fastq_complete_ch
-  val "x" into move_fastq_complete_2_ch
+  // val "x" into move_fastq_complete_2_ch
 
   script:
     if ( params.pooled_run &&  params.run_move_fastq)
@@ -1596,7 +1596,7 @@ process stage_ctg_save {
 
   input:
   val x from multiqc_ctg_complete_ch.collect()
-  val x from move_fastq_complete_2_ch.collect()
+  // val x from move_fastq_complete_2_ch.collect()
 
   output:
   val "x" into stage_ctg_save_complete_ch
