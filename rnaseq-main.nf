@@ -712,7 +712,7 @@ process rsem {
 
 
 process rnaseqmetrics {
-  tag  { params.rnaseqmetrics  ? "$sid" : "blank_run"  }
+  tag  { params.run_rnaseqmetrics  ? "$sid" : "blank_run"  }
   cpus { params.run_rnaseqmetrics  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_rnaseqmetrics  ?  params.mem_standard : params.mem_min  }
 
