@@ -11,7 +11,7 @@ https://deweylab.github.io/RSEM/rsem-calculate-expression.html
 
 rsem can use multiple aligners, e.g. bowtie2, star etc. Uroscan uses bowtie2 as aligner.
 
-Preparing references for uoscan / shell script CMD
+Preparing references for uoscan / shell script from CMD
 
 ```
 /data/bnf/sw/RSEM-1.3.0/rsem-prepare-reference --gtf Homo_sapiens.GRCh37.75.gtf --bowtie2 --bowtie2-path /data/bnf/sw/bowtie2/2.3.3/ /data/bnf/ref/b37/human_g1k_v37.fasta  /data/bnf/ref/rsem/GRCh37
@@ -65,6 +65,7 @@ STAR --genomeDir ${genome} \\
   --limitBAMsortRAM 10000000000 \\
   --outFileNamePrefix ${stardir}/${sid}_
 ```
+NOTES: consiter adding flag to filter multimapping reads. Apparent when aligning total RNA where multimapping are very common.
 
 
 ## bowtie2
