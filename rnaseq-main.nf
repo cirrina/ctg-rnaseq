@@ -975,7 +975,7 @@ process qualimap {
 
   tag  { params.run_qualimap  ? "$sid" : "blank_run"  }
   cpus { params.run_qualimap  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_qualimap  ?  params.mem_standard : params.mem_min  }
+  memory { params.run_qualimap  ?  params.mem_high : params.mem_min  }
 
 
   input:
@@ -1006,7 +1006,7 @@ process qualimap {
     ## /data/bnf/sw/qualimap_v2.2.1/qualimap --java-mem-size=12G rnaseq -bam /data/bnf/bam/rnaseq/21KF00020.STAR.sort.bam -gtf /data/bnf/ref/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /data/bnf/postmap/rnaseq/21KF00020.STAR.qualimap.folder
     # qualimap --java-mem-size=12G rnaseq -bam /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/star/21KF00082_Aligned.sortedByCoord.out.bam -gtf /projects/fs1/shared/uroscan/references/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/qualimap/21KF00082.STAR.qualimap.folder
 
-    qualimap --java-mem-size=90G rnaseq -bam ${stardir}/${bam} -gtf ${gtf} -pe -outdir ${qualimapdir}/${sid}.STAR.qualimap.folder
+    qualimap --java-mem-size=100G rnaseq -bam ${stardir}/${bam} -gtf ${gtf} -pe -outdir ${qualimapdir}/${sid}.STAR.qualimap.folder
 
     """
   else
@@ -1109,7 +1109,7 @@ process fastqc {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
   tag  { params.run_fastqc  ? "$sid" : "blank_run"  }
   cpus { params.run_fastqc  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_fastqc  ?  params.mem_standard : params.mem_min  }
+  memory { params.run_fastqc  ? params.mem_standard : params.mem_min  }
 
 
   input:
