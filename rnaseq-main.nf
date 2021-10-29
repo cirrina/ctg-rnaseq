@@ -974,7 +974,7 @@ process markdups {
 process qualimap {
 
   tag  { params.run_qualimap  ? "$sid" : "blank_run"  }
-  cpus { params.run_qualimap  ? params.cpu_standard : params.cpu_min  }
+  cpus { params.run_qualimap  ? params.cpu_high : params.cpu_min  }
   memory { params.run_qualimap  ?  params.mem_high : params.mem_min  }
 
 
@@ -1006,7 +1006,7 @@ process qualimap {
     ## /data/bnf/sw/qualimap_v2.2.1/qualimap --java-mem-size=12G rnaseq -bam /data/bnf/bam/rnaseq/21KF00020.STAR.sort.bam -gtf /data/bnf/ref/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /data/bnf/postmap/rnaseq/21KF00020.STAR.qualimap.folder
     # qualimap --java-mem-size=12G rnaseq -bam /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/star/21KF00082_Aligned.sortedByCoord.out.bam -gtf /projects/fs1/shared/uroscan/references/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/qualimap/21KF00082.STAR.qualimap.folder
 
-    qualimap --java-mem-size=100G rnaseq -bam ${stardir}/${bam} -gtf ${gtf} -pe -outdir ${qualimapdir}/${sid}.STAR.qualimap.folder
+    qualimap --java-mem-size=90G rnaseq -bam ${stardir}/${bam} -gtf ${gtf} -pe -outdir ${qualimapdir}/${sid}.STAR.qualimap.folder
 
     """
   else
@@ -1019,8 +1019,8 @@ process qualimap {
 
 process rseqc {
   tag  { params.run_rseqc  ? "$sid" : "blank_run"  }
-  cpus { params.run_rseqc  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_rseqc  ?  params.mem_standard : params.mem_min  }
+  cpus { params.run_rseqc  ? params.cpu_high : params.cpu_min  }
+  memory { params.run_rseqc  ?  params.mem_high : params.mem_min  }
 
 
   input:
@@ -1039,7 +1039,7 @@ process rseqc {
 
     geneBody_coverage.py \\
       -i ${stardir}/${bam} \\
-      -r /projects/fs1/shared/uroscan/references/rseqc/hg19.HouseKeepingGenes.bed \\
+      -r /projects/fs1/shared/references/uroscan/rseqc/hg19.HouseKeepingGenes.bed \\
       -o ${rseqcdir}/${sid}.genebodycov
 
     ## find ${rseqcdir} -user $USER -exec chmod g+rw {} +
