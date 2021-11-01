@@ -305,13 +305,7 @@ infoall.subscribe { println "Info: $it" }
   *    --- Demux and fastq files section ---
   =============================================================== */
 
-// Run bcl2fastq
-// Channel to start count if demux == 'n'
-// if ( params.run_blcl2fastq == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ fastq_check_ch }
-// }
+
 process bcl2fastq {
   // -w must be lower than number of samples
   // publishDir "${fastqdir}", mode: 'copy', overwrite: 'true'
@@ -351,6 +345,9 @@ process bcl2fastq {
 }
 
 
+
+
+
 /// run_checkfiles_fastq = NOT OPTIONAL !!!
 
 process checkfiles_fastq {
@@ -365,15 +362,8 @@ process checkfiles_fastq {
   set sid, read1, read2, species from fastq_ch
 
   output:
-  val "x" into run_star_ch
-  val "x" into run_salmon_ch
-  val "x" into run_rsem_ch
+  val "x" into checkfiles_fastq_complete_ch
   set sid, read1, read2, species into fastqc_ch
-  set sid, read1, read2, species into star_ch
-  set sid, read1, read2, species into salmon_ch
-  set sid, read1, read2, species into rsem_ch
-  set sid, read1, read2, species into fastqscreen_ch
-
 
   script:
   if( params.paired )
@@ -404,6 +394,103 @@ process checkfiles_fastq {
   //   """
 
 }
+
+
+/* ===============================================================
+  *      FASTQC
+  =============================================================== */
+
+process fastqc {
+  // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
+  tag  { params.run_fastqc  ? "$sid" : "blank_run"  }
+  cpus { params.run_fastqc  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_fastqc  ? params.mem_standard : params.mem_min  }
+
+
+  input:
+  val x from checkfiles_fastq_complete_ch.collect()
+  set sid, read1, read2, species from fastqc_ch  // from check fastq
+
+  output:
+  val "x" into fastqc_complete_ch
+  val "x" into run_star_ch
+  val "x" into run_salmon_ch
+  val "x" into run_rsem_ch
+  set sid, read1, read2, species into star_ch
+  set sid, read1, read2, species into salmon_ch
+  set sid, read1, read2, species into rsem_ch
+  set sid, read1, read2, species into fastqscreen_ch
+
+
+  // when: params.run_fastqc
+
+  script:
+  if ( params.paired && params.run_fastqc)
+    """
+      mkdir -p ${fastqcdir}
+      echo "running fastqc in paired reads mode"
+      fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
+
+      ## find ${fastqcdir} -user $USER -exec chmod g+rw {} +
+
+  """
+  else if ( !params.paired && params.run_fastqc)
+    """
+      mkdir -p ${fastqcdir}
+      echo "running fastqc in non paired reads mode "
+      fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
+
+      ## find ${fastqcdir} -user $USER -exec chmod g+rw {} +
+    """
+  else
+    """
+    echo "run_fastqc skipped"
+    """
+}
+
+
+
+/* ===============================================================
+  *      FASTQSCREEN
+  =============================================================== */
+
+process fastqscreen {
+
+    tag  { params.run_fastqscreen  ? "$sid" : "blank_run"  }
+    cpus { params.run_fastqscreen  ? params.cpu_standard : params.cpu_min  }
+    memory { params.run_fastqscreen  ?  params.mem_standard : params.mem_min  }
+
+
+    input:
+    set sid, read1, read2, species from fastqscreen_ch //
+
+    output:
+    val "x" into fastqscreen_complete_ch
+
+    script:
+    if ( params.paired ){
+        fqsfiles = "${fastqdir}/${read1} ${fastqdir}/${read2}" }
+    else{
+        fqsfiles = "${fastqdir}/${read1}" }
+
+    if ( params.run_fastqscreen)
+      """
+      mkdir -p ${fastqscreendir}
+
+      fastq_screen \\
+          --conf ${params.fastqscreen_config} \\
+          --subset 500000 \\
+          --outdir ${fastqscreendir} \\
+          ${fqsfiles}
+
+
+      """
+    else
+      """
+      echo "run_fastqscreen skipped"
+      """
+}
+
 
 
 
@@ -502,118 +589,9 @@ process salmon  {
 }
 
 
-
-
-// Run STAR
-// if ( params.run_star == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ star_complete_ch }
-// }
-process star  {
-  tag  { params.run_star  ? "$sid" : "blank_run"  }
-  cpus { params.run_star  ? params.cpu_high : params.cpu_min  }
-  memory { params.run_star  ?  params.mem_hign : params.mem_min  }
-
-  // cpus 20
-  // memory '100 GB'
-  // time '36h'
-  // echo debug_mode
-  //publishDir "${stardir}", mode: 'copy', overwrite: true
-
-  input:
-  val x from run_star_ch.collect()
-  set sid, read1, read2, species from star_ch // from checkfiles_fastq
-
-  output:
-  val "x" into star_complete_ch
-
-  // when: params.run_star
-
-  script:
-  if ( species == "Homo sapiens" ){
-    genome=params.star_genome_hs }
-  else if ( species == "Mus musculus" ){
-    genome=params.star_genome_mm }
-  else if ( species == "Rattus norvegicus" ){
-      genome=params.star_genome_rn }
-  else{
-    genome = ""
-    println( "Warning: Species not recognized." )}
-
-  if ( params.paired ){
-      starfiles = "${fastqdir}/${read1} ${fastqdir}/${read2}" }
-  else{
-      starfiles = "${fastqdir}/${read1}" }
-
-
-  if ( params.run_star )
-  """
-  mkdir -p ${stardir}
-
-  ### added genomeLoad remove - star crashes if not for version 2.5x uroscan pipeline
-  ## STAR  --genomeDir ${genome} --genomeLoad Remove
-
-  STAR --genomeDir ${genome} \\
-    --readFilesIn ${starfiles} \\
-    --runThreadN ${task.cpus}  \\
-    --readFilesCommand zcat \\
-    --outSAMtype BAM SortedByCoordinate \\
-    --limitBAMsortRAM 10000000000 \\
-    --outFileNamePrefix ${stardir}/${sid}_
-
-  #find ${stardir} -user $USER -exec chmod g+rw {} +
-  """
-  else
-  """
-  echo "skipping star"
-  """
-
-}
-
-
-
-
-// Check STAR bam files against names in sample sheet
-// checkfiles_star
-// Channel to start count if demux == 'n'
-// if ( params.run_checkfiles_bam == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ checkfiles_bam_complete_ch }
-// }
-process checkfiles_bam {
-  // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
-  tag  { params.run_checkfiles_bam  ? "$sid" : "blank_run"  }
-  cpus params.cpu_min
-  memory params.mem_min
-
-  input:
-  val x from star_complete_ch.collect() // checkbam_ch - when star is completed
-  set sid, bam, strand, species, RIN, concentration from bam_checkbam_ch
-
-  output:
-  val "x" into checkfiles_bam_complete_ch
-
-  // when: params.run_checkfiles_bam
-
-  script:
-  if( params.run_checkfiles_bam )
-    """
-      if [ ! -f ${stardir}/${bam} ]; then
-        echo "Warning: Cannot locate bam file ${stardir}/${bam}"
-        exit 2
-      fi
-    """
-  else
-    """
-    echo "file check overridden"
-  """
-}
-
-
-
-
+/* ===============================================================
+  *      -RSEM SECTION
+  =============================================================== */
 process rsem {
   tag  { params.run_rsem  ? "$sid" : "blank_run"  }
   cpus { params.run_rsem  ? params.cpu_high : params.cpu_min  }
@@ -711,6 +689,263 @@ process rsem {
 
 
 
+/* ===============================================================
+  *      -STAR AND BAM SECTION
+  =============================================================== */
+
+process star  {
+  tag  { params.run_star  ? "$sid" : "blank_run"  }
+  cpus { params.run_star  ? params.cpu_high : params.cpu_min  }
+  memory { params.run_star  ?  params.mem_hign : params.mem_min  }
+
+  // cpus 20
+  // memory '100 GB'
+  // time '36h'
+  // echo debug_mode
+  //publishDir "${stardir}", mode: 'copy', overwrite: true
+
+  input:
+  val x from run_star_ch.collect()
+  set sid, read1, read2, species from star_ch // from checkfiles_fastq
+
+  output:
+  val "x" into star_complete_ch
+
+  // when: params.run_star
+
+  script:
+  if ( species == "Homo sapiens" ){
+    genome=params.star_genome_hs }
+  else if ( species == "Mus musculus" ){
+    genome=params.star_genome_mm }
+  else if ( species == "Rattus norvegicus" ){
+      genome=params.star_genome_rn }
+  else{
+    genome = ""
+    println( "Warning: Species not recognized." )}
+
+  if ( params.paired ){
+      starfiles = "${fastqdir}/${read1} ${fastqdir}/${read2}" }
+  else{
+      starfiles = "${fastqdir}/${read1}" }
+
+
+  if ( params.run_star )
+  """
+  mkdir -p ${stardir}
+
+  ### added genomeLoad remove - star crashes if not for version 2.5x uroscan pipeline
+  ## STAR  --genomeDir ${genome} --genomeLoad Remove
+
+  STAR --genomeDir ${genome} \\
+    --readFilesIn ${starfiles} \\
+    --runThreadN ${task.cpus}  \\
+    --readFilesCommand zcat \\
+    --outSAMtype BAM SortedByCoordinate \\
+    --limitBAMsortRAM 10000000000 \\
+    --outFileNamePrefix ${stardir}/${sid}_
+
+  #find ${stardir} -user $USER -exec chmod g+rw {} +
+  """
+  else
+  """
+  echo "skipping star"
+  """
+
+}
+
+
+
+process checkfiles_bam {
+  // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
+  tag  { params.run_checkfiles_bam  ? "$sid" : "blank_run"  }
+  cpus params.cpu_min
+  memory params.mem_min
+
+  input:
+  val x from star_complete_ch.collect() // checkbam_ch - when star is completed
+  set sid, bam, strand, species, RIN, concentration from bam_checkbam_ch
+
+  output:
+  val "x" into checkfiles_bam_complete_ch
+
+  // when: params.run_checkfiles_bam
+
+  script:
+  if( params.run_checkfiles_bam )
+    """
+      if [ ! -f ${stardir}/${bam} ]; then
+        echo "Warning: Cannot locate bam file ${stardir}/${bam}"
+        exit 2
+      fi
+    """
+  else
+    """
+    echo "file check overridden"
+  """
+}
+
+
+
+/// INDEX BAMs
+
+
+// samtools index bamfile
+// ml Java; ml nextflow/19.04.1
+// ml Singularity
+// ml GCC/7.3.0-2.30
+// ml SAMtools/1.9
+// samtools index bamfile
+
+
+
+process index_bam {
+  tag  { params.run_index_bam  ? "$sid" : "blank_run"  }
+  cpus { params.run_index_bam  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_index_bam  ?  params.mem_standard : params.mem_min  }
+
+
+
+  input:
+  val x from checkfiles_bam_complete_ch.collect()
+  set sid, bam, strand, species, RIN, concentration from bam_indexbam_ch
+
+  output:
+  val "x" into indexbam_complete_ch
+
+  // when: params.run_index_bam
+
+  script:
+  if ( params.run_index_bam )
+    """
+    cd ${stardir}
+    echo "${stardir}/${bam}"
+    # samtools index -bc ${stardir}/${bam}
+    sambamba index ${stardir}/${bam}
+
+    """
+  else
+    """
+    echo "skipped indexing"
+    """
+}
+
+
+
+process markdups {
+  tag  { params.run_markdups  ? "$sid" : "blank_run"  }
+  cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
+
+  input:
+  val x from indexbam_complete_ch.collect()
+  set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
+
+  output:
+  val "x" into markdups_complete_ch
+  val "x" into markdups_complete_report_ch
+  // val "x" into move
+
+  // when: params.run_markdups
+
+  script:
+  if ( params.run_markdups )
+    """
+    echo "bam: ${bam}"
+    mkdir -p ${markdupstempdir}
+    mkdir -p ${markdupsqcdir}
+
+    echo "markdupstempdir: ${markdupstempdir}/${bam}"
+    # java -jar picard MarkDuplicates \\
+    picard MarkDuplicates \\
+        INPUT=${stardir}/${bam} \\
+        OUTPUT=${markdupstempdir}/${bam} \\
+        METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
+        TAGGING_POLICY=All \\
+        REMOVE_DUPLICATES=false \\
+        ASSUME_SORTED=true \\
+        MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=2000 \\
+        QUIET=true \\
+        VERBOSITY=WARNING
+
+    mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
+
+    ## find ${stardir} -user $USER -exec chmod g+rw {} +
+    ## find ${markdupstempdir} -user $USER -exec chmod g+rw {} +
+    """
+  else
+    """
+    echo "run markdups skipped"
+    """
+}
+
+
+
+
+
+
+process featurecounts {
+  tag  { params.run_featurecounts  ? "$projectid" : "blank_run"  }
+  cpus { params.run_featurecounts  ? params.cpu_max : params.cpu_min  }
+  memory { params.run_featurecounts  ?  params.mem_max : params.mem_min  }
+
+  // cpus 20
+  // memory '350 GB'
+  // time '96h'
+
+	input:
+  val x from markdups_complete_ch.collect()
+
+	val bams from bam_featurecounts_ch.collect()
+
+
+  output:
+	val "x" into featurecounts_complete_ch
+
+
+  script:
+  if( params.strandness == "forward" )
+    strand_numeric = 1
+  else if ( params.strandness == "reverse" )
+    strand_numeric = 2
+  else
+    strand_numeric = 0
+
+  // gtf used for featurecounts
+  if ( params.species_global == "Homo sapiens" ){
+    gtf = params.gtf_hs}
+  else if  ( params.species_global == "Mus musculus" ){
+    gtf = params.gtf_mm}
+  else if  ( params.species_global == "Rattus norvegicus" ){
+      gtf = params.gtf_rn}
+  else{
+    gtf=""}
+
+  if( params.run_featurecounts )
+    """
+    mkdir -p ${featurecountsdir}
+    cd ${stardir}
+    bamstring=\$(echo $bams | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
+    echo \${bamstring}
+
+    echo "gtf: ${gtf}"
+    featureCounts -T ${task.cpus} \\
+      -t ${params.fcounts_feature} \\
+      --extraAttributes gene_name,gene_type \\
+      -a ${gtf} -g gene_id  \\
+      -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
+      -p \\
+      -s ${strand_numeric} \${bamstring}
+
+    #find ${featurecountsdir} -user $USER -exec chmod g+rw {} +
+    """
+  else
+    """
+    echo "featurecounts skipped"
+    """
+}
+
+
 process rnaseqmetrics {
   tag  { params.run_rnaseqmetrics  ? "$sid" : "blank_run"  }
   cpus { params.run_rnaseqmetrics  ? params.cpu_standard : params.cpu_min  }
@@ -718,7 +953,7 @@ process rnaseqmetrics {
 
 
   input:
-  val x from checkfiles_bam_complete_ch.collect()
+  val x from featurecounts_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_rnaseqmetrics_ch
 
   output:
@@ -812,163 +1047,6 @@ process rnaseqmetrics {
 
 
 
-process featurecounts {
-  tag  { params.run_featurecounts  ? "$projectid" : "blank_run"  }
-  cpus { params.run_featurecounts  ? params.cpu_max : params.cpu_min  }
-  memory { params.run_featurecounts  ?  params.mem_max : params.mem_min  }
-
-  // cpus 20
-  // memory '350 GB'
-  // time '96h'
-
-	input:
-  val x from rnaseqmetrics_complete_ch.collect()
-	val bams from bam_featurecounts_ch.collect()
-
-  output:
-	val "x" into featurecounts_complete_ch
-
-
-  script:
-  if( params.strandness == "forward" )
-    strand_numeric = 1
-  else if ( params.strandness == "reverse" )
-    strand_numeric = 2
-  else
-    strand_numeric = 0
-
-  // gtf used for featurecounts
-  if ( params.species_global == "Homo sapiens" ){
-    gtf = params.gtf_hs}
-  else if  ( params.species_global == "Mus musculus" ){
-    gtf = params.gtf_mm}
-  else if  ( params.species_global == "Rattus norvegicus" ){
-      gtf = params.gtf_rn}
-  else{
-    gtf=""}
-
-  if( params.run_featurecounts )
-    """
-    mkdir -p ${featurecountsdir}
-    cd ${stardir}
-    bamstring=\$(echo $bams | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
-    echo \${bamstring}
-
-    echo "gtf: ${gtf}"
-    featureCounts -T ${task.cpus} \\
-      -t ${params.fcounts_feature} \\
-      --extraAttributes gene_name,gene_type \\
-      -a ${gtf} -g gene_id  \\
-      -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
-      -p \\
-      -s ${strand_numeric} \${bamstring}
-
-    #find ${featurecountsdir} -user $USER -exec chmod g+rw {} +
-    """
-  else
-    """
-    echo "featurecounts skipped"
-    """
-}
-
-
-/// INDEX BAMs
-
-
-// samtools index bamfile
-// ml Java; ml nextflow/19.04.1
-// ml Singularity
-// ml GCC/7.3.0-2.30
-// ml SAMtools/1.9
-// samtools index bamfile
-
-//
-// if ( params.run_index_bam == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ indexbam_complete_ch }
-// }
-
-process index_bam {
-  tag  { params.run_index_bam  ? "$sid" : "blank_run"  }
-  cpus { params.run_index_bam  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_index_bam  ?  params.mem_standard : params.mem_min  }
-
-
-
-  input:
-  val x from featurecounts_complete_ch.collect()
-  set sid, bam, strand, species, RIN, concentration from bam_indexbam_ch
-
-  output:
-  val "x" into indexbam_complete_ch
-
-  // when: params.run_index_bam
-
-  script:
-  if ( params.run_index_bam )
-    """
-    cd ${stardir}
-    echo "${stardir}/${bam}"
-    # samtools index -bc ${stardir}/${bam}
-    sambamba index ${stardir}/${bam}
-
-    """
-  else
-    """
-    echo "skipped indexing"
-    """
-}
-
-
-
-process markdups {
-  tag  { params.run_markdups  ? "$sid" : "blank_run"  }
-  cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
-
-  input:
-  val x from indexbam_complete_ch.collect()
-  set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
-
-  output:
-  val "x" into markdups_complete_ch
-  val "x" into markdups_complete_report_ch
-  // val "x" into move
-
-  // when: params.run_markdups
-
-  script:
-  if ( params.run_markdups )
-    """
-    echo "bam: ${bam}"
-    mkdir -p ${markdupstempdir}
-    mkdir -p ${markdupsqcdir}
-
-    echo "markdupstempdir: ${markdupstempdir}/${bam}"
-    # java -jar picard MarkDuplicates \\
-    picard MarkDuplicates \\
-        INPUT=${stardir}/${bam} \\
-        OUTPUT=${markdupstempdir}/${bam} \\
-        METRICS_FILE=${markdupsqcdir}/${sid}_bam.MarkDuplicates.metrics.txt \\
-        TAGGING_POLICY=All \\
-        REMOVE_DUPLICATES=false \\
-        ASSUME_SORTED=true \\
-        MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=2000 \\
-        QUIET=true \\
-        VERBOSITY=WARNING
-
-    mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
-
-    ## find ${stardir} -user $USER -exec chmod g+rw {} +
-    ## find ${markdupstempdir} -user $USER -exec chmod g+rw {} +
-    """
-  else
-    """
-    echo "run markdups skipped"
-    """
-}
-
 
 
 process qualimap {
@@ -979,7 +1057,7 @@ process qualimap {
 
 
   input:
-  val x from markdups_complete_ch.collect()
+  val x from rnaseqmetrics_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_qualimap_ch
 
   output:
@@ -1029,7 +1107,7 @@ process rseqc {
 
   output:
   val "x" into rseqc_complete_ch
-
+  val "x" into rseqc_complete_report_ch
   // when: params.run_rseqc
 
   script:
@@ -1056,93 +1134,8 @@ process rseqc {
 
 
 
-/* ===============================================================
-  *      FASTQSCREEN
-  =============================================================== */
-
-process fastqscreen {
-
-    tag  { params.run_fastqscreen  ? "$sid" : "blank_run"  }
-    cpus { params.run_fastqscreen  ? params.cpu_standard : params.cpu_min  }
-    memory { params.run_fastqscreen  ?  params.mem_standard : params.mem_min  }
 
 
-    input:
-    set sid, read1, read2, species from fastqscreen_ch //
-
-    output:
-    val "x" into fastqscreen_complete_ch
-
-    script:
-    if ( params.paired ){
-        fqsfiles = "${fastqdir}/${read1} ${fastqdir}/${read2}" }
-    else{
-        fqsfiles = "${fastqdir}/${read1}" }
-
-    if ( params.run_fastqscreen)
-      """
-      mkdir -p ${fastqscreendir}
-
-      fastq_screen \\
-          --conf ${params.fastqscreen_config} \\
-          --subset 500000 \\
-          --outdir ${fastqscreendir} \\
-          ${fqsfiles}
-
-
-      """
-    else
-      """
-      echo "run_fastqscreen skipped"
-      """
-}
-
-
-
-
-
-/* ===============================================================
-  *      FASTQC
-  =============================================================== */
-
-process fastqc {
-  // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
-  tag  { params.run_fastqc  ? "$sid" : "blank_run"  }
-  cpus { params.run_fastqc  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_fastqc  ? params.mem_standard : params.mem_min  }
-
-
-  input:
-  set sid, read1, read2, species from fastqc_ch  // from check fastq
-
-  output:
-  val "x" into fastqc_complete_ch
-
-  // when: params.run_fastqc
-
-  script:
-  if ( params.paired && params.run_fastqc)
-    """
-      mkdir -p ${fastqcdir}
-      echo "running fastqc in paired reads mode"
-      fastqc ${fastqdir}/${read1} ${fastqdir}/${read2}  --outdir ${fastqcdir}
-
-      ## find ${fastqcdir} -user $USER -exec chmod g+rw {} +
-
-  """
-  else if ( !params.paired && params.run_fastqc)
-    """
-      mkdir -p ${fastqcdir}
-      echo "running fastqc in non paired reads mode "
-      fastqc ${fastqdir}/${read1}  --outdir ${fastqcdir}
-
-      ## find ${fastqcdir} -user $USER -exec chmod g+rw {} +
-    """
-  else
-    """
-    echo "run_fastqc skipped"
-    """
-}
 
 
 
@@ -1169,7 +1162,7 @@ process bladderreport {
 
 
   input:
-  val x from markdups_complete_report_ch.collect()
+  val x from rseqc_complete_report_ch.collect()
   val x from rsem_complete_report_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_bladderreport_ch
 
