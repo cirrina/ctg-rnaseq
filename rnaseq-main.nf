@@ -1144,7 +1144,7 @@ process rseqc {
   *      BLADDER REPORT
   =============================================================== */
 
-// /usr/bin/Rscript -e "library(rmarkdown, lib='/home/petter/R/x86_64-pc-linux-gnu-library/3.4'); rmarkdown::render('/data/bnf/scripts/bladderreport/bladderreport_ctg_anonymous.Rmd',params=list(sampleid='21KF00020', rsem_in='/data/bnf/premap/rnaseq/21KF00020_0.rsem',star_qc='/data/bnf/tmp/rnaseq/21KF00020_0.sort.bam.folder/Log.final.out', clarity_id='ALL557A36'),output_file='/data/bnf/postmap/rnaseq/21KF00020.STAR.bladderreport_anonymous.html')"
+// /usr/bin/Rscript -e "library(rmarkdown, lib='/home/petter/R/x86_64-pc-linux-gnu-library/3.4'); rmarkdown::render('/data/bnf/scripts/ort/bladderreport_ctg_anonymous.Rmd',params=list(sampleid='21KF00020', rsem_in='/data/bnf/premap/rnaseq/21KF00020_0.rsem',star_qc='/data/bnf/tmp/rnaseq/21KF00020_0.sort.bam.folder/Log.final.out', clarity_id='ALL557A36'),output_file='/data/bnf/postmap/rnaseq/21KF00020.STAR.bladderreport_anonymous.html')"
 
 
 //
@@ -1156,8 +1156,8 @@ process rseqc {
 process bladderreport {
 
   tag  { params.run_bladderreport  ? "$sid" : "blank_run"  }
-  cpus { params.run_bladderreport  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_bladderreport  ?  params.mem_standard : params.mem_min  }
+  cpus { params.run_bladderreport  ? params.cpu_mid : params.cpu_min  }
+  memory { params.run_bladderreport  ?  params.mem_mid : params.mem_min  }
 
 
 

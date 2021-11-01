@@ -6,6 +6,25 @@ Notes on reference libraries on lsens
 uroscan. These are non-controlled references used as-is from the Lennart server. All are based on GRCh37. One reference, the RefFlat was compiled as belw.   
 
 
+
+## ORDER OF EVENTS!
+
+
+### FASTQ-related
+
+- bcl2fastq
+- checkfiles fastq
+- fastqc
+
+rsem
+salmon
+
+star
+  + index bam
+  + markdups
+
+
+
 ## rsem
 https://deweylab.github.io/RSEM/rsem-calculate-expression.html
 
@@ -95,6 +114,6 @@ http://refgenomes.databio.org/
 
 
 ## qualimap
-
+http://seqanswers.com/forums/showthread.php?t=66538
 
 ## fastqscreen
