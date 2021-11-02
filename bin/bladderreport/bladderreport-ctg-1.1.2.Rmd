@@ -7,7 +7,7 @@ params:
   star_qc: ./uroscan_data/R09_T1_Log.final.out
   anonymous: yes
   RIN: 9.5
-  concentration: 130.4
+  koncentration: 130.4
   date: 2021-09-14
 
 output:
@@ -41,7 +41,7 @@ params <- list(
   star_qc = "/Users/david/tasks/blrep_test/uroscan_data/R09_T1_Log.final.out",
   anonymous = "yes",
   RIN= "9.5",
-  concentration="130.4",
+  koncentration="130.4",
   date= "2021-09-14"
 )
 
@@ -167,8 +167,8 @@ sampledata<-data.frame(
   sampledata$personnummer <- "YYYYMMDD-NANA"
   sampledata$ankomstdatum <- params$date
 
-  if(!is.null(params$concentration)){
-    sampledata$koncentration <- params$concentration
+  if(!is.null(params$koncentration)){
+    sampledata$koncentration <- params$koncentration
   }
   if(!is.null(params$DV200)){
     sampledata$dv200 <- params$DV200

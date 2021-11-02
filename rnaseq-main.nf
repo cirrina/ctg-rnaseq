@@ -1190,7 +1190,7 @@ process bladderreport {
           rsem_in='${rsemdir}/${sid}.rsem.genes.results', \\
           star_qc='${stardir}/${sid}_Log.final.out', \\
           RIN='${RIN}', \\
-          concentration='${concentration}'),  \\
+          koncentration='${concentration}'),  \\
         output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
 
     cd ${bladderreportdir}
