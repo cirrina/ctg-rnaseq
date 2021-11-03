@@ -1196,7 +1196,7 @@ process bladderreport {
     cd ${bladderreportdir}
     chromium --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
 
-    mv ${bladderreportdir}/tmp_${sid}/bladderreport/${sid}.LundClassifier.rds ${bladderreportdir}/${sid}.LundClassifier.rds
+    mv -f ${bladderreportdir}/tmp_${sid}/bladderreport/${sid}.LundClassifier.rds ${bladderreportdir}/${sid}.LundClassifier.rds
 
     ## find ${bladderreportdir} -user $USER -exec chmod g+rw {} +
 
@@ -1650,7 +1650,7 @@ process stage_ctg_save {
 
   ##  Move ctg qc dir from project folder to delivery location
   ##   --------------------------------------------------------------
-  mv ${qcdir} ${ctg_save_dir}
+  mv -f ${qcdir} ${ctg_save_dir}
 
   ##  duplicate the fastqc analyses from delivery dir
   ## -----------------------------------------
@@ -1733,7 +1733,7 @@ process finalize_pipeline {
     ##  Move delivery temp dir from project folder to delivery location
     ##   --------------------------------------------------------------
     mkdir -p ${deliverydir}
-    mv ${deliverytemp}/* ${deliverydir}
+    mv -f ${deliverytemp}/* ${deliverydir}
 
 
     cd ${deliverydir}
