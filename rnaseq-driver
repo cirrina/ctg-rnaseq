@@ -401,9 +401,9 @@ if [ -z "$sharedflowcell" ]; then
 fi
 
 if [[ $sharedflowcell == "true" ]]; then
-  pooled=true
+  # pooled=true
 elif [[ $sharedflowcell == "false" ]]; then
-    pooled=false
+  #  pooled=false
 else
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo " SharedFlowCell is not properly supplied in samplesheet. \
@@ -588,8 +588,8 @@ if [[ $resume == "false" ]]; then
     echo "  runfolder           =  '${runfolder}'                       " >> $nf_conf
     echo "  fastqdir            =  '${fastqdir}'                        " >> $nf_conf
     echo ""                                                               >> $nf_conf
-    echo "  pooled_run          =  ${pooled}                            " >> $nf_conf
-    echo "  species_global      =  '${species_global}'                         " >> $nf_conf
+    echo "  sharedflowcell      =   ${sharedflowcell}                   " >> $nf_conf
+    echo "  species_global      =  '${species_global}'                  " >> $nf_conf
     echo "  n_samples           =  '${n_samples}'                       " >> $nf_conf
     echo ""                                                               >> $nf_conf
     echo "  assay               =  '${assay}'                           " >> $nf_conf
