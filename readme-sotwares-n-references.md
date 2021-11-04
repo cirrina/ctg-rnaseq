@@ -10,6 +10,9 @@ uroscan. These are non-controlled references used as-is from the Lennart server.
 ## ORDER OF EVENTS!
 
 
+## SAMtools
+https://github.com/merenlab/anvio/issues/1479
+
 ### FASTQ-related
 
 - bcl2fastq
@@ -22,6 +25,11 @@ salmon
 star
   + index bam
   + markdups
+
+
+## bcl2fastq
+!! note : Fix option so that Undetermined fastq is NOT outputed if multipke projecs are run!!
+
 
 
 
@@ -110,6 +118,10 @@ http://refgenomes.databio.org/
 
 
 ## rseqc
+CAN NOT GET RSQEQC to conistently work
+get error messages some times
+may have to do with samtools in conda
+DO NOT RUN until container with rseqc/samtools/rsamtools is OK
 
 
 
