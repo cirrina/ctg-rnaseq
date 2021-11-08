@@ -230,7 +230,7 @@ RNA-kvalitet | Godkänd
 Analysmetod   | NGS-/MPS-analys med RNA-seq
 Indatafil     | `r params$rsem_in`
 Analys genomförd av  | Centrum för Translationell Genomik (CTG), Lunds Universitet
-Rapportversion  | 1.1.0 - Reviderad 2021-09-17
+Rapportversion  | 1.1.2 - Reviderad 2021-09-17
 
 ***
 

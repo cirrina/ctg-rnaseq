@@ -379,6 +379,7 @@ process checkfiles_fastq {
         exit 2
       fi
     """
+
   else
     """
       echo "checking fastq files - non paired  "
@@ -1425,7 +1426,7 @@ process move_fastq {
   val "x" into move_fastq_complete_2_ch
 
   script:
-    if ( params.pooled_run &&  params.run_move_fastq)
+    if ( params.sharedflowcell &&  params.run_move_fastq)
       """
         mkdir -p ${deliverytemp}/fastq
         if [ -d ${fastqdir} ]; then
@@ -1433,7 +1434,7 @@ process move_fastq {
           mv -f ${fastqdir} ${deliverytemp}/fastq
         fi
       """
-    else if ( !params.pooled_run &&  params.run_move_fastq )
+    else if ( !params.sharedflowcell &&  params.run_move_fastq )
       """
       if [ -d ${bcl2fastq_dir} ]; then
         echo "non pooled data. moving comlplete bcl2fastq output foldler."
