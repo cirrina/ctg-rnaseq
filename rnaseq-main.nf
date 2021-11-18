@@ -881,6 +881,42 @@ process markdups {
 }
 
 
+//
+// process filterdups {
+//   tag  { params.run_markdups  ? "$sid" : "blank_run"  }
+//   cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
+//   memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
+//
+//   input:
+//   val x from indexbam_complete_ch.collect()
+//   set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
+//
+//   output:
+//   val "x" into markdups_complete_ch
+//   val "x" into markdups_complete_report_ch
+//   // val "x" into move
+//
+//   // when: params.run_markdups
+//
+//   script:
+//   if ( params.run_filterdups )
+//     """
+//     echo "bam: ${bam}"
+//     mkdir -p ${markdupstempdir}
+//     mkdir -p ${markdupsqcdir}
+//
+//     echo "markdupstempdir: ${markdupstempdir}/${bam}"
+//     samtools  view -b -F 0x0400 20KFU0047_Aligned.sortedByCoord.out.bam > temp.bam//
+//     mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
+//
+//     ## find ${stardir} -user $USER -exec chmod g+rw {} +
+//     ## find ${markdupstempdir} -user $USER -exec chmod g+rw {} +
+//     """
+//   else
+//     """
+//     echo "run markdups skipped"
+//     """
+// }
 
 
 
