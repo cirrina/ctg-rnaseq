@@ -401,9 +401,11 @@ if [ -z "$sharedflowcell" ]; then
 fi
 
 if [[ $sharedflowcell == "true" ]]; then
+  echo ""
   # pooled=true
 elif [[ $sharedflowcell == "false" ]]; then
   #  pooled=false
+  echo ""
 else
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo " SharedFlowCell is not properly supplied in samplesheet. \
