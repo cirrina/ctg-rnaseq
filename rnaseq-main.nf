@@ -96,7 +96,7 @@ stardir = deliverytemp+'/star'
 salmondir = deliverytemp+'/salmon'
 rsemdir = deliverytemp+'/rsem'
 bladderreportdir = deliverytemp+'/bladderreport'
-
+featurecountsdir = deliverytemp+'/featurecounts'
 
 deliveryqc = deliverytemp+'/qc'
 fastqcdir = deliverytemp+'/qc/fastqc'
@@ -109,7 +109,7 @@ readme = deliverydir +'/README_ctg_delivery_' + projectid
 qcdir = outputdir+'/qc'
 qualimapdir = qcdir+'/qualimap'
 rseqcdir = qcdir+'/rseqc'
-featurecountsdir = qcdir+'/featurecounts'
+
 
 markdupstempdir = qcdir+'/markdups_bam_tmp'
 markdupsqcdir = qcdir+'/markdups'
