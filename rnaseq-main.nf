@@ -96,7 +96,7 @@ stardir = deliverytemp+'/star'
 salmondir = deliverytemp+'/salmon'
 rsemdir = deliverytemp+'/rsem'
 bladderreportdir = deliverytemp+'/bladderreport'
-featurecountsdir = deliverytemp+'/featurecounts'
+featurecountsdir = qcdir+'/featurecounts'
 
 deliveryqc = deliverytemp+'/qc'
 fastqcdir = deliverytemp+'/qc/fastqc'

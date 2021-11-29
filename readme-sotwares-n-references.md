@@ -94,6 +94,8 @@ STAR --genomeDir ${genome} \\
 ```
 NOTES: consiter adding flag to filter multimapping reads. Apparent when aligning total RNA where multimapping are very common.
 
+outFilterMultimapNmax
+
 
 ## bowtie2
 
