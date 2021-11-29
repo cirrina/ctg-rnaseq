@@ -93,6 +93,7 @@ ctg_save_dir =  ctg_save_root + '/' + projectid
 deliverytemp  =  outputdir+'/delivery' // this temp deliverydir is used within the nf workfolder/outputdir to store files that are comitted for delivery. A customer multiqc will be run only on this dir. Upon completion of all analyses this will be moved to delivery dir
 
 stardir = deliverytemp+'/star'
+stardir = deliverytemp+'/star_filtered'
 salmondir = deliverytemp+'/salmon'
 rsemdir = deliverytemp+'/rsem'
 bladderreportdir = deliverytemp+'/bladderreport'
@@ -278,7 +279,7 @@ Channel
   .splitCsv(header:true)
   .map { row -> tuple( row.Sample_ID, row.bam, row.Strandness, row.Species, row.RIN, row.concentration ) }
   .tap { infobam }
-  .into { bam_checkbam_ch; bam_indexbam_ch; bam_rnaseqmetrics_ch; bam_markdups_ch; bam_qualimap_ch; bam_rseqc_ch;  bam_bladderreport_ch }
+  .into { bam_checkbam_ch; bam_indexbam_ch; bam_rnaseqmetrics_ch; bam_markdups_ch; bam_filter_multimap_ch; bam_qualimap_ch; bam_rseqc_ch;  bam_bladderreport_ch }
 
 Channel
     .fromPath(samplesheet_ctg)
@@ -882,41 +883,35 @@ process markdups {
 
 
 //
-// process filterdups {
-//   tag  { params.run_markdups  ? "$sid" : "blank_run"  }
-//   cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
-//   memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
-//
-//   input:
-//   val x from indexbam_complete_ch.collect()
-//   set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
-//
-//   output:
-//   val "x" into markdups_complete_ch
-//   val "x" into markdups_complete_report_ch
-//   // val "x" into move
-//
-//   // when: params.run_markdups
-//
-//   script:
-//   if ( params.run_filterdups )
-//     """
-//     echo "bam: ${bam}"
-//     mkdir -p ${markdupstempdir}
-//     mkdir -p ${markdupsqcdir}
-//
-//     echo "markdupstempdir: ${markdupstempdir}/${bam}"
-//     samtools  view -b -F 0x0400 20KFU0047_Aligned.sortedByCoord.out.bam > temp.bam//
-//     mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
-//
-//     ## find ${stardir} -user $USER -exec chmod g+rw {} +
-//     ## find ${markdupstempdir} -user $USER -exec chmod g+rw {} +
-//     """
-//   else
-//     """
-//     echo "run markdups skipped"
-//     """
-// }
+process filter_multimap {
+  tag  { params.run_featurecounts  ? "$sid" : "blank_run"  }
+  cpus { params.run_featurecounts  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_featurecounts  ?  params.mem_standard : params.mem_min  }
+
+  input:
+  val x from markdups_complete_ch.collect()
+  set sid, bam, strand, species, RIN, concentration from bam_filter_multimap_ch
+
+  output:
+  val "x" into filter_multimap_complete_ch
+
+  // when: params.run_markdups
+
+  script:
+  if ( params.run_featurecounts )
+    """
+    echo "bam: ${bam}"
+    mkdir -p ${stardir_filtered}
+
+    cd ${stardir_filtered}
+    samtools  view -b -F 0x104  ${stardir}/${bam} >  ${stardir_filtered}/${bam}
+
+    """
+  else
+    """
+    echo "run filter_multimap skipped"
+    """
+}
 
 
 
@@ -931,8 +926,7 @@ process featurecounts {
   // time '96h'
 
 	input:
-  val x from markdups_complete_ch.collect()
-
+  val x from filter_multimap_complete_ch.collect()
 	val bams from bam_featurecounts_ch.collect()
 
 
@@ -961,7 +955,8 @@ process featurecounts {
   if( params.run_featurecounts )
     """
     mkdir -p ${featurecountsdir}
-    cd ${stardir}
+    # cd ${stardir}
+    cd ${stardir_filtered}
     bamstring=\$(echo $bams | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
     echo \${bamstring}
 
@@ -1377,6 +1372,10 @@ process stage_delivery {
 
     if [ -d ${markdupstempdir} ]; then
       rm -rf ${markdupstempdir}
+    fi
+
+    if [ -d ${stardir_filtered} ]; then
+      rm -rf ${stardir_filtered}
     fi
 
 
