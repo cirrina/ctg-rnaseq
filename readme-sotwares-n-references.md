@@ -96,6 +96,20 @@ NOTES: consiter adding flag to filter multimapping reads. Apparent when aligning
 
 outFilterMultimapNmax
 
+For multi-mappers, all alignments except one are marked with 0x100 (secondary alignment) in
+the FLAG (column 2 of the SAM). The unmarked alignment is selected from the best ones (i.e.
+highest scoring). This default behavior can be changed with --outSAMprimaryFlag AllBestScore
+option, that will output all alignments with the best score as primary alignments (i.e. 0x100 bit in the FLAG unset).
+
+singularity exec --bind /projects/fs1/ /projects/fs1/shared/ctg-containers/rnaseq/singularity-samtools-1.9.sif samtools  view -b -F 0x100 15PL19843_01_01_Aligned.sortedByCoord.out.bam > noMultiMap.bam
+
+https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools
+
+How many primary aligned reads (0x100 = 0) are in the bwa_local.sort.dup.bam file?
+samtools view -F 0x104 -c bwa_local.sort.dup.bam
+
+
+https://broadinstitute.github.io/picard/explain-flags.html
 
 ## bowtie2
 
@@ -117,6 +131,8 @@ http://refgenomes.databio.org/
 
 
 ## featurecounts
+countMultiMappingReads = FALSE (default)
+logical indicating if multi-mapping reads/fragments should be counted, FALSE by default. If TRUE, a multi-mapping read will be counted up to N times if it has N reported mapping locations. This function uses the NH tag to find multi-mapping reads.
 
 
 ## rseqc
@@ -124,6 +140,13 @@ CAN NOT GET RSQEQC to conistently work
 get error messages some times
 may have to do with samtools in conda
 DO NOT RUN until container with rseqc/samtools/rsamtools is OK
+
+http://rseqc.sourceforge.net/
+
+https://sourceforge.net/projects/rseqc/
+https://sourceforge.net/projects/rseqc/files/BED/
+
+inner_distance.py
 
 
 

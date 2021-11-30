@@ -818,13 +818,17 @@ process index_bam {
   // when: params.run_index_bam
 
   script:
-  if ( params.run_index_bam )
+  if ( params.run_index_bam  && params.pipelineProfile == "rnaseq"  )
     """
     cd ${stardir}
     echo "${stardir}/${bam}"
-    # samtools index -bc ${stardir}/${bam}
+    samtools index -bc ${stardir}/${bam}
+    """
+  else if ( params.run_index_bam  && params.pipelineProfile == "uroscan"  )
+    """
+    cd ${stardir}
+    echo "${stardir}/${bam}"
     sambamba index ${stardir}/${bam}
-
     """
   else
     """
@@ -1142,6 +1146,22 @@ process rseqc {
   val "x" into rseqc_complete_report_ch
   // when: params.run_rseqc
 
+  // gtf used for featurecounts
+  if ( params.species_global == "Homo sapiens" ){
+    rcqc_bed = params.rcqc_bed
+    rcqc_housekeeping = params.rcqc_housekeeping
+  }
+  else if  ( params.species_global == "Mus musculus" ){
+    rcqc_bed = params.rcqc_bed_mm
+    rcqc_housekeeping = params.rcqc_housekeeping_mm
+  }
+  else if  ( params.species_global == "Rattus norvegicus" ){
+    rcqc_bed = params.rcqc_bed_rn
+    rcqc_housekeeping = params.rcqc_housekeeping_rn
+    }
+  else{
+    rcqc_bed=""}
+
   script:
   if ( params.run_rseqc )
     """
@@ -1149,10 +1169,14 @@ process rseqc {
 
     geneBody_coverage.py \\
       -i ${stardir}/${bam} \\
-      -r /projects/fs1/shared/references/uroscan/rseqc/hg19.HouseKeepingGenes.bed \\
+      -r ${rcqc_housekeeping}\\
       -o ${rseqcdir}/${sid}.genebodycov
 
-    ## find ${rseqcdir} -user $USER -exec chmod g+rw {} +
+    inner_distance.py \\
+      -i ${stardir}/${bam} \\
+      -r ${rcqc_bed} \\
+      -o ${rseqcdir}/${sid}.innerdistance
+
     """
   else
     """
