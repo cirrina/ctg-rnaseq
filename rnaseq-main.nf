@@ -349,7 +349,6 @@ process bcl2fastq {
 
 
 
-/// run_checkfiles_fastq = NOT OPTIONAL !!!
 
 process checkfiles_fastq {
   // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastqdir
@@ -1145,6 +1144,7 @@ process rseqc {
   val "x" into rseqc_complete_report_ch
   // when: params.run_rseqc
 
+  script:
   // gtf used for featurecounts
   if ( species == "Homo sapiens" ){
     rcqc_bed = params.rcqc_bed
@@ -1157,7 +1157,6 @@ process rseqc {
   else{
     rcqc_bed=""}
 
-  script:
   if ( params.run_rseqc && ( species == "Mus musculus" || species == "Homo sapiens") )
     """
     mkdir -p ${rseqcdir}
