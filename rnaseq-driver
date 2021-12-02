@@ -639,17 +639,17 @@ if [[ $resume == "false" ]]; then
     #################################################
     # If skip demux flag is given in execution.
   echo " ... profile set to: ${pipelineProfile}'"
-    if [[ ${pipelineProfile} == "rnaseq" ]]; then
-      echo " ... ... forcing 'run_rsem' to 'false'"
-      sed "s/run_rsem.*/run_rsem            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
-      echo " ... ... forcing 'run_bladderreport' to 'false'"
-      sed "s/run_bladderreport.*/run_bladderreport            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
-    fi
+    # if [[ ${pipelineProfile} == "rnaseq" ]]; then
+      # echo " ... ... forcing 'run_rsem' to 'false'"
+      # sed "s/run_rsem.*/run_rsem            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
+      # echo " ... ... forcing 'run_bladderreport' to 'false'"
+      #sed "s/run_bladderreport.*/run_bladderreport            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
+    # fi
 
-    if [[ ${pipelineProfile} == "uroscan" ]]; then
-      echo " ... ... forcing 'run_featurecounts' to 'false'"
-      sed "s/run_featurecounts.*/run_featurecounts            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
-    fi
+    #if [[ ${pipelineProfile} == "uroscan" ]]; then
+  #    echo " ... ... forcing 'run_featurecounts' to 'false'"
+  #    sed "s/run_featurecounts.*/run_featurecounts            =  false/g" $nf_config_default > tmp.txt ; mv tmp.txt $nf_config_default
+#    fi
 
 
     #  Priming of project folder complete
