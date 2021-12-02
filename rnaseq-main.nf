@@ -93,11 +93,11 @@ ctg_save_dir =  ctg_save_root + '/' + projectid
 deliverytemp  =  outputdir+'/delivery' // this temp deliverydir is used within the nf workfolder/outputdir to store files that are comitted for delivery. A customer multiqc will be run only on this dir. Upon completion of all analyses this will be moved to delivery dir
 
 stardir = deliverytemp+'/star'
-stardir = deliverytemp+'/star_filtered'
+stardir_filtered = deliverytemp+'/star_filtered'
 salmondir = deliverytemp+'/salmon'
 rsemdir = deliverytemp+'/rsem'
 bladderreportdir = deliverytemp+'/bladderreport'
-featurecountsdir = qcdir+'/featurecounts'
+featurecountsdir = deliverytemp+'/featurecounts'
 
 deliveryqc = deliverytemp+'/qc'
 fastqcdir = deliverytemp+'/qc/fastqc'
@@ -1086,7 +1086,6 @@ process rnaseqmetrics {
 
 
 process qualimap {
-
   tag  { params.run_qualimap  ? "$sid" : "blank_run"  }
   cpus { params.run_qualimap  ? params.cpu_high : params.cpu_min  }
   memory { params.run_qualimap  ?  params.mem_high : params.mem_min  }
@@ -1103,11 +1102,11 @@ process qualimap {
 
   script:
   // gtf used for featurecounts
-  if ( params.species_global == "Homo sapiens" ){
+  if ( species == "Homo sapiens" ){
     gtf = params.gtf_hs}
-  else if  ( params.species_global == "Mus musculus" ){
+  else if  ( species == "Mus musculus" ){
     gtf = params.gtf_mm}
-  else if  ( params.species_global == "Rattus norvegicus" ){
+  else if  ( species == "Rattus norvegicus" ){
       gtf = params.gtf_rn}
   else{
     gtf=""}
@@ -1147,23 +1146,19 @@ process rseqc {
   // when: params.run_rseqc
 
   // gtf used for featurecounts
-  if ( params.species_global == "Homo sapiens" ){
+  if ( species == "Homo sapiens" ){
     rcqc_bed = params.rcqc_bed
     rcqc_housekeeping = params.rcqc_housekeeping
   }
-  else if  ( params.species_global == "Mus musculus" ){
+  else if  ( species == "Mus musculus" ){
     rcqc_bed = params.rcqc_bed_mm
     rcqc_housekeeping = params.rcqc_housekeeping_mm
   }
-  else if  ( params.species_global == "Rattus norvegicus" ){
-    rcqc_bed = params.rcqc_bed_rn
-    rcqc_housekeeping = params.rcqc_housekeeping_rn
-    }
   else{
     rcqc_bed=""}
 
   script:
-  if ( params.run_rseqc )
+  if ( params.run_rseqc && ( species == "Mus musculus" || species == "Homo sapiens") )
     """
     mkdir -p ${rseqcdir}
 

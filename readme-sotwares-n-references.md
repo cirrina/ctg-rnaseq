@@ -136,7 +136,7 @@ logical indicating if multi-mapping reads/fragments should be counted, FALSE by 
 
 
 ## rseqc
-CAN NOT GET RSQEQC to conistently work
+CAN NOT GET RSQEQC to conistently work. Same as qualimap below.
 get error messages some times
 may have to do with samtools in conda
 DO NOT RUN until container with rseqc/samtools/rsamtools is OK
@@ -150,7 +150,28 @@ inner_distance.py
 
 
 
+
+
 ## qualimap
 http://seqanswers.com/forums/showthread.php?t=66538
+
+For unknown reasons. Possible larger bam files. qualimap, often but not always, crashed. The nodes keep filling up with temporary bam files. May have to do with samtools library problem when initated from a conda environment.
+
+Error messages such as:
+WARN: Killing pending tasks (6)
+ERROR ~ Error executing process > 'qualimap (20PL05864_01_01)'
+
+Caused by:
+  Process `qualimap (20PL05864_01_01)` terminated for an unknown reason -- Likely it has been terminated by the external system
+
+Command executed:
+
+  mkdir -p /projects/fs1/shared/ctg-projects/rnaseq/2021_151/nf-output/qc/qualimap
+
+  ## export JAVA_OPTS="-Djava.io.tmpdir=/data/tmp"
+  ## /data/bnf/sw/qualimap_v2.2.1/qualimap --java-mem-size=12G rnaseq -bam /data/bnf/bam/rnaseq/21KF00020.STAR.sort.bam -gtf /data/bnf/ref/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /data/bnf/postmap/rnaseq/21KF00020.STAR.qualimap.folder
+  # qualimap --java-mem-size=12G rnaseq -bam /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/star/21KF00082_Aligned.sortedByCoord.out.bam -gtf /projects/fs1/shared/uroscan/references/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/qualimap/21KF00082.STAR.qualimap.folder
+
+
 
 ## fastqscreen
