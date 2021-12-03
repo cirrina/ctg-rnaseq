@@ -885,7 +885,16 @@ process markdups {
 }
 
 
-//
+
+
+
+
+/* ===============================================================
+  *     FEATURE COUNTS SECTION
+  =============================================================== */
+// Filter bams on only primary mapped sequence using 0x104 flag.
+// Featurecounts will only use primary mapped read anlyway - but tends to crash if multi mapped sequences are included
+
 process filter_multimap {
   tag  { params.run_featurecounts  ? "$sid" : "blank_run"  }
   cpus { params.run_featurecounts  ? params.cpu_standard : params.cpu_min  }
@@ -915,8 +924,6 @@ process filter_multimap {
     echo "run filter_multimap skipped"
     """
 }
-
-
 
 
 process featurecounts {
@@ -980,6 +987,42 @@ process featurecounts {
     """
 }
 
+// Remove temooraryfiltered bams
+// instead of changing directories that goes into multiqc-ctg_
+// should not be in this multiqc sice file names are the same as non filtered bams
+
+process rm_filter_mmap {
+  tag  { params.run_featurecounts  ? "$sid" : "blank_run"  }
+  cpus { params.run_featurecounts  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_featurecounts  ?  params.mem_standard : params.mem_min  }
+
+  input:
+  val x from featurecounts_complete_ch.collect()
+
+  output:
+  val "x" into rm_mmapfiltered_complete_ch
+
+  // when: params.run_markdups
+
+  script:
+  if ( params.run_featurecounts )
+    """
+    if [ -d ${stardir_filtered} ]; then
+      rm -rf ${stardir_filtered}
+    fi
+    """
+  else
+    """
+    echo "rm_mmapfiltered"
+    """
+}
+
+
+
+
+/* ===============================================================
+  *     OTHER QC APPS
+  =============================================================== */
 
 process rnaseqmetrics {
   tag  { params.run_rnaseqmetrics  ? "$sid" : "blank_run"  }
@@ -988,7 +1031,7 @@ process rnaseqmetrics {
 
 
   input:
-  val x from featurecounts_complete_ch.collect()
+  val x from markdups_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_rnaseqmetrics_ch
 
   output:
@@ -1083,7 +1126,8 @@ process rnaseqmetrics {
 
 
 
-
+// qualimap us quite redundant given the other apps Used
+// If to be used a container that does uses Qualimap inastalled through pip3 NOT conda
 process qualimap {
   tag  { params.run_qualimap  ? "$sid" : "blank_run"  }
   cpus { params.run_qualimap  ? params.cpu_high : params.cpu_min  }
@@ -1296,6 +1340,7 @@ process multiqc_ctg {
 
 
   input:
+  val x from rm_mmapfiltered_complete_ch.collect()
   val x from fastqc_complete_ch.collect()
   //val x from markdups_complete_ch.collect()
   val x from rseqc_complete_ch.collect()
@@ -1392,9 +1437,6 @@ process stage_delivery {
       rm -rf ${markdupstempdir}
     fi
 
-    if [ -d ${stardir_filtered} ]; then
-      rm -rf ${stardir_filtered}
-    fi
 
 
     ##  sample sheets
