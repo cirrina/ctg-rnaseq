@@ -848,6 +848,7 @@ process markdups {
 
   output:
   val "x" into markdups_complete_ch
+  val "x" into markdups_complete_fcounts_ch
   val "x" into markdups_complete_report_ch
   // val "x" into move
 
@@ -901,7 +902,7 @@ process filter_multimap {
   memory { params.run_featurecounts  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from markdups_complete_ch.collect()
+  val x from markdups_complete_fcounts_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_filter_multimap_ch
 
   output:
