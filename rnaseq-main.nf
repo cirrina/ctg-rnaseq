@@ -953,6 +953,7 @@ process featurecounts {
   else
     strand_numeric = 0
 
+
   // gtf used for featurecounts
   if ( params.species_global == "Homo sapiens" ){
     gtf = params.gtf_hs}
@@ -963,14 +964,15 @@ process featurecounts {
   else{
     gtf=""}
 
-  if( params.run_featurecounts )
+
+
+  if( params.run_featurecounts && params.paired)
     """
     mkdir -p ${featurecountsdir}
     # cd ${stardir}
     cd ${stardir_filtered}
     bamstring=\$(echo $bams | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
     echo \${bamstring}
-
     echo "gtf: ${gtf}"
     featureCounts -T ${task.cpus} \\
       -t ${params.fcounts_feature} \\
@@ -981,6 +983,20 @@ process featurecounts {
       -s ${strand_numeric} \${bamstring}
 
     #find ${featurecountsdir} -user $USER -exec chmod g+rw {} +
+    """
+  else if( params.run_featurecounts && !params.paired)
+    """
+    mkdir -p ${featurecountsdir}
+    cd ${stardir_filtered}
+    bamstring=\$(echo $bams | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
+    echo \${bamstring}
+    echo "gtf: ${gtf}"
+    featureCounts -T ${task.cpus} \\
+      -t ${params.fcounts_feature} \\
+      --extraAttributes gene_name,gene_type \\
+      -a ${gtf} -g gene_id  \\
+      -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
+      -s ${strand_numeric} \${bamstring}
     """
   else
     """
