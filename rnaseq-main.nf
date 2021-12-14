@@ -662,25 +662,6 @@ process rsem {
 
     #find ${rsemdir} -user $USER -exec chmod g+rw {} +
     """
-  else if ( params.run_rsem && params.pipelineProfile == "uroscan" )
-    """
-    mkdir -p ${rsemdir}
-    rsem-calculate-expression \\
-        --num-threads ${task.cpus} \\
-        ${paired} \\
-        --strandedness ${strand} \\
-        --bowtie2 \\
-        --bowtie2-path /opt/software/uroscan_env/bin \\
-        --estimate-rspd \\
-        --append-names \\
-        --no-bam-output \\
-        ${rsemfiles} \\
-        ${genome} \\
-        ${rsemdir}/${sid}.rsem
-
-    #find ${rsemdir} -user $USER -exec chmod g+rw {} +
-
-    """
   else
     """
     echo "rsem not run"
