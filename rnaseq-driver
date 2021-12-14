@@ -306,11 +306,13 @@ pipelineProfile=$(awk -F, '$1 == "PipelineProfile"' ${samplesheet} | awk -F, '{p
 if [ -z "$pipelineProfile" ]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
   echo "Warning: 'pipelineProfile' is not properly supplied in samplesheet. \
- Must be given as 'uroscan or rnaseq' within the [Header] section of sample sheet"; echo""; echo ""
+ Must be given as 'uroscan, rnaseq or rnaseq_total' within the [Header] section of sample sheet"; echo""; echo ""
   exit_abnormal
 fi
 
 if [[ $pipelineProfile == "rnaseq" ]]; then
+  echo "  ... pipelineProfile: $pipelineProfile"
+elif [[ $pipelineProfile == "rnaseq_total"  ]]; then
   echo "  ... pipelineProfile: $pipelineProfile"
 elif [[ $pipelineProfile == "uroscan"  ]]; then
   echo "  ... pipelineProfile: $pipelineProfile"
