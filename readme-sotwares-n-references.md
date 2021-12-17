@@ -272,7 +272,7 @@ uroscan. These are non-controlled references used as-is from the Lennart server.
 Sample sheet must be given in Illumina IEM csv format. See SampleSheet section below. 
 
 ### FASTQ file names
-FASTQ files are named by blc2fastq with the following logic (e.g. *{samplename}_{S1}_{L001}_{R1}_001.fastq.gz*)
+FASTQ files are named by blc2fastq with the following logic: **{samplename}\_{S1}\_{L001}\_{R1}\_001.fastq.gz**
 
 - **{samplename}**: Defined by `Sample_Name` column in [Data] section of SampleSheet. Note that this pipeline will **force** `Sample_Name` to the same as `Sample_ID`. If Sample_Name column is specified but do not match the Sample_ID, the FASTQ files reside in a `Sample_ID` subdirectory where files use the Sample_Name value.
 - **{S1}**: The number of the sample based on the order that samples are listed in the sample sheet, starting
@@ -318,56 +318,86 @@ and underscores (_).
 
 
 
-## RSEM
+## RSEM & bowtie2
 - [RSEM publication](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-323)
 - [RSEM at GitHub](https://github.com/deweylab/RSEM)
 - [rsem-calculate-expression command description](https://deweylab.github.io/RSEM/rsem-calculate-expression.html)
 
 RSEM is currently (v 2.1.x) only used available for the `uroscan` profile. RSEM can use multiple aligners, e.g. bowtie2, star etc. Uroscan uses bowtie2 as aligner and a hg19 reference genome. 
 
-Preparing references for uoscan / shell script from CMD
-
-```
-/data/bnf/sw/RSEM-1.3.0/rsem-prepare-reference --gtf Homo_sapiens.GRCh37.75.gtf --bowtie2 --bowtie2-path /data/bnf/sw/bowtie2/2.3.3/ /data/bnf/ref/b37/human_g1k_v37.fasta  /data/bnf/ref/rsem/GRCh37
-```
-
-Prepare bowtie2 rsem reference for hg38 on lsens
 
 
-
-### rsem: ctg-rnaseq 2.1.6 (version & code)
+### RSEM UroScanSeq: ctg-rnaseq 2.1.6 (version, code & references)
 - container: 'singularity-uroscan-1.0.1.sif' <br>
 - version: RSEM v1.3.0 <br>
+- version: bowtie2 version 2.3.3.1
 - gtf_hs = `/projects/fs1/shared/references/uroscan/rsem_bowtie2/GRCh37/Homo_sapiens.GRCh37.75.gtf` <br>
 - rsem\_bowtie2\_genome_hs  =  `/projects/fs1/shared/references/uroscan/rsem_bowtie2/GRCh37/GRCh37` <br>
 - rsem_star_genome_hs =  `/projects/fs1/shared/references/uroscan/star` <br>
 
+Nextflow chunk:
+
+```
+mkdir -p ${rsemdir}
+rsem-calculate-expression \\
+    --num-threads ${task.cpus} \\
+    --paired-end \\
+    --bowtie2 \\
+    --bowtie2-path /opt/software/uroscan_env/bin \\
+    --estimate-rspd \\
+    --append-names \\
+    --no-bam-output \\
+    ${rsemfiles} \\
+    ${genome} \\
+    ${rsemdir}/${sid}.rsem
+```
+
+Parameters:<br>
+
+- `--bowtie2` Uses bowtie2 aligner reference genome GRCh37
+- `--no-bam-output`: No bam output is produced using the aligneer (bowtie2). Uroscan bam files are produced using STAR. 
+- `--paired-end` : **hardcoded at present** - the uroscan pipeline will always be paried end sequencing. 
+- `--estimate-rspd` : Set this option if you want to estimate the read start position distribution (RSPD) from data.
 
 
-
-#### UroScanSeq
-`--bowtie2` Uses bowtie2 aligner with reference genome GRCh37: `/projects/fs1/shared/uroscan/references/rsem/GRCh37/GRCh37`.
-
-Flags:
-`--no-bam-output`: No bam output is produced using the aligneer (bowtie2)
-`--paired-end` : hardcoded as is - SHOULD BE CHANGED ACCORDING TO PROTOCOL
-`--stranddcness`: For Illumina TruSeq Stranded protocols, please use 'reverse'. (Default: 'none'). NOT USED AS IS
-`--estimate-rspd` : Set this option if you want to estimate the read start position distribution (RSPD) from data.
+Parameters not used:<br>
+- `--stranddcness`: For Illumina TruSeq Stranded protocols, please use 'reverse'. (Default: 'none'). **Note** Urocsan uses a stranded protocol (TruSeq). Thus this `--strandness 'reverse'` should be used. This parameter was not used in the original uroscan pipeline set up at CMD and therefore ommmited here.
 
 
+References were prepared for uoscan pipeline with shell script (from CMD):
 
-## last working nextflow script. hanging
+```
+/data/bnf/sw/RSEM-1.3.0/rsem-prepare-reference \
+--gtf Homo_sapiens.GRCh37.75.gtf \
+--bowtie2 \
+--bowtie2-path /data/bnf/sw/bowtie2/2.3.3/ \
+/data/bnf/ref/b37/human_g1k_v37.fasta  \
+/data/bnf/ref/rsem/GRCh37
+```
+
+### Possible refinements ...
+- Prepare bowtie2 rsem reference for hg38 on lsens
+- change --paired-end to alternative for non paired end runs. {paired} variable.
 
 
-
-
+<br>
+<br>
 ## STAR
 Uroscan and rnaseq is run using different versions of star
 
-#### Versions:
+### File Names
 
-rnaseq pipeline: 
-uroscan pipeline:  
+By default STAR bam files are named
+
+
+### rnaseq & rnaseq_total (2.1.6)
+- container: '/projects/fs1/shared/ctg-containers/rnaseq/singularity-ctg-rnaseq-1.0.2.sif'<br>
+- version: STAR version 2.7.6a <br>
+- star_genome_hs      =  `/projects/fs1/shared/references/hg38/star/star_2.7.6a/` <br>
+- star_genome_rn      =  `/projects/fs1/shared/references/rattus_norvegicus/Rnor_6.0/star/star_2.7.6a` <br>
+- star_genome_mm      =  `/projects/fs1/shared/references/mm10/star/star-2.7.6a/` <br>
+
+Genomes are built from: 
 
 
 ```
@@ -379,54 +409,150 @@ STAR --genomeDir ${genome} \\
   --limitBAMsortRAM 10000000000 \\
   --outFileNamePrefix ${stardir}/${sid}_
 ```
-NOTES: consiter adding flag to filter multimapping reads. Apparent when aligning total RNA where multimapping are very common.
 
-outFilterMultimapNmax
 
-For multi-mappers, all alignments except one are marked with 0x100 (secondary alignment) in
-the FLAG (column 2 of the SAM). The unmarked alignment is selected from the best ones (i.e.
-highest scoring). This default behavior can be changed with --outSAMprimaryFlag AllBestScore
-option, that will output all alignments with the best score as primary alignments (i.e. 0x100 bit in the FLAG unset).
+### uroscan (2.1.6)
+* container: `singularity-uroscan-1.0.1.sif`
+* version: STAR_2.5.3a
+* star_genome_hs = `/projects/fs1/shared/references/uroscan/star`
+
+```
+STAR --genomeDir ${genome} \\
+  --readFilesIn ${starfiles} \\
+  --runThreadN ${task.cpus}  \\
+  --readFilesCommand zcat \\
+  --outSAMtype BAM SortedByCoordinate \\
+  --limitBAMsortRAM 10000000000 \\
+  --outFileNamePrefix ${stardir}/${sid}_
+```
+
+### Notes on STAR
+
+**Total RNA & multimapping reads**:<br>
+Whemn aligning total RNA seq libraries, multimapping reads are very common resulting in large bam-files (sometimes affecting downstream processes).
+
+Filtering of multimapping reads can be performed with STAR flag `--outFilterMultimapNmax` to output only the best scoring multipmapping read. 
+
+For multi-mappers, all alignments except one are marked with 0x100 (secondary alignment) in the FLAG (column 2 of the SAM). The unmarked alignment is selected from the best ones (i.e. highest scoring). This default behavior can be changed with --outSAMprimaryFlag AllBestScore option, that will output all alignments with the best score as primary alignments (i.e. 0x100 bit in the FLAG unset).
+
+[Picard: bam flags explained](https://broadinstitute.github.io/picard/explain-flags.html)
+
+See [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools) and [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools) 
 
 ```
 singularity exec --bind /projects/fs1/ /projects/fs1/shared/ctg-containers/rnaseq/singularity-samtools-1.9.sif samtools  view -b -F 0x100 15PL19843_01_01_Aligned.sortedByCoord.out.bam > noMultiMap.bam
 ```
-
-[https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools]()
-
+**Use SamTools to filter multimapping reads**<br>
 How many primary aligned reads (0x100 = 0) are in the bwa_local.sort.dup.bam file?
 samtools view -F 0x104 -c bwa_local.sort.dup.bam
 
 
-[https://broadinstitute.github.io/picard/explain-flags.html]()
-
-## bowtie2 (uroscan only)
 
 
 
-## salmon (uroscan only)
-[https://salmon.readthedocs.io/en/latest/salmon.html]()
+## salmon
+[salmon ducumentation](https://salmon.readthedocs.io/en/latest/salmon.html)
+
+
+### uroscan (2.1.6)
+* container: `singularity-uroscan-1.0.1.sif`
+* version: 
+* salmon_transcripts_hs =  `/projects/fs1/shared/references/uroscan/salmon/GRCh37.transcripts`
+
+
+```
+salmon quant -l A \\
+      -i  ${transcripts} \\
+      -1  ${fastqdir}/${read1} \\
+      -2  ${fastqdir}/${read2} \\
+      -p  6 --validateMappings \\
+      -o  ${salmondir}/${sid}_0.salmon.salmon \\
+      --no-version-check
+```
+To allow Salmon to automatically infer the library type, simply provide -l A
+
+
+### Notes on salmon
+#### Treads
+but there is a point beyond which allocating more threads will not speed up alignment-based quantification. We find that allocating 8 — 12 threads results in the maximum speed, threads allocated above this limit will likely spend most of their time idle / sleeping.
+
+
+
+### How to build salmon references
+
+he first is to compute a set of decoy sequences by mapping the annotated transcripts you wish to index against a hard-masked version of the organism’s genome. This can be done with e.g. MashMap2, and we provide some simple scripts to greatly simplify this whole process. Specifically, you can use the generateDecoyTranscriptome.sh script, whose instructions you can find in this README.
+
+[Pre built Salmon references](http://refgenomes.databio.org/)
 
 `> ./bin/salmon index -t transcripts.fa -i transcripts_index --decoys decoys.txt -k 31`
 
 
-but there is a point beyond which allocating more threads will not speed up alignment-based quantification. We find that allocating 8 — 12 threads results in the maximum speed, threads allocated above this limit will likely spend most of their time idle / sleeping.
 
 
-he first is to compute a set of decoy sequences by mapping the annotated transcripts you wish to index against a hard-masked version of the organism’s genome. This can be done with e.g. MashMap2, and we provide some simple scripts to greatly simplify this whole process. Specifically, you can use the generateDecoyTranscriptome.sh script, whose instructions you can find in this README.
+## featureCounts
+featureCounts is a part of the [subread package](http://subread.sourceforge.net/). https://usermanual.wiki/Pdf/SubreadUsersGuide.127634897/html. 
+[Rsubread documentation](https://www.rdocumentation.org/packages/Rsubread/versions/1.22.2/topics/featureCounts) for featureCounts
 
-[http://refgenomes.databio.org/]()
+By default multi-mapping reads are not counted included in the mapping *"Due to the mapping ambiguity, it is recommended that multi-mapping
+reads should be excluded from read counting (default behavior of featureCounts program) to produce as accurate counts as possible"* (can be turned on e.g. by the `-M` option).
 
+For large bam files (e.g. total RNA libs with high numbers of multi-mapping reads) featureCounts would stall on ls4, taking days. Even though multimappers is not to be counted by featureCounts. Therefore, post 2.1.0 and additional filtering step of bam files is performed before featureCounts. For multi-mappers, all alignments except one are marked with 0x100 (secondary alignment) in the FLAG (column 2 of the SAM). The unmarked alignment is selected from the best ones (i.e. highest scoring). This default behavior can be changed with --outSAMprimaryFlag AllBestScore option, that will output all alignments with the best score as primary alignments (i.e. 0x100 bit in the FLAG unset).
 
+[Picard: bam flags explained](https://broadinstitute.github.io/picard/explain-flags.html)
 
-## featurecounts
-FeatureCoiunts is run
+See [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools) and [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools) 
+
+```
+singularity exec --bind /projects/fs1/ /projects/fs1/shared/ctg-containers/rnaseq/singularity-samtools-1.9.sif samtools  view -b -F 0x100 15PL19843_01_01_Aligned.sortedByCoord.out.bam > noMultiMap.bam
+```
+**Use SamTools to filter multimapping reads**<br>
+How many primary aligned reads (0x100 = 0) are in the bwa_local.sort.dup.bam file?
+samtools view -F 0x104 -c bwa_local.sort.dup.bam
+
 
 countMultiMappingReads = FALSE (default)
 logical indicating if multi-mapping reads/fragments should be counted, FALSE by default. If TRUE, a multi-mapping read will be counted up to N times if it has N reported mapping locations. This function uses the NH tag to find multi-mapping reads.
 
 
-## rseqc
+### uroscan, rnaseq & rnaseq_total (2.1.6)
+
+
+```
+mkdir -p ${stardir_filtered}
+cd ${stardir_filtered}
+samtools  view -b -F 0x104  ${stardir}/${bam} >  ${stardir_filtered}/${bam}
+```
+ 
+```
+  mkdir -p ${featurecountsdir}
+    # cd ${stardir}
+    cd ${stardir_filtered}
+    bamstring=\$(echo $bams | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
+    echo \${bamstring}
+    echo "gtf: ${gtf}"
+    featureCounts -T ${task.cpus} \\
+      -t ${params.fcounts_feature} \\
+      --extraAttributes gene_name,gene_type \\
+      -a ${gtf} -g gene_id  \\
+      -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
+      -p \\
+      -s ${strand_numeric} \${bamstring}
+
+    #find ${featurecountsdir} -user $USER -exec chmod g+rw {} +
+```
+
+
+
+
+### uroscan (2.1.6)
+* container: `singularity-uroscan-1.0.1.sif`
+* version: 
+* salmon_transcripts_hs =  `/projects/fs1/shared/references/uroscan/salmon/GRCh37.transcripts`
+ 
+  
+
+
+## RSEQC
 
 ```
 mkdir -p ${rsemdir}
@@ -498,3 +624,6 @@ Command executed:
   ## export JAVA_OPTS="-Djava.io.tmpdir=/data/tmp"
   ## /data/bnf/sw/qualimap_v2.2.1/qualimap --java-mem-size=12G rnaseq -bam /data/bnf/bam/rnaseq/21KF00020.STAR.sort.bam -gtf /data/bnf/ref/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /data/bnf/postmap/rnaseq/21KF00020.STAR.qualimap.folder
   # qualimap --java-mem-size=12G rnaseq -bam /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/star/21KF00082_Aligned.sortedByCoord.out.bam -gtf /projects/fs1/shared/uroscan/references/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/qualimap/21KF00082.STAR.qualimap.folder
+
+
+## BladderReport

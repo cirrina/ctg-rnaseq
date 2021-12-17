@@ -642,8 +642,6 @@ process rsem {
   else
     strand = 'none'
 
-
-
     //the uroscan pipe is run without strandness flag.
   if ( params.run_rsem && params.pipelineProfile == "uroscan" )
     """
@@ -659,8 +657,6 @@ process rsem {
         ${rsemfiles} \\
         ${genome} \\
         ${rsemdir}/${sid}.rsem
-
-    #find ${rsemdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
