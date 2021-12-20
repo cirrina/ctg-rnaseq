@@ -794,18 +794,18 @@ process index_bam {
   // when: params.run_index_bam
 
   script:
-  if ( params.run_index_bam  && params.pipelineProfile == "rnaseq"  )
+  if ( params.run_index_bam )
     """
     cd ${stardir}
     echo "${stardir}/${bam}"
     samtools index -bc ${stardir}/${bam}
     """
-  else if ( params.run_index_bam  && params.pipelineProfile == "uroscan"  )
-    """
-    cd ${stardir}
-    echo "${stardir}/${bam}"
-    sambamba index ${stardir}/${bam}
-    """
+   // else if ( params.run_index_bam  && params.pipelineProfile == "uroscan"  )
+   //  """
+   //  cd ${stardir}
+   //  echo "${stardir}/${bam}"
+   //  sambamba index ${stardir}/${bam}
+   //  """
   else
     """
     echo "skipped indexing"

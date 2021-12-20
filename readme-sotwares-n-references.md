@@ -1,6 +1,6 @@
 
-# ctg-rnaseq pipeline
----------------------
+# ctg-rnaseq
+------------
 
 
 Primary data processing pipeline for Illumina RNA-seq data produced at CTG. Built to run using Nextflow and (multiple) Singularity containers. The pipeline is designed to start from an Illumina Runfolder to demultiplex data, different qc measures, alignment and transcript summarization.
@@ -26,33 +26,40 @@ The pipeline is designed for three different profiles/main configurations.<br>
  
 
 
-## Running the ctg-rnaseq pipeline
+# Running the ctg-rnaseq pipeline
 The pipeline is intiated by executing a driver script `rnaseq-driver`. The diver will:
-- Prime a work directory (copy scripts and configs to this dir)
-- Check the SampleSheet (illegal characters, indexes etc). See SampleSheet below.
-- Generate a run/project-specific nextflow config. 
-- Initiate the `nextflow-main` piepline script.
 
-1. Retrieve (or build) the **Singularity container(s)**. Containers are specified in:
-2. Add the correct .sif paths to:
- 	- `nextflow.config`
-	- `rnaseq-driver`
-3. make sure that the `ctg-rnaseq` scriptsdir matches the `scripts_root` in the `rnaseq-driver` script.
-4. Make sure that the software versions as installed in .sif are compatible with references defined in nextflow.config, e.g. STAR indexed references.
-5. Edit your samplesheet to fullfill all requirements. See section `SampleSheet` below. The SampleSheet (-s) ,must be supplied and present within the pipeline execution dir.  
-6. Run the `naseq-driver` from within `Illumina Sequencing Runfolder`
-7. *OR* run the `naseq-driver`from within the `Project work folder`. This requires that path to fastq directory is specified. Typically this is performed when resuming a failed run. 
-8. Optional: A project runfolder can be primed without starting the pipeline. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files. 
+* Prime a work directory (copy scripts and configs to this dir)
+* Check the SampleSheet (illegal characters, indexes etc). See SampleSheet below.
+* Generate a run/project-specific nextflow config. 
+* Initiate the `nextflow-main` piepline script.
+
+### Quickstart guide
+
+1. Check file paths in `rnaseq-driver`
+	* `scripts_root`: Root directory for script versions (see script version section).  
+	* `singularity_container_rscript`: Container used by R-script samplesheet check. 
+	* `project_root`: Root directory for where nextflow is run, configs and samplesheets are saved etc. This directory is currently synced ("backupped") on the ldb server. 
+	* `delivery_root`: Root directory for where output directed to and that will be delivered to customer.
+	* `ctg_save_root`: Root directory where to save qc data for ctg, i.e. same as `ctg-qc`.
+2.  Check file paths in `nextflow.config`. Note that the different profiles have different containers and/or reference files. Make sure that the software versions as installed in .sif are compatible with references defined in nextflow.config, e.g. STAR indexed references.
+	* Genome References 
+	* Singularity containers
+3. Edit your samplesheet to fullfill all requirements. See section `SampleSheet`. A SampleSheet must be supplied and present within the pipeline execution dir.  
+4. Note that **.fastq** and **.bam** file names must be **defined in the SampleSheet**.
+4. Run the `rnaseq-driver` from `Illumina Sequencing Runfolder` (if first time & no project dir has been created)
+5. **OR** run the `naseq-driver`from within the `Project work folder`. This requires that path to fastq directory is specified (`-f` flag). Typically this is performed when resuming a failed run or changing a projects paramters using the config files.
+6. Optional: A project runfolder can be primed without starting the nextflow pipeline. Use the `-p`, *prime run* flag. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files. 
 
 
-Example initiate from within Illumina runfolder (v2.x):
+Example initiate from within Illumina runfolder (v2.1.x).:
 
 ```
 /projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.0.0/rnaseq-driver \
   -s 2021_024_SampleSheet-IEM.csv
 ```
 
-Re-run a failed run, debug etc within a project folder:
+Re-run a failed run. Done from within the project folder. Filepath to fastq diectory is needed :
 
 ```
 rnaseq-driver \
@@ -74,11 +81,29 @@ rnaseq-driver \
   -r
 ```
 
-## Configurations and input parameters
+# Configurations and input parameters
 Input parameters and variables are determined by:<br>
-    - SampleSheet (-s flag)
-    - `nextflow.config`
-    - `nextflow.config.{projectId}`
+
+*  `SampleSheet`: contains most required input parameters.
+*  `nextflow.config`: parameters that define the different nextflow profiles, including genome reference and container files.
+*  `nextflow.config.{projectId}`: auto-generated from the rnaseq-driver using parameters from 'SampleSheet' and file paths from the driver file.
+*  `rnaseq-driver`: contains file paths etc. 
+
+
+## Nextflow Profiles
+A nextflow config profile must be defined and is  set in `SampleSheet` (below) using `PipelineProfile ` variable. A profile is a set of nextflow configuration attributes that can be activated/chosen when launching a pipeline execution by using the `-profile` option. By convention the `standard` profile is implicitly used when no other profile is specified by the user (not implemeted here - a profile must be defined).
+
+Available profiles:
+
+* rnaseq
+* rnaseq_total
+* uroscan
+
+**Note:** When using the profiles feature in your config file do **NOT** set attributes in the same scope both inside and outside a profiles context. e.g if using `process` attributes, all of these have to be defined within the different profiles sections. 
+
+## Nextflow Configs
+Two different nextflow.configs are used to pass variables to the nextflow pipeline. The project specific `nextflow.config.{projectId}` is auto generated and carries variables from the samoplesheet to the actual nextflow script. `nextflow.config.{projectId}` is initiated by nextflow through the `-c` flag and will override (if reduntant) the `nextflow config`. 
+
 
 ## SampleSheet
 The SampleSheet is the main source of input parameters for the pipeline. The SampleSheet is structured in accordance to [Illumnina IEM software](https://support.illumina.com/sequencing/sequencing_software/experiment_manager/downloads.html ) requirements (and can therefore also be used as input for the bcl2fastq software). The ctg samplesheet will include a number of additional placeholders wihtin the [Header] section that are used as holders for metadata and is used by the ctg-pipelines.
@@ -122,8 +147,8 @@ The **Bold** fields below must be correctly specified!
 
 
 
+
 ### IEM samplesheet example:
-----
 Parameters in bold are used by the rnaseq pipeline:
 
 **[Header],,,,,,,,,,,,,,,,,,,,,,,**<br>
@@ -186,7 +211,7 @@ Running the ctg-rnaseq pipeline on aurora lsens4 clusters requires:
 [The Slurm Workflow Manager](https://slurm.schedmd.com/tutorials.html) version 17.02.1-2 was used as of ctg-rnaseq 2.1.6.
 
 ### Singularity
-Containers are built using [Singularity](https://sylabs.io/singularity). As of of ctg-rnaseq 2.1.6, singularity version 3.7.0-1.el7 was installed on LSENS.
+Containers are built using [Singularity](https://sylabs.io/singularity). As of of ctg-rnaseq 2.1.6, singularity version 3.7.0-1.el7 was installed on LS4.
 
 
 
@@ -213,14 +238,14 @@ rm -rf ${gitTag}.tar.gz
 ```
 
 
-## LSENS structure
-### ctg-rnasesq pipeline
+## LSENS LS4 structure
+### ctg-rnasesq versions
 The ctg-rnaseq pipeline is deploed onto ls4 in folders:
 
 Development versions: `/projects/fs1/shared/ctg-dev/pipelines/ctg-rnaseq`<br> 
 Production ready versions: `/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/`
 
-Versions are sprcified only by their respective version.<br>
+Versions directories are sprcified only by their respective version.<br>
 
 ```
 /projects/fs1/shared/ctg-dev/pipelines/ctg-rnaseq/
@@ -627,3 +652,34 @@ Command executed:
 
 
 ## BladderReport
+
+
+## Version 2.2 outline
+
+### ctg-demux script
+Demux should now be berformed outside (prior) ctg-rnaseq main script. This by other script `ctg-demux`.
+This new scritp shoud
+
+1. Check SampleSheet for required parameters and format - python script. This to replace the R script used in previuos versions. Trigger script using daemon upon completed transfer to ls4?
+	* Make option (default) to output .fastq and .bam file names. File namings will be dependent on input order (samplesheet row number), Lane (if used), etc. A second option to set row number after splitting on unique projects. 
+2. Output:
+	* SampleSheet-original
+	* SampleSheet-demux
+	* SampleSheet-project - used for nextflow. Split samplesheet based on Sample_Project 
+3. Run bcl2fastq demux. Output files to `shared/bcl2fastq-output-fastq`
+4. Output file to be recognized by daemon & start project specific pipeline (ctg-rnaseq) 
+
+### ctg-rnaseq changes in structure
+Main change in strategy to adapt to Pers pipelines.
+* change delivery root to `shared/ctg-delivery`
+* The project work folder will be the main source of script backup (as compared to the current ctg-qc folder)
+* Output files to be delivered to customer should be put immediately into the delivery foler.
+* 
+
+1. fastq files. Default is now to obtain fastq-files from the demux output path. `shared/bcl2fastq-output-fastq`. Check at this location. If there, then prepare to move fastq files to `delivery/projid/fastq`. If no there, use the `-f` flag to define
+
+2. change driver. A new driver strategy should be to move the  `rnaseq-driver` to `\ctg-tools`. This driver shoud be a **light**. The main function is to be a wrapper that identifies the correct script version, create a project dir (if needed) and executes the pipeline. **Q!** Should project scripts be overwritten or NOT?.
+	* input SampleSheet. Should contain ALL relevant params (exept for -p prime and -r resume, and -f fastq)
+	* identify the version to be run
+	* Create the project dir and copy all relevant files to there
+	* execute `rnaseq-main.sh` scritp that in much crresponds to the old `rnaseq-driver`
