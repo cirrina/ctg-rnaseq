@@ -7,6 +7,7 @@ iem_section,parameter,conditional_parameter,conditional_value,value,Comment
 [Header],Assay,,,SMARTer Stranded Total RNA HI Mammalian,"SMARTer Stranded Total RNA Sample Prep Kit  HI Mammalian (634873, Takara Bio USA, Inc.)"
 [Header],Assay,,,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,"SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian Components (634418, Takara Bio USA, Inc.) "
 [Header],Assay,,,SMART-Seq v4 Ultra Low Input RNA Kit,"NOTE: This protocol/Assay uses Nextera XT DNA Library PreparationKit (FC-131-1096, Illumina). Assay value should be 'SMART-Seq v4 Ultra Low Input RNA Kit' since this will determine ReadStart params."
+[Header],Assay,,,TruSeq Stranded Total RNA Library Prep Gold,TruSeq total RNA
 [Header],Index Adapters,,,IDT-ILMN TruSeq RNA UD Indexes (96 Indexes),IDT-ILMN TruSeq RNA UD Indexes (96 Indexes) (20023785) NovaSeq1.5
 [Header],Index Adapters,,,IDT-Ilmn RNA UD Indexes SetA Ligation,"IDT for Illumina RNA UD Indexes Set A, Ligation (20040553, Illumina)"
 [Header],Index Adapters,,,IDT-Ilmn RNA UD Indexes SetB Ligation,"IDT for Illumina RNA UD Indexes Set B, Ligation (20040554, Illumina)"
