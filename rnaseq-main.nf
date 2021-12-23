@@ -596,7 +596,7 @@ process salmon  {
 process rsem {
   tag  { params.run_rsem  ? "$sid" : "blank_run"  }
   cpus { params.run_rsem  ? params.cpu_high : params.cpu_min  }
-  memory { params.run_rsem  ?  params.mem_hign : params.mem_min  }
+  memory { params.run_rsem  ?  params.mem_high : params.mem_min  }
 
   // cpus 20
   // memory '100 GB'
