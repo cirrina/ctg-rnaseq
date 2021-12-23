@@ -674,7 +674,7 @@ process rsem {
 process star  {
   tag  { params.run_star  ? "$sid" : "blank_run"  }
   cpus { params.run_star  ? params.cpu_high : params.cpu_min  }
-  memory { params.run_star  ?  params.mem_hign : params.mem_min  }
+  memory { params.run_star  ?  params.mem_high : params.mem_min  }
 
   // cpus 20
   // memory '100 GB'
