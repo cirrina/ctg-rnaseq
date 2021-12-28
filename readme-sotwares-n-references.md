@@ -7,11 +7,11 @@ Primary data processing pipeline for Illumina RNA-seq data produced at CTG. Buil
 
 The pipeline is designed to handle multiple different RNAseq Assays (library preparation methods), and reference Species. Different assays will require differences in read strandness, read trimming etc. These input parameters are either set through the Sample Sheet or profile-specific and specified in the nextflow configurations file (see below).
 
-**Note on Demultiplexing and Fastq:** As of versions 3.x and above, demultiplexing is no longer performed within the pipeline. Instead the pipeline assumes fastq files as starting input. Demultiplexing is performed on a RunFolder basis using the ctg-demux pipeline and may include multiple projects rather than one single project (as of versions ≤2.x. 
+**Note on Demultiplexing and Fastq:** As of versions 3.x and above, demultiplexing is no longer performed within the pipeline. Instead the pipeline assumes fastq files as starting input. Demultiplexing is performed on a RunFolder basis using the ctg-demux pipeline and may include multiple projects rather than one single project (as of versions ≤2.x.
 
 **Note on RunFolder(s):** Versions ≤2.x. are designed to process samples in **one single sequencing run** (all run within one Illumina Runfolder). If a project uses multiple sequencing runs, manual adjustments have to be made to fit the pipeline execution requirements (see below).  
 
-**Note on ProjectId/Sample_Project** Only **one project** is allowed per pipeline run. `ProjectId` is supplied through the SampleSheet [Header]. Thus, for a run, all individual `Sample_Project` entries in the SampleSheet [Data] section must be same as `ProjectId` for all **samples**. 
+**Note on ProjectId/Sample_Project** Only **one project** is allowed per pipeline run. `ProjectId` is supplied through the SampleSheet [Header]. Thus, for a run, all individual `Sample_Project` entries in the SampleSheet [Data] section must be same as `ProjectId` for all **samples**.
 
 The `project_id` (supplied by `ProjectId` in SampleSheet) will owerwrite the `Sample_Project` column in sample sheet - again  (As of v1.3 the `ProjedId` is supplied through the SampleSheet, **not** using -i flag as for versions 2.x. Thus, different projects (& library pools) within a pooled run must be processed separately.  
 
@@ -20,10 +20,10 @@ The `project_id` (supplied by `ProjectId` in SampleSheet) will owerwrite the `Sa
 
 **nextflow profiles {PipelineProfile}**
 The pipeline is designed for three different profiles/main configurations.<br>
-- rnaseq: Sequencing of a mRNA libraries generated at CTG. 
-- rnaseq_total: Sequencing of total RNA libraries generated at CTG. 
-- uroscan: The UroScanSeq pipeline. Processing and generation of *bladderreports* as part of the UroSCan project. 
- 
+- rnaseq: Sequencing of a mRNA libraries generated at CTG.
+- rnaseq_total: Sequencing of total RNA libraries generated at CTG.
+- uroscan: The UroScanSeq pipeline. Processing and generation of *bladderreports* as part of the UroSCan project.
+
 
 
 # Running the ctg-rnaseq pipeline
@@ -31,25 +31,25 @@ The pipeline is intiated by executing a driver script `rnaseq-driver`. The diver
 
 * Prime a work directory (copy scripts and configs to this dir)
 * Check the SampleSheet (illegal characters, indexes etc). See SampleSheet below.
-* Generate a run/project-specific nextflow config. 
+* Generate a run/project-specific nextflow config.
 * Initiate the `nextflow-main` piepline script.
 
 ### Quickstart guide
 
 1. Check file paths in `rnaseq-driver`
 	* `scripts_root`: Root directory for script versions (see script version section).  
-	* `singularity_container_rscript`: Container used by R-script samplesheet check. 
-	* `project_root`: Root directory for where nextflow is run, configs and samplesheets are saved etc. This directory is currently synced ("backupped") on the ldb server. 
+	* `singularity_container_rscript`: Container used by R-script samplesheet check.
+	* `project_root`: Root directory for where nextflow is run, configs and samplesheets are saved etc. This directory is currently synced ("backupped") on the ldb server.
 	* `delivery_root`: Root directory for where output directed to and that will be delivered to customer.
 	* `ctg_save_root`: Root directory where to save qc data for ctg, i.e. same as `ctg-qc`.
 2.  Check file paths in `nextflow.config`. Note that the different profiles have different containers and/or reference files. Make sure that the software versions as installed in .sif are compatible with references defined in nextflow.config, e.g. STAR indexed references.
-	* Genome References 
+	* Genome References
 	* Singularity containers
 3. Edit your samplesheet to fullfill all requirements. See section `SampleSheet`. A SampleSheet must be supplied and present within the pipeline execution dir.  
 4. Note that **.fastq** and **.bam** file names must be **defined in the SampleSheet**.
 4. Run the `rnaseq-driver` from `Illumina Sequencing Runfolder` (if first time & no project dir has been created)
 5. **OR** run the `naseq-driver`from within the `Project work folder`. This requires that path to fastq directory is specified (`-f` flag). Typically this is performed when resuming a failed run or changing a projects paramters using the config files.
-6. Optional: A project runfolder can be primed without starting the nextflow pipeline. Use the `-p`, *prime run* flag. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files. 
+6. Optional: A project runfolder can be primed without starting the nextflow pipeline. Use the `-p`, *prime run* flag. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files.
 
 
 Example initiate from within Illumina runfolder (v2.1.x).:
@@ -87,7 +87,7 @@ Input parameters and variables are determined by:<br>
 *  `SampleSheet`: contains most required input parameters.
 *  `nextflow.config`: parameters that define the different nextflow profiles, including genome reference and container files.
 *  `nextflow.config.{projectId}`: auto-generated from the rnaseq-driver using parameters from 'SampleSheet' and file paths from the driver file.
-*  `rnaseq-driver`: contains file paths etc. 
+*  `rnaseq-driver`: contains file paths etc.
 
 
 ## Nextflow Profiles
@@ -99,10 +99,10 @@ Available profiles:
 * rnaseq_total
 * uroscan
 
-**Note:** When using the profiles feature in your config file do **NOT** set attributes in the same scope both inside and outside a profiles context. e.g if using `process` attributes, all of these have to be defined within the different profiles sections. 
+**Note:** When using the profiles feature in your config file do **NOT** set attributes in the same scope both inside and outside a profiles context. e.g if using `process` attributes, all of these have to be defined within the different profiles sections.
 
 ## Nextflow Configs
-Two different nextflow.configs are used to pass variables to the nextflow pipeline. The project specific `nextflow.config.{projectId}` is auto generated and carries variables from the samoplesheet to the actual nextflow script. `nextflow.config.{projectId}` is initiated by nextflow through the `-c` flag and will override (if reduntant) the `nextflow config`. 
+Two different nextflow.configs are used to pass variables to the nextflow pipeline. The project specific `nextflow.config.{projectId}` is auto generated and carries variables from the samoplesheet to the actual nextflow script. `nextflow.config.{projectId}` is initiated by nextflow through the `-c` flag and will override (if reduntant) the `nextflow config`.
 
 
 ## SampleSheet
@@ -115,7 +115,7 @@ The SampleSheet is the main source of input parameters for the pipeline. The Sam
 
 
 ### Samplesheet requirements:
-Should be in the format of Illumina IEM sample sheet. For a sample sheet with multiple projkects (as outputed from the lab) may include multiple 
+Should be in the format of Illumina IEM sample sheet. For a sample sheet with multiple projkects (as outputed from the lab) may include multiple
 
 **[Header]:** The file must start with a [Header] section. Whithin this section additional metadata can be added.<br>
 **PipelineName:** In this case always "ctg-rnaseq".<br>
@@ -219,7 +219,7 @@ Containers are built using [Singularity](https://sylabs.io/singularity). As of o
 Main git repository [https://github.com/cirrina/ctg-rnaseq](https://github.com/cirrina/ctg-rnaseq/tags)
 
 
-### Git version tags 
+### Git version tags
 Versions are stored as tags in git repository [https://github.com/cirrina/ctg-rnaseq/tags](https://github.com/cirrina/ctg-rnaseq/tags)
 Versisons are specified as X.Y.ZZ, e.g. version 2.1.6 and tagged in the git site.
 
@@ -242,7 +242,7 @@ rm -rf ${gitTag}.tar.gz
 ### ctg-rnasesq versions
 The ctg-rnaseq pipeline is deploed onto ls4 in folders:
 
-Development versions: `/projects/fs1/shared/ctg-dev/pipelines/ctg-rnaseq`<br> 
+Development versions: `/projects/fs1/shared/ctg-dev/pipelines/ctg-rnaseq`<br>
 Production ready versions: `/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/`
 
 Versions directories are sprcified only by their respective version.<br>
@@ -257,7 +257,7 @@ Versions directories are sprcified only by their respective version.<br>
 ### singularity containers
 
 
-### Genome References 
+### Genome References
 
 
 
@@ -267,7 +267,7 @@ Versions directories are sprcified only by their respective version.<br>
 
 # Genome References
 
-The ctg-rnaseq uses multiple references. Some are used as-is whereas others are modified. 
+The ctg-rnaseq uses multiple references. Some are used as-is whereas others are modified.
 Notes on reference libraries on lsens
 
 # Singularity containers
@@ -280,7 +280,7 @@ Notes on reference libraries on lsens
 # Bin
 
 
-## Uroscan 
+## Uroscan
 The uroscan pipeline uses references prepared by CMD anno-2020.
 uroscan. These are non-controlled references used as-is from the Lennart server. All are based on GRCh37. One reference, the RefFlat was compiled as belw.  
 
@@ -294,7 +294,7 @@ uroscan. These are non-controlled references used as-is from the Lennart server.
 [bcl2fastq](https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf): Converts raw basecalls to fastq, and demultiplex samples based on indexes.  
 
 ### SampleSheet
-Sample sheet must be given in Illumina IEM csv format. See SampleSheet section below. 
+Sample sheet must be given in Illumina IEM csv format. See SampleSheet section below.
 
 ### FASTQ file names
 FASTQ files are named by blc2fastq with the following logic: **{samplename}\_{S1}\_{L001}\_{R1}\_001.fastq.gz**
@@ -329,7 +329,7 @@ find ${bcl2fastq_dir} -user $USER -exec chmod g+rw {} +
 
 ### notes on bcl2fastq
 **demux in ctg-rnaseq pipeline**
-In versions ≤2.1.x, demultiplexing is included whithin the main nextflow pipeline. 
+In versions ≤2.1.x, demultiplexing is included whithin the main nextflow pipeline.
 
 **the -r -p and -w flags**<br>
 The most demanding step is the processing step (-p option). Assign this step the most threads.
@@ -339,7 +339,7 @@ performance.
 **Character limitations**<brr>
 - [Data]: The Sample_Project, Sample_ID, and Sample_Name columns accept alphanumeric characters, hyphens (-),
 and underscores (_).
-- [Header]. Make sure htat no regional characters are used. Other problematic signs are the + sign. 
+- [Header]. Make sure htat no regional characters are used. Other problematic signs are the + sign.
 
 
 
@@ -348,7 +348,7 @@ and underscores (_).
 - [RSEM at GitHub](https://github.com/deweylab/RSEM)
 - [rsem-calculate-expression command description](https://deweylab.github.io/RSEM/rsem-calculate-expression.html)
 
-RSEM is currently (v 2.1.x) only used available for the `uroscan` profile. RSEM can use multiple aligners, e.g. bowtie2, star etc. Uroscan uses bowtie2 as aligner and a hg19 reference genome. 
+RSEM is currently (v 2.1.x) only used available for the `uroscan` profile. RSEM can use multiple aligners, e.g. bowtie2, star etc. Uroscan uses bowtie2 as aligner and a hg19 reference genome.
 
 
 
@@ -380,8 +380,8 @@ rsem-calculate-expression \\
 Parameters:<br>
 
 - `--bowtie2` Uses bowtie2 aligner reference genome GRCh37
-- `--no-bam-output`: No bam output is produced using the aligneer (bowtie2). Uroscan bam files are produced using STAR. 
-- `--paired-end` : **hardcoded at present** - the uroscan pipeline will always be paried end sequencing. 
+- `--no-bam-output`: No bam output is produced using the aligneer (bowtie2). Uroscan bam files are produced using STAR.
+- `--paired-end` : **hardcoded at present** - the uroscan pipeline will always be paried end sequencing.
 - `--estimate-rspd` : Set this option if you want to estimate the read start position distribution (RSPD) from data.
 
 
@@ -422,7 +422,7 @@ By default STAR bam files are named
 - star_genome_rn      =  `/projects/fs1/shared/references/rattus_norvegicus/Rnor_6.0/star/star_2.7.6a` <br>
 - star_genome_mm      =  `/projects/fs1/shared/references/mm10/star/star-2.7.6a/` <br>
 
-Genomes are built from: 
+Genomes are built from:
 
 
 ```
@@ -456,13 +456,13 @@ STAR --genomeDir ${genome} \\
 **Total RNA & multimapping reads**:<br>
 Whemn aligning total RNA seq libraries, multimapping reads are very common resulting in large bam-files (sometimes affecting downstream processes).
 
-Filtering of multimapping reads can be performed with STAR flag `--outFilterMultimapNmax` to output only the best scoring multipmapping read. 
+Filtering of multimapping reads can be performed with STAR flag `--outFilterMultimapNmax` to output only the best scoring multipmapping read.
 
 For multi-mappers, all alignments except one are marked with 0x100 (secondary alignment) in the FLAG (column 2 of the SAM). The unmarked alignment is selected from the best ones (i.e. highest scoring). This default behavior can be changed with --outSAMprimaryFlag AllBestScore option, that will output all alignments with the best score as primary alignments (i.e. 0x100 bit in the FLAG unset).
 
 [Picard: bam flags explained](https://broadinstitute.github.io/picard/explain-flags.html)
 
-See [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools) and [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools) 
+See [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools) and [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools)
 
 ```
 singularity exec --bind /projects/fs1/ /projects/fs1/shared/ctg-containers/rnaseq/singularity-samtools-1.9.sif samtools  view -b -F 0x100 15PL19843_01_01_Aligned.sortedByCoord.out.bam > noMultiMap.bam
@@ -481,7 +481,7 @@ samtools view -F 0x104 -c bwa_local.sort.dup.bam
 
 ### uroscan (2.1.6)
 * container: `singularity-uroscan-1.0.1.sif`
-* version: 
+* version:
 * salmon_transcripts_hs =  `/projects/fs1/shared/references/uroscan/salmon/GRCh37.transcripts`
 
 
@@ -515,7 +515,7 @@ he first is to compute a set of decoy sequences by mapping the annotated transcr
 
 
 ## featureCounts
-featureCounts is a part of the [subread package](http://subread.sourceforge.net/). https://usermanual.wiki/Pdf/SubreadUsersGuide.127634897/html. 
+featureCounts is a part of the [subread package](http://subread.sourceforge.net/). https://usermanual.wiki/Pdf/SubreadUsersGuide.127634897/html.
 [Rsubread documentation](https://www.rdocumentation.org/packages/Rsubread/versions/1.22.2/topics/featureCounts) for featureCounts
 
 By default multi-mapping reads are not counted included in the mapping *"Due to the mapping ambiguity, it is recommended that multi-mapping
@@ -525,7 +525,7 @@ For large bam files (e.g. total RNA libs with high numbers of multi-mapping read
 
 [Picard: bam flags explained](https://broadinstitute.github.io/picard/explain-flags.html)
 
-See [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools) and [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools) 
+See [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools) and [thread](https://wikis.utexas.edu/display/CoreNGSTools/Filtering+with+SAMTools)
 
 ```
 singularity exec --bind /projects/fs1/ /projects/fs1/shared/ctg-containers/rnaseq/singularity-samtools-1.9.sif samtools  view -b -F 0x100 15PL19843_01_01_Aligned.sortedByCoord.out.bam > noMultiMap.bam
@@ -547,7 +547,7 @@ mkdir -p ${stardir_filtered}
 cd ${stardir_filtered}
 samtools  view -b -F 0x104  ${stardir}/${bam} >  ${stardir_filtered}/${bam}
 ```
- 
+
 ```
   mkdir -p ${featurecountsdir}
     # cd ${stardir}
@@ -571,10 +571,10 @@ samtools  view -b -F 0x104  ${stardir}/${bam} >  ${stardir_filtered}/${bam}
 
 ### uroscan (2.1.6)
 * container: `singularity-uroscan-1.0.1.sif`
-* version: 
+* version:
 * salmon_transcripts_hs =  `/projects/fs1/shared/references/uroscan/salmon/GRCh37.transcripts`
- 
-  
+
+
 
 
 ## RSEQC
@@ -654,32 +654,74 @@ Command executed:
 ## BladderReport
 
 
-## Version 2.2 outline
+## Version 3 outline
 
 ### ctg-demux script
 Demux should now be berformed outside (prior) ctg-rnaseq main script. This by other script `ctg-demux`.
 This new scritp shoud
 
 1. Check SampleSheet for required parameters and format - python script. This to replace the R script used in previuos versions. Trigger script using daemon upon completed transfer to ls4?
-	* Make option (default) to output .fastq and .bam file names. File namings will be dependent on input order (samplesheet row number), Lane (if used), etc. A second option to set row number after splitting on unique projects. 
+	* Make option (default) to output .fastq and .bam file names. File namings will be dependent on input order (samplesheet row number), Lane (if used), etc. A second option to set row number after splitting on unique projects.
 2. Output:
 	* SampleSheet-original
 	* SampleSheet-demux
-	* SampleSheet-project - used for nextflow. Split samplesheet based on Sample_Project 
+	* SampleSheet-project - used for nextflow. Split samplesheet based on Sample_Project
 3. Run bcl2fastq demux. Output files to `shared/bcl2fastq-output-fastq`
-4. Output file to be recognized by daemon & start project specific pipeline (ctg-rnaseq) 
+4. Output file to be recognized by daemon & start project specific pipeline (ctg-rnaseq)
 
-### ctg-rnaseq changes in structure
+
+### ctg-rnaseq v3.0.0 -- changes in structure
 Main change in strategy to adapt to Pers pipelines.
 * change delivery root to `shared/ctg-delivery`
 * The project work folder will be the main source of script backup (as compared to the current ctg-qc folder)
 * Output files to be delivered to customer should be put immediately into the delivery foler.
-* 
+* Clean the bin directory - remove unnecessary files.
+
 
 1. fastq files. Default is now to obtain fastq-files from the demux output path. `shared/bcl2fastq-output-fastq`. Check at this location. If there, then prepare to move fastq files to `delivery/projid/fastq`. If no there, use the `-f` flag to define
 
+
 2. change driver. A new driver strategy should be to move the  `rnaseq-driver` to `\ctg-tools`. This driver shoud be a **light**. The main function is to be a wrapper that identifies the correct script version, create a project dir (if needed) and executes the pipeline. **Q!** Should project scripts be overwritten or NOT?.
+
 	* input SampleSheet. Should contain ALL relevant params (exept for -p prime and -r resume, and -f fastq)
 	* identify the version to be run
 	* Create the project dir and copy all relevant files to there
 	* execute `rnaseq-main.sh` scritp that in much crresponds to the old `rnaseq-driver`
+
+
+#### rnaseq-driver -- should be moved to ctg-tools
+
+1/ Runfolder mode (runfolder_mode = true)
+ generate project folder
+ overwerites everything in project folder if exists (warns if exists)
+
+check if initiated in a runfolder
+
+2. Project folder mode (runfolder_mode = false)
+Require samplesheet must be same requirements as for 1. get project id from here and check pipeline parameter
+
+ 2.a . resume - false -
+ 2.a.1 skip demux  = false
+
+
+ 2.a.2 skip demcux = true
+
+ 2.b . resume - true -
+ check that all expected files are present - including nf log files
+ initiate nextflow with resume flag
+
+
+RESUME MODE - THEN NO OTHER AHTN
+
+
+`scripts_root`: <br/>Defines root directory where the different versions of scripts are stored. The version to be run is specified in the samplesheet. So, if the `scripts_root` is `/projects/fs1/shared/ctg-dev/pipelines` and SampleSheet `pipelineName` is `ctg-rnaseq` and `pipelineVersion` is `2.1.7`, the script will start pipeline dir `/projects/fs1/shared/ctg-dev/pipelines/ctg-rnaseq/2.1.7`
+
+`rnaseq_script`: Name of shell sctipt that will initaiate an rnaseq run & nextflow scripts
+`nf_script`: Name of nextflow script
+
+
+SampleSheet
+- PipelineName
+- PipelineVersion
+- PipelineProfile
+- ProjectId
