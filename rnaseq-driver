@@ -163,6 +163,11 @@ if [[ $(cat ${samplesheet} | grep "\[Header\]" | cut -f1 -d ",") != "[Header]" ]
     echo " ERROR: ${samplesheet} does not seem to be a valid SampleSheet - lacking first row [Header]."
     exit 0
 fi
+if [[ $(cat ${samplesheet} | grep "\[Data\]" | cut -f1 -d ",") != "[Data]" ]]
+  then
+    echo " ERROR: ${samplesheet} does not seem to be a valid SampleSheet - lacking [Data] section."
+    exit 0
+fi
 echo " Reading SampleSheet params:"
 echo "  ... samplesheet: $samplesheet"
 
