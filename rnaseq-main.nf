@@ -263,6 +263,36 @@ println( msg_modules )
 
 
 
+// Process sample sheet. Save
+
+## Set name for Samplesheet used by nextflow - without [Header] sections.
+## Generated below.
+samplesheet_nextflow="${project_dir}/SampleSheet-nexflow.csv"
+
+// Read and process sample sheet
+sheet = file(params.sheet)
+
+// samplesheet to be parsed as input channel (take everything below [Data])
+channel_sheet = file("${projectdir}/samplesheet.channel.nf.sc-rna-10x.csv")
+
+// create new samplesheet parsed to fit the format for dragen demux
+newsheet = "${projectdir}/SampleSheet-nexflow.csv"
+// Read and process sample sheet
+all_lines = sheet.readLines()
+write_row = false // if next lines has sample info
+channel_sheet.text=""
+
+for ( line in all_lines ) {
+    if ( write_row ) {
+	     channel_sheet.append(line + "\n")
+    }
+    if (line.contains("[Data]")) {
+	     write_row = true
+    }
+}
+
+
+
 
 
 // all samplesheet info
