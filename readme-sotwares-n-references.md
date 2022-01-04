@@ -81,6 +81,32 @@ rnaseq-driver \
   -r
 ```
 
+# Default directory structure
+
+// [nas-sync/upload]: ls4 Illumina runfolder upload sync dir, shared/ctg-projects/nas-sync/upload/
+//    └──– [runfolder] = Illumina runfolder.
+//      |--- Data ....
+//      |
+//      └──-
+
+// [basedir]: ls4 ctg projets base directory, e.g. shared/ctg-projects/rnaseq
+//   └──–– [projectdir] = workdir = nf execution dir = baseDir. e.g. shared/ctg-projects/rnaseq/<projectid>
+//      |--- [fastq] (if demux)
+//      |      |- <project_id>
+//      |      |      └── fastq-files.fastq.gz
+//      |      |- Reports
+//      |      |- Stats
+//      |      └─ "Undetermined ... fastq.gz ". Remember to NOT COPY these if pooled sample
+//      |---  "nextflow.config"
+//      |---  "ctg-rnaesq.nf"
+//      |---  "sample sheet original IEM"
+//      |---  [nfworkdir] = workDir: shared/ctg-projects/rnaseq/work; used by Nextflow
+//      └──-  [outputdir]: shared/ctg-projects/rnaseq/nf-output
+
+
+
+
+
 # Configurations and input parameters
 Input parameters and variables are determined by:<br>
 
@@ -778,7 +804,7 @@ TASKS
   mkdir project_workfolder (prevoiusly runfolder_mode)
   Copy sampleheet to project folder.
 
-5. 
+5.
 
 
 MOVE to /delivery_root/

@@ -28,24 +28,6 @@ echo "  ... PoolName: $poolname"
 
 
 
-# #############################################################################
-#  1. IF RESUME FLAG - Try initiate Nextflow Pipeline using RESUME
-# #############################################################################
-if [[ $resume == "true" ]]; then
-  if [[ $runfolder_mode == "true" ]]; then
-    echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
-    echo " Nextflow resume flag -r must not be used while executing sctipt in Illumina runfolder."
-    echo " Move to project directory and initiate resume"
-    echo""; echo ""
-    exit_abnormal
-  fi
-  echo " RESUME mode"
-  echo " ... trying to resume nextflow"
-  echo " ... Hail mary !!! "
-  nohup nextflow run $nf_script -c $nf_config_project -profile ${pipelineProfile} --resume > log.nextflow.rnaseq &
-  echo " ... :  nextflow run $nf_script -c $nf_config_project --resume"
-fi
-
 
 
 
