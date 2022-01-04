@@ -1,18 +1,14 @@
 #!/bin/bash
 
 
-
 #######################################
-# ctg driver for  rnaseq pipeline
+# driver for  ctg-rnaseq pipeline
 #######################################
 
 ## INPUT: CTG IEM Sample Sheet
 ## INPUT: FASTQ files (default fastq parth is output from bcl2fastq analysis)
 
 
-## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CHANGE WHEN DEPOLYT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-# scripts_dir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
 # scripts_root='/Users/david/scripts' #
 
 # script execution dir. If generate workfolder & copy scripts, this WILL be checked & warn against the script version rovided in samplesheet
@@ -22,7 +18,6 @@ script_exec_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && p
 ## Root directories (based on ourr set folder naming conventions on lsens)
 
 scripts_root="/projects/fs1/shared/ctg-dev/pipelines"
-
 project_root='/projects/fs1/shared/ctg-projects'
 delivery_root='/projects/fs1/shared/ctg-delivery' ## should be added pipelineProfile/ProjectID
 ctg_save_root='/projects/fs1/shared/ctg-qc/ctg-rnaseq' ## should be added pipelineProfile/ProjectID
@@ -39,7 +34,7 @@ nf_config_project="${project_dir}/nextflow.params.${projectid}"
 #  == Initiation ==
 #######################
 fastq_custom=true ## set to false if no fastq_input_path is supplied (will defalt to {project_})
-prime_projectfolder_mode=false
+prime_projectfolder_mode=false ## -p true,  if to generate project folder and configs, but not initiate the nextgflow
 resume=false ## used to resume nextflow pipeline, Need to be executed within project workfolder.
 exec_dir=$(pwd)
 
@@ -140,21 +135,20 @@ if [ ! -f $samplesheet ]; then
   exit_abnormal
 fi
 
-
+## If -f is defined (fastq_input_path), set fastq_custom to true
 if [ -z $fastq_input_path ]; then
   fastq_custom=false
 fi
-
+## check if supplied fastq_input_path is valid
 if [[ ${fastq_custom} == "true" ]]; then
   fastq_custom=true
   fastq_input_path=$(realpath $fastq_input_path)
   echo ""; echo " Custom fastq mode set to: ${fastq_custom}"; echo ""
-  if [[ ! -d $fastq_input_path ]]; then
+  if [[ ! -d ${fastq_input_path} ]]; then
     echo ""; echo ""; echo "Error:"
     echo "fastq_input_path (-f) does not exist: ${fastq_input_path} "; echo ""
     exit_abnormal
   fi
-  echo ""; echo " Custom fastq folder is : ${fastq_input_path}"; echo ""
 fi
 
 
@@ -245,10 +239,10 @@ fi
 ## -------------------------------
 # indicate shared species, i.e. for all samples. Will only be used for modules that input ALL samples. Default is to use the species option supplied as column header in [Data] section.
 species_all_samples=$(awk -F, '$1 == "Species"' ${samplesheet} | awk -F, '{print $2}')
-echo "  ... species_all_samples (applied to all samples, from samplesheet [Header]): $species_all_samples"
+echo "  ... species_all_samples (applied to all samples, from samplesheet [Header]): ${species_all_samples}"
 
 sharedflowcell=$(awk -F, '$1 == "SharedFlowCell"' ${samplesheet} | awk -F, '{print $2}')
-echo "  ... SharedFlowCell: $sharedflowcell"
+echo "  ... SharedFlowCell: ${sharedflowcell}"
 if [ -z "$sharedflowcell" ]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo " SharedFlowCell is not properly supplied in samplesheet."
@@ -259,20 +253,12 @@ fi
 
 ## Read if shared flow cell or not (not sure if to use or not...)
 ## -------------------------------
-if [[ $sharedflowcell == "true" ]]; then
-  echo ""
-  # pooled=true
-elif [[ $sharedflowcell == "false" ]]; then
-  #  pooled=false
-  echo ""
-else
+if [[ ${sharedflowcell} != "true" ]] || [[ ${sharedflowcell} != "false"  ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo " SharedFlowCell is not properly supplied in samplesheet. \
   Must be supplied as 'SharedFlowCell' 'true' OR 'false' within the [Header] section of sample sheet"; echo" This to indicate wether multiple customer projects are present within the runfolder data"; echo ""
   exit_abnormal
 fi
-
-
 
 
 
@@ -285,22 +271,21 @@ project_dir="${project_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 delivery_dir="${delivery_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 ctg_save_dir=="${ctg_save_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 ## scripts - where and what version of pipelie sctips to copy to project work dir
+# e.g. scripts_dir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
 scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
 
-## Fastq paths
-## If not supplied through -f defaults to the output (delivery) path
+## Set fastq_dir - defaults to the output (delivery) path If not supplied through -f argument (above)
 if [[ ${fastq_custom} == "true" ]]; then
   fastq_dir=${fastq_input_path}
 fi
 if [[ ${fastq_custom} == "false" ]]; then
-  fastq_dir="${project_dir}/nf-output/fastq/${projectid}" # only used for blc2fastq output. includes the fastq directory as well as
+  fastq_dir="${project_dir}/nf-output/fastq/${projectid}" # defaults to blc2fastq output format - ../fastq/project_id
   echo ""; echo " No Custom fastq specified. Using default: ${fastq_dir}"; echo ""
   if [[ ! -d $fastq_dir ]]; then
     echo " Fastq dir does not exist."
     exit_abnormal
   fi
 fi
-
 
 ##  Check if scripts_dir exist
 if [[ ! -d ${scripts_dir} ]]; then
@@ -310,25 +295,43 @@ if [[ ! -d ${scripts_dir} ]]; then
   exit_abnormal
 else
 
-
+## if -p true, prime_projectfolder_mode. must be executed outside execution dir.
 if [[ ${prime_projectfolder_mode} == "true" && "${exec_dir}" == "${project_dir}" ]]; then
   echo ""; echo " Can not prime workfolder with the same path as the one where script is executed"; echo ""
   echo " You must specify a different projectId wihtin your SampleSheet"
   exit_abnormal
 fi
 
-## Set name for Samplesheet used by nextflow - without [Header] sections.
-## Generated below.
-samplesheet_nextflow="${project_dir}/SampleSheet-nexflow.csv"
+
+
+# #############################################################################
+#  == 4.a == IF RESUME FLAG - Try Resume Nextflow Pipeline using RESUME
+# #############################################################################
+if [[ $resume == "true" ]]; then
+  if [[ "${script_exec_dir}" != "${project_dir}" ]]; then
+    echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+    echo " Nextflow resume flag -r must used when executing script from the project folder defined by projectId in samplesheet"
+    echo " Move to project directory and initiate resume"
+    echo""; echo ""
+    exit_abnormal
+  fi
+  echo " RESUME mode"
+  echo " ... trying to resume nextflow"
+  echo " ... Hail mary !!! "
+  nohup nextflow run ${nf_script} -c ${nf_config_project} -profile ${pipelineProfile} --resume > log.nextflow.rnaseq &
+  echo " ... :  nextflow run ${nf_script} -c ${nf_config_project} --resume"
+  exit 0
+fi
+
+
 
 
 ################################################
-##  == 4.a ==  projectfolder_setup_mode = true
+##  == 4.b ==  projectfolder_setup_mode = true
 ################################################
 # if executed outside the project dir, then initiate in projectfolder_setup_mode
 # This will generate a project folder and copy the scrips (of specfied version) to work folder
 # IF workfolder and scripts exists these will be overwritten.
-
 
 if [[ "${exec_dir}" != "${project_dir}" ]]; then
 
@@ -336,7 +339,6 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo " Executing script outside defined project workfolder."
   projectfolder_setup_mode=true
   echo "  ... ... projectfolder_setup_mode: ${projectfolder_setup_mode}"
-
 
   ## verify that script execution dir matches the path in which this script was executed
   if [[ "${script_exec_dir}" != "${scripts_dir}" ]]; then
@@ -348,9 +350,8 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
 
   ## Warnings & Prompt.
   echo ""
-  echo " projectfolder_setup_mode"
-  echo "  ... scripts_dir:  $scripts_dir"
-  echo "  ... project workfolder:  $project_dir "
+  echo "  ... ... scripts_dir:  $scripts_dir"
+  echo "  ... ... project workfolder:  $project_dir "
   echo ""
   # Prompt user to approve running in current directory and input
   read -p "
@@ -366,7 +367,7 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   if [[ -d ${project_dir} ]]; then
     echo ""
     read -p "  ... Warning!!
-  ... ... project work folder already exists:
+  ... ... project work folder already exists!
   ... ... scripts & configs will be overwritten!
 
   proceed? (y/n)
@@ -379,22 +380,20 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo ""
   echo ""
 
-
-
-  ## Copy scripts from version specific pipeline scripts dir
+  ## Create project directory
   mkdir -p ${project_dir}
   cd ${project_dir}
+
+  ## Copy scripts from version specific pipeline scripts dir
   cp -r ${scripts_dir}/* ${project_dir}/ # copy all scripts to workfolder. Will overwrite netflow.config
 
-
-  ## Copy samplesheet to workfolder
+  ## Copy samplesheet to project workfolder
   cp ${samplesheet} ${project_dir}
 
-
-  # Prime nextflow configuration file -- nextflow.params_${projectid} --
+  # Create nextflow configuration file -- nextflow.params_${projectid} --
   #######################################################################
   echo ""
-  echo " Writing nextflow parameters to project-specific config: ${nf_config_project}"
+  echo " ... Writing nextflow parameters to project-specific config: ${nf_config_project}"
 
   ## Write nextflow params to file
   echo ""  > $nf_config_project
@@ -437,50 +436,42 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
 
   #  Priming of project folder complete
   ## --------------------------------
-  echo ""
-  echo ""
-  echo ""
+  echo "";echo ""
   echo "  Project primed"
   echo "  ... Project dir        :  ${project_dir}"
   echo "  ... Nextflow config    :  ${nf_config_project}"
-  echo "  ... samplesheet        :  $samplesheet"
-  echo "  ... Pipeline           :  ${pipeline}"
-
+  echo "  ... samplesheet        :  ${samplesheet}"
+  echo "  ... Scripts dir        :  ${scripts_dir}"
   echo ""
 
   chmod -R 775 ${project_dir}
   cd ${project_dir}
 
-
-fi
+  if [[ $prime_projectfolder_mode == "true" ]]; then
+    echo ""
+    echo " prime_projectfolder_mode is TRUE "
+    echo " ... exiting without submitting nextflow run"
+    echo " ... go to runfolder and edit your configs, then start run using rnaseq-driver"
+    exit 0
+  fi
+fi # end if projectfolder_setup_mode
 
 
 #
 ################################################
-##  == 4.b ==  projectfolder_setup_mode = false
+##  == 4.c ==  Script executed within project folder (projectfolder_setup_mode = false)
 ################################################
 if [[ "${exec_dir}" == "${project_dir}" ]]; then
-
   ## add expected files - nextflow.main config.project ...
-
   echo " Script executed within the defined project workfolder."
-  echp " Will NOT overwrite scripts and configs. Assume all scripts are present."
+  echp " ... will NOT overwrite scripts and configs. Assume all scripts are present."
   projectfolder_setup_mode=false
-
-
 fi
 
-##################################################################
-##  == 5 ==  Genereate run-specific samplesheet for NextFlow only
-##################################################################
-## NOTE: This is a temorary samplesheet - a new will be generated each run.
-## IF you want a CUSTOM one: Change the 'samplesheet' parameter in ''
-## Uses the parse-samplesheet
 
-## NOT YET ...
 
 ###################################################################
-# == 6 == Final Check if all expected f\les are present
+# == 5 == Final Check expected f\les needed for nextflow initiation
 ###################################################################
 ## Check if nextflow config files are present
 cd ${project_dir}
@@ -488,72 +479,47 @@ if [ ! -f ${nf_config_project} ]; then # | ! -f "${execdir}/nextflow.config" | !
   echo ""; echo "Error:"
   echo "'${nf_config_project}' does not exist in current dir. Generate this in projectfolder_setup_mode or crete one from template."; echo ""; echo ""
   exit_abnormal
-  # echo "'${project_dir}' already exists. Overwriting this folder."
 fi
 if [ ! -f "${project_dir}/nextflow.config" ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
   echo ""; echo "Error:"
   echo "'nextflow.config' file does not exist in project work directory"; echo ""; echo ""
   exit_abnormal
-  # echo "'${project_dir}' already exists. Overwriting this folder."
 fi
 
 
 
 ################################################
-##  == 7 ==  Execute the NextFlow rnaseq-main.nf sctipt
+##  == 6 ==  Execute the NextFlow rnaseq-main.nf sctipt
 ################################################
+cd ${project_dir}
 
+echo ""; echo "";
+echo " Initiating nextflow pipeline"
+echo " ... pipelineName      : $pipelineName";
+echo " ... pipelineVersion   : $pipelineVersion";
+echo " ... pipelineProfile   : $pipelineProfile";
+echo " ... project id    : $projectid";
+echo " ... project dir   : $execdir";
+echo ""; echo "";
 
-  # nohup nextflow run $nf_script -c $nf_config_project > log.nextflow.rnaseq &
-  cd ${project_dir}
-  if [[ $prime_projectfolder_mode == "false" ]]; then
+# Prompt user to approve running in current directory and input
+echo "";
+read -p "
+  Initiating nextflow pipeline - proceed? (y/n)
+  ... " prompt
+if [[ $prompt != "y" ]]; then
+  echo ""; echo "Exiting!! "
+  exit 0
+fi
 
-  echo ""
-  echo ""
-  echo " Initiating nextflow pipeline"
-  echo " ... pipelineName      : $pipelineName";
-  echo " ... pipelineVersion   : $pipelineVersion";
-  echo " ... pipelineProfile   : $pipelineProfile";
-  echo " ... project id    : $projectid";
-  echo " ... project dir   : $execdir";
+## intiate the nextflow command. include project specific config & profile -p
+nohup nextflow run $nf_script -c $nf_config_project -profile ${pipelineProfile} > log.nextflow.progress &
 
-  echo "";
-  echo "";
-
-  #echo ""
-  #echo " Project specific nextflow config"
-  # cat ${nf_config_project}
-  # Prompt user to approve running in current directory and input
-  echo "";
-  read -p "
-
-    proceed? (y/n)
-     ... " prompt
-
-    if [[ $prompt != "y" ]]
-    then
-        echo ""; echo "Exiting!! "
-        exit 0
-    fi
-    echo "";echo ""
-
-
-    nohup nextflow run $nf_script -c $nf_config_project -profile ${pipelineProfile} > log.nextflow.progress &
-
-    echo "  Running :   nextflow run $nf_pipe -c $nf_config_project -profile ${pipelineProfile}"
-    echo "  Singularity container:  ${singularity_container}"
-    echo "";
-    echo "  ########################## "
-    echo "      S U B M I T T E D "
-    echo "  ########################## "
-    echo "  Logfile :  ${project_dir}/log.nextflow.progress "
-    echo ""
-    fi
-
-  if [[ $prime_projectfolder_mode == "true" ]]; then
-    echo ""
-    echo " prime_projectfolder_mode is TRUE "
-    echo " ... exiting without submitting nextflow run"
-    echo " ... go to runfolder and edit your configs, then start run using rnaseq-driver"
-  fi
-fi ## end resume is false
+echo "";echo ""
+echo "  Running :   nextflow run $nf_pipe -c $nf_config_project -profile ${pipelineProfile}"
+echo "";
+echo "  ########################## "
+echo "      S U B M I T T E D "
+echo "  ########################## "
+echo "  Logfile :  ${project_dir}/log.nextflow.progress "
+echo ""

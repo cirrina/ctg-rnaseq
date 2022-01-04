@@ -263,11 +263,15 @@ println( msg_modules )
 
 
 
+/* ===============================================================
+  *    PROCESS SAMPLE SHEET
+  =============================================================== */
+
 // Process sample sheet. Save
 
-## Set name for Samplesheet used by nextflow - without [Header] sections.
-## Generated below.
-samplesheet_nextflow="${project_dir}/SampleSheet-nexflow.csv"
+// Set name for Samplesheet used by nextflow - without [Header] sections.
+// Generated below.
+// samplesheet_nextflow="${project_dir}/SampleSheet-nexflow.csv"
 
 // Read and process sample sheet
 sheet = file(params.sheet)
