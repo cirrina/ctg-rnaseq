@@ -68,7 +68,7 @@ usage() {
     echo " FlowCell:         What flowcell is used"
     echo " SharedFlowCell:  'true' or 'false'. If the pool/flowcell includes more than one customer projects."
     echo " PoolName:         Name of ctg pool, i.e. name of the library pool added to flowcell, e.g. 'CTGpool_0150'"
-    echo " Species:          Species for all samples in current sample sheet (species_all_samples), e.g. Homo sapiens. Set to 'Multiple' if multiple species - this assumes that no alignment is performed."
+    echo " Species:          Species for all samples in current sample sheet (species_global), e.g. Homo sapiens. Set to 'Multiple' if multiple species - this assumes that no alignment is performed."
     echo ""
     echo ""
     echo "------------------- "
@@ -238,24 +238,29 @@ else
 fi
 
 
-## Read Species from samplesheet Header.
+## Read params from samplesheet [Header].
 ## -------------------------------
-# indicate shared species, i.e. for all samples. Will only be used for modules that input ALL samples. Default is to use the species option supplied as column header in [Data] section.
-species_all_samples=$(awk -F, '$1 == "Species"' ${samplesheet} | awk -F, '{print $2}')
-echo "  ... species_all_samples (applied to all samples, from samplesheet [Header]): ${species_all_samples}"
 
-sharedflowcell=$(awk -F, '$1 == "SharedFlowCell"' ${samplesheet} | awk -F, '{print $2}')
-echo "  ... SharedFlowCell: ${sharedflowcell}"
-if [ -z "$sharedflowcell" ]; then
+## species
+# indicate shared species, i.e. for all samples. Will only be used for modules that input ALL samples. Default is to use the species option supplied as column header in [Data] section.
+species_global=$(awk -F, '$1 == "Species"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... species_global, from samplesheet [Header]: ${species_global}"
+paired_global=$(awk -F, '$1 == "Paired"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... paired_global, from samplesheet [Header]: ${paired_global}"
+if [[ ${paired_global} != "true" ]] || [[ ${paired_global} != "false"  ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
-  echo " SharedFlowCell is not properly supplied in samplesheet."
-  echo " Must be supplied as 'SharedFlowCell' 'true' OR 'false' within the [Header] section of sample sheet"; echo""; echo ""
+  echo " paired_global is not properly supplied in samplesheet."; echo " Must be supplied as 'Paired' 'true' OR 'false' within the [Header] section of sample sheet"; echo""; echo ""
   exit_abnormal
 fi
-
-
-## Read if shared flow cell or not (not sure if to use or not...)
-## -------------------------------
+strandness_global=$(awk -F, '$1 == "Paired"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... paired_global, from samplesheet [Header]: ${paired_global}"
+if [[ ${strandness_global} != "forward" ]] || [[ ${strandness_global} != "reverse"  ]]; then
+  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+  echo " strandness_global is not properly supplied in samplesheet."; echo " Must be supplied as 'Strandness' 'forward' OR 'reverse' within the [Header] section of sample sheet"; echo""; echo ""
+  exit_abnormal
+fi
+sharedflowcell=$(awk -F, '$1 == "SharedFlowCell"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... SharedFlowCell: ${sharedflowcell}"
 if [[ ${sharedflowcell} != "true" ]] || [[ ${sharedflowcell} != "false"  ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo " SharedFlowCell is not properly supplied in samplesheet. \
@@ -399,29 +404,31 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo " params {"                                                      >> $nf_config_project
   echo ""                                                               >> $nf_config_project
   echo "  // Pipeline                                                 " >> $nf_config_project
-  echo "  pipelineName      =  '${pipelineName}'                      " >> $nf_config_project
-  echo "  pipelineProfile   =  '${pipelineProfile}'                   " >> $nf_config_project
-  echo "  pipelineVersion   =  '${pipelineVersion}'                   " >> $nf_config_project
+  echo "  pipelineName       =  '${pipelineName}'                      " >> $nf_config_project
+  echo "  pipelineProfile    =  '${pipelineProfile}'                   " >> $nf_config_project
+  echo "  pipelineVersion    =  '${pipelineVersion}'                   " >> $nf_config_project
   echo "  script_execution_dir  =  '${script_exec_dir}'               " >> $nf_config_project
   echo ""                                                               >> $nf_config_project
   echo "  // Project and run directories                               " >> $nf_config_project
   echo "  projectid          =  '${projectid}'                       " >> $nf_config_project
-  echo "  project_dir         =  '${project_dir}'                      " >> $nf_config_project
-  echo "  delivery_dir        =  '${delivery_dir}'                      " >> $nf_config_project
+  echo "  project_dir        =  '${project_dir}'                      " >> $nf_config_project
+  echo "  delivery_dir       =  '${delivery_dir}'                      " >> $nf_config_project
   echo "  ctg_qc_dir         =  '${ctg_qc_dir}'                   " >> $nf_config_project
   echo "  fastq_input_dir    =  '${fastq_input_dir}'                        " >> $nf_config_project
   echo ""                                                               >> $nf_config_project
-  echo "  sharedflowcell      =   ${sharedflowcell}                   " >> $nf_config_project
-  echo "  species_all_samples =  '${species_all_samples}'              " >> $nf_config_project
+  echo "  sharedflowcell     =   ${sharedflowcell}                   " >> $nf_config_project
+  echo "  species_global     =  '${species_global}'                     " >> $nf_config_project
+  echo "  paired_global      =  '${paired_global}'                     " >> $nf_config_project
+  echo "  strandness_global  =  '${strandness_global}'              " >> $nf_config_project
   echo ""                                                               >> $nf_config_project
   echo "  //  samplesheets                                            " >> $nf_config_project
-  echo "  samplesheet           =  '${samplesheet_ctg}'               " >> $nf_config_project
-  echo "  samplesheet_nf        =  '${samplesheet_nextflow}'          " >> $nf_config_project
+  echo "  samplesheet        =  '${samplesheet_ctg}'               " >> $nf_config_project
+  echo "  samplesheet_nf     =  '${samplesheet_nextflow}'          " >> $nf_config_project
   echo ""                                                               >> $nf_config_project
   echo "  // root directories                                         " >> $nf_config_project
-  echo "  project_root        =  '${project_root}'                    " >> $nf_config_project
-  echo "  delivery_root       =  '${delivery_root}'                   " >> $nf_config_project
-  echo "  ctg_save_root       =  '${ctg_save_root}'                   " >> $nf_config_project
+  echo "  project_root       =  '${project_root}'                    " >> $nf_config_project
+  echo "  delivery_root      =  '${delivery_root}'                   " >> $nf_config_project
+  echo "  ctg_save_root      =  '${ctg_save_root}'                   " >> $nf_config_project
   echo ""                                                               >> $nf_config_project
   echo " }"                                                             >> $nf_config_project
   echo ""                                                               >> $nf_config_project

@@ -46,7 +46,7 @@ The pipeline is intiated by executing a driver script `rnaseq-driver`. The diver
 	* Genome References
 	* Singularity containers
 3. Edit your samplesheet to fullfill all requirements. See section `SampleSheet`. A SampleSheet must be supplied and present within the pipeline execution dir.  
-4. Note that **.fastq** and **.bam** file names must be **defined in the SampleSheet**.
+4. Note that **.fastq** and **.bam** file names must be **defined in the SampleSheet**. FASTQ files are ALL expected to be supplied in the SAME directory. SampleSheet provides filename(s) and -f argument provides FASTQ path.
 4. Run the `rnaseq-driver` from `Illumina Sequencing Runfolder` (if first time & no project dir has been created)
 5. **OR** run the `naseq-driver`from within the `Project work folder`. This requires that path to fastq directory is specified (`-f` flag). Typically this is performed when resuming a failed run or changing a projects paramters using the config files.
 6. Optional: A project runfolder can be primed without starting the nextflow pipeline. Use the `-p`, *prime run* flag. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files.
@@ -113,7 +113,7 @@ For a regular run, pipeline input parameters need only to be controlled by the S
 
 Input parameters and variables are determined by:<br>
 
-
+-f --fastq_input_dir: FASTQ files are ALL expected to be supplied in the SAME directory. SampleSheet provides filename(s) and -f argument provides FASTQ path.
 
 *  `SampleSheet`: contains most required input parameters.
 *  `nextflow.config`: parameters that define the different nextflow profiles, including genome reference and container files.
@@ -336,6 +336,7 @@ uroscan. These are non-controlled references used as-is from the Lennart server.
 Sample sheet must be given in Illumina IEM csv format. See SampleSheet section below.
 
 ### FASTQ file names
+
 FASTQ files are named by blc2fastq with the following logic: **{samplename}\_{S1}\_{L001}\_{R1}\_001.fastq.gz**
 
 - **{samplename}**: Defined by `Sample_Name` column in [Data] section of SampleSheet. Note that this pipeline will **force** `Sample_Name` to the same as `Sample_ID`. If Sample_Name column is specified but do not match the Sample_ID, the FASTQ files reside in a `Sample_ID` subdirectory where files use the Sample_Name value.

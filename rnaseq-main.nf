@@ -9,82 +9,53 @@
 //  project and run folders
 projectid           =  params.projectid    // ctg project id. e.g. 2021_024
 project_dir         =  params.project_dir   // .../shared/ctg-rnaseq/uroscan/2021_024 // NOT to be confused with project_dir
-delivery_dir        =  params.delivery_dir
 samplesheet         =  params.samplesheet           // name of simple sample sheet used for pipeline. Must includes file paths to fastq and bamsm, as well as species etc.
 fastq_input_dir     =  params.fastq_input_dir            // subdirectory fastq files are located. For a default run the output location from blc2fastq. fastq-files will be read according to sample sheet. Defaults to <bcl2fastq_dir>/<projectid>
+delivery_dir        =  params.delivery_dir
+file(delivery_dir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
 ctg_qc_dir          =  params.ctg_qc_dir
+file(ctg_qc_dir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
 
 
 /* ===============================================================
   *      DEFINE PATHS FROM INPUT PARAMS
   =============================================================== */
 // Note that the primary output dir is the delivery_dir (to store all files to be delivered )
-// the nf_output_dir is used to store qc-files and temp files that are not included in the delivery
-nf_output_dir =  project_dir+'/nf-output' // nextflow (temp) output directory for files genetated with the Pipeline that are NOT to be delivered
-file(nf_output_dir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
-
-// deliverysamplesheets = delivery_dir+'/samplesheets'
-// deliveryscripts = delivery_dir+'/scripts'
-// deliveryconfigs = delivery_dir+'/configs'
-// deliverylogs = delivery_dir+'/logs'
+// the nf_tmp_dir is used to store qc-files and temp files that are not included in the delivery
+nf_tmp_dir =  project_dir+'/nf-output' // nextflow (temp) output directory for files genetated with the Pipeline that are NOT to be delivered
+file(nf_tmp_dir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
 
 
 // Process & Module specific paths (Delivered to customer)
-fastq_dir = delivery_dir+'/fastq' // To where fastqfiles are moved (delivery path)
+fastq_dir = delivery_dir+'/fastq'+'/'+projectid // To where fastqfiles are moved (delivery path). Follows bcl2fastq output naming. This to allow for transfer of a complete blc2fastq output (incuding stats folders etc) into the delivery dir.
 stardir = delivery_dir+'/star'
-
 salmondir = delivery_dir+'/salmon'
 rsemdir = delivery_dir+'/rsem'
 bladderreportdir = delivery_dir+'/bladderreport'
+featurecountsdir = delivery_dir+'/featurecounts'
 
+// QC dirs
+qcdir = delivery_dir+'/qc'
 
-fastqcdir = deliverytemp+'/qc/fastqc'
-multiqcdelivery_dir  =  deliverytemp+'/qc/multiqc'
-mqcreport = deliverytemp+'/qc/multiqc' + '/' + projectid + '_multiqc_report'
-
-// readme = delivery_dir +'/README_ctg_delivery_' + projectid
-
-
-// Process & Module specific paths (Delivered to customer as QC)
-
-// output for qc
-qc_dir = delivery_dir+'/qc'
+fastqcdir = qcdir+'/qc/fastqc'
+multiqcdir  =  qcdir+'/qc/multiqc'
 qualimapdir = qcdir+'/qualimap'
 rseqcdir = qcdir+'/rseqc'
-featurecountsdir = delivery_dir+'/featurecounts'
 markdupsqcdir = qcdir+'/markdups'
 rnaseqmetricsdir = qcdir+'/rnaseqmetrics'
-multiqcctgdir = qcdir+'/multiqc-ctg'
 fastqscreendir = qcdir+'/fastqscreen'
 
-
-
 // tmp output dirs
-markdupstempdir = nf_output_dir+'/markdups_bam_tmp'
-stardir_filtered = nf_output_dir+'/star_filtered' // temporary folder used for filtered bam-files (no multi-map reads). These are used for featureCounts only due to problems with handling od large bam files.
-
-
-
-/// ctg sav dirs
-ctg_save_samplesheets = ctg_save_dir+'/samplesheets'
-ctg_save_scripts = ctg_save_dir+'/scripts'
-ctg_save_configs = ctg_save_dir+'/configs'
-ctg_save_logs =  ctg_save_dir+'/logs'
-
-
+markdupstempdir = nf_tmp_dir+'/markdups_bam_tmp'
+stardir_filtered = nf_tmp_dir+'/star_filtered' // temporary folder used for filtered bam-files (no multi-map reads). These are used for featureCounts only due to problems with handling od large bam files.
 
 
 
 /* ===============================================================
   *       create output and logdirs
   =============================================================== */
-
 // log file for nextflow .onComplete
 logfile   =  file( project_dir + '/' + 'log.nextflow.complete' )
-// logfile_sav          =  file( ctg_save_dir + '/' + 'log.nextflow.complete' )
-
-
-
 
 
 
@@ -101,14 +72,13 @@ if (samplesheet   == '') {exit 1, "You must define a sample sheet path in the ne
 
 // Check if files and directories exist
 checkPathParamList = [
-  params.project_root, params.delivery_root, ctg_qc_root,
   project_dir,
-  nf_output_dir,
+  nf_tmp_dir,
   samplesheet
 ]
 for (param in checkPathParamList) {
     if (param) {
-	file(param, checkIfExists: true)
+	     file(param, checkIfExists: true)
     }
 }
 
@@ -140,7 +110,7 @@ def msg_startup = """\
     project id              :  ${projectid}
     project work dir        :  ${project_dir}
     nextflow execution dir  :  ${baseDir}
-    nextflow output dir     :  ${nf_output_dir}
+    nextflow output dir     :  ${nf_tmp_dir}
     nextflow work dir       :  ${workDir}
     samplesheet             :  ${samplesheet}
 
@@ -219,7 +189,10 @@ for ( line in all_lines ) {
   }
 }
 
-// Define Channels based from SampleSheet
+
+/* ===============================================================
+  *     Define Channels based from SampleSheet
+  =============================================================== */
 Channel
   .fromPath(chsheet)
   .splitCsv(header:true)
@@ -230,9 +203,9 @@ Channel
 Channel
   .fromPath(chsheet)
   .splitCsv(header:true)
-  .map { row -> tuple( row.Sample_ID, row.bam, row.Strandness, row.Species, row.RIN, row.concentration ) }
+  .map { row -> tuple( row.Sample_ID, row.bam, row.Species, row.RIN, row.concentration ) }
   .tap { infobam }
-  .into { bam_checkbam_ch; bam_indexbam_ch; bam_rnaseqmetrics_ch; bam_markdups_ch; bam_filter_multimap_ch; bam_qualimap_ch; bam_rseqc_ch;  bam_bladderreport_ch }
+  .into { bam_checkbam_ch; bam_qualimap_ch; bam_rseqc_ch;  bam_bladderreport_ch }
 
 Channel
     .fromPath(chsheet)
@@ -249,11 +222,11 @@ infoall.subscribe { println "Info: $it" }
 
 
 /* ===============================================================
-  *    --- CHECK FASTQ FILES ---
+  *    --- CHECK & MOVE FASTQ FILES ---
   =============================================================== */
-
+// check if all expected files provided by samplesheet (columns fastq_1 and fastq_2) in fastq_input_dir
+// if paired run, check bit
 process checkfiles_fastq {
-  // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastq_dir
 
   tag  "$sid"
   cpus params.cpu_min
@@ -263,35 +236,78 @@ process checkfiles_fastq {
   set sid, read1, read2, species from fastq_ch
 
   output:
-  val "x" into checkfiles_fastq_complete_ch
-  set sid, read1, read2, species into fastqc_ch
+  // val "x" into checkfiles_fastq_complete_ch
+  set sid, read1, read2, species into move_fastqc_ch
 
   script:
-  if( params.paired )
+  if( params.paired_global )
     """
-      echo "checking fastq files - paired reads "
-      if [ ! -f ${fastq_dir}/${read1} ]; then
-        echo "Warning: Cannot locate fastq_1 file ${fastq_dir}/${read1}"
-        exit 2
-      fi
-
-      if [ ! -f ${fastq_dir}/${read1} ]; then
-        echo "Warning: Cannot locate fastq_2 file ${fastq_dir}/${read2}"
-        exit 2
-      fi
+    file1=$(find ${fastq_input_dir} -type f -name ${read1})
+    file2=$(find ${fastq_input_dir} -type f -name ${read2})
+    if [[ -z ${file1} ]]; then
+      echo "Warning: Cannot locate fastq_1 file supplied dir: ${fastq_input_dir}/${read1}"
+      exit 2
+    fi
+    if [[ -z ${file2} ]]; then
+    echo "Warning: Cannot locate fastq_1 file supplied dir: ${fastq_input_dir}/${read2}"
+      exit 2
+    fi
     """
-
   else
     """
-      echo "checking fastq files - non paired  "
-
-      if [ ! -f ${fastq_dir}/${read1} ]; then
-        "Cannot locate fastq_1 file ${read2}"
-        exit 2
-      fi
+    file1=$(find ${fastq_input_dir} -type f -name ${read1})
+    if [[ -z ${file1} ]]; then
+      echo "Warning: Cannot locate fastq_1 file supplied dir: ${fastq_input_dir}/${read1}"
+      exit 2
+    fi
     """
-
 }
+
+
+// move fastq files to delivery dir {delivery_dir}/fastq/{project_id}
+// --------------------------------
+// Follow bcl2fastq file path convention, i.e. /fastq/${projectid}
+// do NOT move if they already reside in a (subdirectory) of the delivery dir. IF so change the fastq_dir (used by nextflow) to same as fastq_input_dir
+// Check if present in fastq_dir rather than fastq_input_dir - if file is already in expected folder and do not move
+process move_fastq {
+
+  tag  { params.run_move_fastq  ? "$projectid" : "blank_run"  }
+  cpus { params.run_move_fastq  ? params.cpu_min : params.cpu_min  }
+  memory { params.run_move_fastq  ?  params.mem_min : params.mem_min  }
+
+  input:
+  set sid, read1, read2, species from move_fastqc_ch  // from check fastq
+
+  output:
+  set sid, read1, read2, species into fastqc_ch
+  //set sid, read1, read2, species into fastqc_ch
+
+  script:
+  if( params.paired_global && params.run_move_fastq)
+    """
+    mkdir -p ${fastq_dir}
+    file1=$(find ${fastq_dir} -type f -name ${read1})
+    file2=$(find ${fastq_dir} -type f -name ${read2})
+    if [[ -z ${file1} ]]; then
+      mv ${fastq_input_dir}/${read1} ${fastq_dir}
+    fi
+    if [[ -z ${file2} ]]; then
+      mv ${fastq_input_dir}/${read2} ${fastq_dir}
+    fi
+    """
+  else if( !params.paired_global && params.run_move_fastq)
+    """
+    mkdir -p ${fastq_dir}
+    file1=$(find ${fastq_dir} -type f -name ${read1})
+    if [[ -z ${file1} ]]; then
+      mv ${fastq_input_dir}/${read1} ${fastq_dir}
+    fi
+    """
+  else
+    """
+    """
+}
+
 
 
 /* ===============================================================
@@ -299,46 +315,32 @@ process checkfiles_fastq {
   =============================================================== */
 
 process fastqc {
-  // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastq_dir
   tag  { params.run_fastqc  ? "$sid" : "blank_run"  }
   cpus { params.run_fastqc  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_fastqc  ? params.mem_standard : params.mem_min  }
 
-
   input:
-  val x from checkfiles_fastq_complete_ch.collect()
-  set sid, read1, read2, species from fastqc_ch  // from check fastq
+  set sid, read1, read2, species from fastqc_ch  // from move_fastqc_ch
 
   output:
   val "x" into fastqc_complete_ch
-  val "x" into run_star_ch
-  val "x" into run_salmon_ch
-  val "x" into run_rsem_ch
   set sid, read1, read2, species into star_ch
   set sid, read1, read2, species into salmon_ch
   set sid, read1, read2, species into rsem_ch
   set sid, read1, read2, species into fastqscreen_ch
 
-
-  // when: params.run_fastqc
-
   script:
-  if ( params.paired && params.run_fastqc)
+  if ( params.paired_global && params.run_fastqc)
     """
-      mkdir -p ${fastqcdir}
-      echo "running fastqc in paired reads mode"
-      fastqc ${fastq_dir}/${read1} ${fastq_dir}/${read2}  --outdir ${fastqcdir}
-
-      ## find ${fastqcdir} -user $USER -exec chmod g+rw {} +
-
-  """
-  else if ( !params.paired && params.run_fastqc)
+    mkdir -p ${fastqcdir}
+    echo "running fastqc in paired reads mode"
+    fastqc ${fastq_dir}/${read1} ${fastq_dir}/${read2}  --outdir ${fastqcdir}
     """
-      mkdir -p ${fastqcdir}
-      echo "running fastqc in non paired reads mode "
-      fastqc ${fastq_dir}/${read1}  --outdir ${fastqcdir}
-
-      ## find ${fastqcdir} -user $USER -exec chmod g+rw {} +
+  else if ( !params.paired_global && params.run_fastqc)
+    """
+    mkdir -p ${fastqcdir}
+    echo "running fastqc in non paired reads mode "
+    fastqc ${fastq_dir}/${read1}  --outdir ${fastqcdir}
     """
   else
     """
@@ -366,7 +368,7 @@ process fastqscreen {
     val "x" into fastqscreen_complete_ch
 
     script:
-    if ( params.paired ){
+    if ( params.paired_global ){
         fqsfiles = "${fastq_dir}/${read1} ${fastq_dir}/${read2}" }
     else{
         fqsfiles = "${fastq_dir}/${read1}" }
@@ -374,14 +376,11 @@ process fastqscreen {
     if ( params.run_fastqscreen)
       """
       mkdir -p ${fastqscreendir}
-
       fastq_screen \\
           --conf ${params.fastqscreen_config} \\
           --subset 500000 \\
           --outdir ${fastqscreendir} \\
           ${fqsfiles}
-
-
       """
     else
       """
@@ -394,52 +393,20 @@ process fastqscreen {
 
 
 /* ===============================================================
-  *      -- ALIGMENT SECTION --
+  *      -- SALMON  --
   =============================================================== */
 
-  // Run STAR: ls4 ctg projets base directory, e.g. shared/ctg-projects/rnaseq
-  //   └──–– check_bam: uses sample sheet to check if expected bams are generated
-  //      |-  index_bam : optional
-  //      |-  markdups  : optional
-  //      └── rnaseqmetrics : optional
-  //   The three latter are always run to generate flag - but may be run with no script if set ti false
-  //    When all three are run, process
-
-
-//
-// if ( run_star == false ) {
-//   Channel
-// 	 .from("x")
-//   .into{ align_complete_ch ; align_complete_report_ch}
-// }
-
-
-
-// Run salmon
-// if ( params.run_salmon == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ salmon_complete_ch }
-// }
 process salmon  {
   tag  { params.run_salmon  ? "$sid" : "blank_run"  }
   cpus { params.run_salmon  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_salmon  ?  params.mem_standard : params.mem_min  }
 
-  // cpus 6
-  // memory '48 GB'
-  // time '36h'
-  // echo debug_mode
-  // //publishDir "${stardir}", mode: 'copy', overwrite: true
-
   input:
-  val x from run_salmon_ch.collect()
+  val x from fastqc_complete_ch.collect()
   set sid, read1, read2, species from salmon_ch // from checkfiles_fastq
 
   output:
   val "x" into salmon_complete_ch
-
-  // when: params.run_salmon
 
   script:
   if ( species == "Homo sapiens" ){
@@ -452,10 +419,7 @@ process salmon  {
     genome = ""
     println( "Warning: Species not recognized." )}
 
-  // if ( params.paired )
-
-
-  if ( params.paired && params.run_salmon )
+  if ( params.paired_global && params.run_salmon )
     """
     salmon quant -l A \\
       -i  ${transcripts} \\
@@ -464,11 +428,8 @@ process salmon  {
       -p  6 --validateMappings \\
       -o  ${salmondir}/${sid}_0.salmon.salmon \\
       --no-version-check
-
-    ## find ${salmondir} -user $USER -exec chmod g+rw {} +
-
     """
-  else if ( !params.paired && params.run_salmon )
+  else if ( !params.paired_global && params.run_salmon )
     """
     salmon quant -l A \\
       -i  ${transcripts} \\
@@ -476,41 +437,31 @@ process salmon  {
       -p  6 --validateMappings \\
       -o  ${salmondir}/${sid}_0.salmon.salmon \\
       --no-version-check
-
-    #find ${salmondir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
     echo "skipping salmon"
     """
-
 }
 
 
 /* ===============================================================
-  *      -RSEM SECTION
+  *      RSEM ALIGNMENT
   =============================================================== */
 process rsem {
   tag  { params.run_rsem  ? "$sid" : "blank_run"  }
   cpus { params.run_rsem  ? params.cpu_high : params.cpu_min  }
   memory { params.run_rsem  ?  params.mem_high : params.mem_min  }
 
-  // cpus 20
-  // memory '100 GB'
-  // time '36h'
-  // //publishDir "${stardir}", mode: 'copy', overwrite: true
-
   input:
-  val x from run_rsem_ch.collect()
+  val x from fastqc_complete_ch.collect()
   set sid, read1, read2, species from rsem_ch // from checkfiles_fastq
 
   output:
   val "x" into rsem_complete_ch
   val "x" into rsem_complete_report_ch
-  // file "${sid}_Aligned.sortedByCoord.out.bam" into bam_featurecounts_ch // channel defined start instead
 
   script:
-
   // species and references (bowtie2 refs)
   if ( species == "Homo sapiens" ){
     genome=params.rsem_bowtie2_genome_hs }
@@ -524,22 +475,21 @@ process rsem {
   }
 
   // paired end
-  if ( params.paired ){
+  if ( params.paired_global ){
     rsemfiles = "${fastq_dir}/${read1} ${fastq_dir}/${read2}"
     paired='--paired-end'}
   else{
     rsemfiles = "${fastq_dir}/${read1}"
     paired=''}
 
-  // strand
-  if( params.strandness == "forward" )
+  // strand - NOTE the uroscan pipe is run without strandness flag.
+  if( params.strandness_global == "forward" )
     strand = 'forward'
-  else if ( params.strandness == "reverse" )
+  else if ( params.strandness_global == "reverse" )
     strand = 'reverse'
   else
     strand = 'none'
 
-    //the uroscan pipe is run without strandness flag.
   if ( params.run_rsem && params.pipelineProfile == "uroscan" )
     """
     mkdir -p ${rsemdir}
@@ -562,10 +512,8 @@ process rsem {
 }
 
 
-
-
 /* ===============================================================
-  *      -STAR AND BAM SECTION
+  *      STAR AND BAM SECTION
   =============================================================== */
 
 process star  {
@@ -573,20 +521,12 @@ process star  {
   cpus { params.run_star  ? params.cpu_high : params.cpu_min  }
   memory { params.run_star  ?  params.mem_high : params.mem_min  }
 
-  // cpus 20
-  // memory '100 GB'
-  // time '36h'
-  // echo debug_mode
-  //publishDir "${stardir}", mode: 'copy', overwrite: true
-
   input:
-  val x from run_star_ch.collect()
+  val x from fastqc_complete_ch.collect()
   set sid, read1, read2, species from star_ch // from checkfiles_fastq
 
   output:
   val "x" into star_complete_ch
-
-  // when: params.run_star
 
   script:
   if ( species == "Homo sapiens" ){
@@ -599,7 +539,7 @@ process star  {
     genome = ""
     println( "Warning: Species not recognized." )}
 
-  if ( params.paired ){
+  if ( params.paired_global ){
       starfiles = "${fastq_dir}/${read1} ${fastq_dir}/${read2}" }
   else{
       starfiles = "${fastq_dir}/${read1}" }
@@ -630,9 +570,7 @@ process star  {
 }
 
 
-
 process checkfiles_bam {
-  // Run fastqc. Also check if all expected files, defined in the ctg samplesheet, are present in fastq_dir
   tag  { params.run_checkfiles_bam  ? "$sid" : "blank_run"  }
   cpus params.cpu_min
   memory params.mem_min
@@ -643,35 +581,21 @@ process checkfiles_bam {
 
   output:
   val "x" into checkfiles_bam_complete_ch
-
-  // when: params.run_checkfiles_bam
+  set sid, bam, strand, species, RIN, concentration into bam_checkbam_ch
 
   script:
   if( params.run_checkfiles_bam )
     """
-      if [ ! -f ${stardir}/${bam} ]; then
-        echo "Warning: Cannot locate bam file ${stardir}/${bam}"
-        exit 2
-      fi
+    if [[ ! -f ${stardir}/${bam} ]]; then
+      echo "Warning: Cannot locate bam file ${stardir}/${bam}"
+      exit 2
+    fi
     """
   else
     """
     echo "file check overridden"
-  """
+    """
 }
-
-
-
-/// INDEX BAMs
-
-
-// samtools index bamfile
-// ml Java; ml nextflow/19.04.1
-// ml Singularity
-// ml GCC/7.3.0-2.30
-// ml SAMtools/1.9
-// samtools index bamfile
-
 
 
 process index_bam {
@@ -679,16 +603,13 @@ process index_bam {
   cpus { params.run_index_bam  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_index_bam  ?  params.mem_standard : params.mem_min  }
 
-
-
   input:
   val x from checkfiles_bam_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_indexbam_ch
 
   output:
   val "x" into indexbam_complete_ch
-
-  // when: params.run_index_bam
+  set sid, bam, strand, species, RIN, concentration into bam_markdups_ch
 
   script:
   if ( params.run_index_bam )
@@ -697,18 +618,11 @@ process index_bam {
     echo "${stardir}/${bam}"
     samtools index -bc ${stardir}/${bam}
     """
-   // else if ( params.run_index_bam  && params.pipelineProfile == "uroscan"  )
-   //  """
-   //  cd ${stardir}
-   //  echo "${stardir}/${bam}"
-   //  sambamba index ${stardir}/${bam}
-   //  """
   else
     """
     echo "skipped indexing"
     """
 }
-
 
 
 process markdups {
@@ -722,11 +636,7 @@ process markdups {
 
   output:
   val "x" into markdups_complete_ch
-  val "x" into markdups_complete_fcounts_ch
-  val "x" into markdups_complete_report_ch
-  // val "x" into move
-
-  // when: params.run_markdups
+  set sid, bam, strand, species, RIN, concentration into bam_filter_multimap_ch
 
   script:
   if ( params.run_markdups )
@@ -747,11 +657,7 @@ process markdups {
         MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=2000 \\
         QUIET=true \\
         VERBOSITY=WARNING
-
     mv -f ${markdupstempdir}/${bam} ${stardir}/${bam}
-
-    ## find ${stardir} -user $USER -exec chmod g+rw {} +
-    ## find ${markdupstempdir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -761,11 +667,8 @@ process markdups {
 
 
 
-
-
-
 /* ===============================================================
-  *     FEATURE COUNTS SECTION
+  *     FEATURECOUNTS SECTION
   =============================================================== */
 // Filter bams on only primary mapped sequence using 0x104 flag.
 // Featurecounts will only use primary mapped read anlyway - but tends to crash if multi mapped sequences are included
@@ -776,23 +679,19 @@ process filter_multimap {
   memory { params.run_featurecounts  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from markdups_complete_fcounts_ch.collect()
+  val x from markdups_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_filter_multimap_ch
 
   output:
   val "x" into filter_multimap_complete_ch
-
-  // when: params.run_markdups
 
   script:
   if ( params.run_featurecounts )
     """
     echo "bam: ${bam}"
     mkdir -p ${stardir_filtered}
-
     cd ${stardir_filtered}
-    samtools  view -b -F 0x104  ${stardir}/${bam} >  ${stardir_filtered}/${bam}
-
+    samtools view -b -F 0x104 ${stardir}/${bam} >  ${stardir_filtered}/${bam}
     """
   else
     """
@@ -806,27 +705,22 @@ process featurecounts {
   cpus { params.run_featurecounts  ? params.cpu_max : params.cpu_min  }
   memory { params.run_featurecounts  ?  params.mem_max : params.mem_min  }
 
-  // cpus 20
-  // memory '350 GB'
-  // time '96h'
-
 	input:
   val x from filter_multimap_complete_ch.collect()
 	val bams from bam_featurecounts_ch.collect()
 
-
   output:
 	val "x" into featurecounts_complete_ch
 
-
   script:
-  if( params.strandness == "forward" )
+  fcounts_feature   =  'exon'
+
+  if( params.strandness_global == "forward" )
     strand_numeric = 1
-  else if ( params.strandness == "reverse" )
+  else if ( params.strandness_global == "reverse" )
     strand_numeric = 2
   else
     strand_numeric = 0
-
 
   // gtf used for featurecounts
   if ( params.species_global == "Homo sapiens" ){
@@ -838,18 +732,16 @@ process featurecounts {
   else{
     gtf=""}
 
-
-
-  if( params.run_featurecounts && params.paired)
+  if( params.run_featurecounts && params.paired_global)
     """
     mkdir -p ${featurecountsdir}
     # cd ${stardir}
     cd ${stardir_filtered}
-    bamstring=\$(echo $bams | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
+    bamstring=\$(echo ${bams} | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
     echo \${bamstring}
     echo "gtf: ${gtf}"
     featureCounts -T ${task.cpus} \\
-      -t ${params.fcounts_feature} \\
+      -t ${fcounts_feature} \\
       --extraAttributes gene_name,gene_type \\
       -a ${gtf} -g gene_id  \\
       -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
@@ -858,7 +750,7 @@ process featurecounts {
 
     #find ${featurecountsdir} -user $USER -exec chmod g+rw {} +
     """
-  else if( params.run_featurecounts && !params.paired)
+  else if( params.run_featurecounts && !params.paired_global)
     """
     mkdir -p ${featurecountsdir}
     cd ${stardir_filtered}
@@ -866,7 +758,7 @@ process featurecounts {
     echo \${bamstring}
     echo "gtf: ${gtf}"
     featureCounts -T ${task.cpus} \\
-      -t ${params.fcounts_feature} \\
+      -t ${fcounts_feature} \\
       --extraAttributes gene_name,gene_type \\
       -a ${gtf} -g gene_id  \\
       -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
@@ -878,10 +770,7 @@ process featurecounts {
     """
 }
 
-// Remove temooraryfiltered bams
-// instead of changing directories that goes into multiqc-ctg_
-// should not be in this multiqc sice file names are the same as non filtered bams
-
+// Remove temoorary filtered bams
 process rm_filter_mmap {
   tag  { params.run_featurecounts  ? "$sid" : "blank_run"  }
   cpus { params.run_featurecounts  ? params.cpu_standard : params.cpu_min  }
@@ -893,12 +782,10 @@ process rm_filter_mmap {
   output:
   val "x" into rm_mmapfiltered_complete_ch
 
-  // when: params.run_markdups
-
   script:
   if ( params.run_featurecounts )
     """
-    if [ -d ${stardir_filtered} ]; then
+    if [[ -d ${stardir_filtered} ]]; then
       rm -rf ${stardir_filtered}
     fi
     """
@@ -907,7 +794,6 @@ process rm_filter_mmap {
     echo "rm_mmapfiltered"
     """
 }
-
 
 
 
@@ -920,15 +806,12 @@ process rnaseqmetrics {
   cpus { params.run_rnaseqmetrics  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_rnaseqmetrics  ?  params.mem_standard : params.mem_min  }
 
-
   input:
   val x from markdups_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_rnaseqmetrics_ch
 
   output:
   val "x" into rnaseqmetrics_complete_ch
-
-  // when: params.run_rnaseqmetrics
 
   script:
   // NONE, FIRST_READ_TRANSCRIPTION_STRAND, and SECOND_READ_TRANSCRIPTION_STRAND.
@@ -938,7 +821,6 @@ process rnaseqmetrics {
     strand="SECOND_READ_TRANSCRIPTION_STRAND"
   else
     strand="NONE"
-
 
   if ( species == "Homo sapiens" ){
     refflat = params.picard_refflat_hs
@@ -954,24 +836,17 @@ process rnaseqmetrics {
     rrna = ""
   }
 
-  // if ( params.run_rnaseqmetrics && species == "Rattus norvegicus" )
-  // else if ( pecies == "Rattus norvegicus" )
-  // changed to NOT use the rrna file. not working anyway?
   if ( params.run_rnaseqmetrics && params.pipelineProfile == "uroscan")
     """
     echo "strand: ${strand}"
     echo "refflat file: ${refflat}"
     mkdir -p ${rnaseqmetricsdir}
 
-    ## java -jar picard.jar CollectRnaSeqMetrics \\ ## old line
     picard CollectRnaSeqMetrics \\
         INPUT=${stardir}/${bam} \\
         OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
         REF_FLAT=${refflat} \\
         STRAND=${strand}
-
-    #find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
-
     """
   else if ( params.run_rnaseqmetrics && species == "Rattus norvegicus")
     """
@@ -979,16 +854,13 @@ process rnaseqmetrics {
     echo "refflat file: ${refflat}"
     mkdir -p ${rnaseqmetricsdir}
 
-    ## java -jar picard.jar CollectRnaSeqMetrics \\ ## old line
     picard CollectRnaSeqMetrics \\
         INPUT=${stardir}/${bam} \\
         OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
         REF_FLAT=${refflat} \\
         STRAND=${strand}
-
-    #find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
     """
-  else if ( params.run_rnaseqmetrics && params.pipelineProfile == "rnaseq")
+  else if ( params.run_rnaseqmetrics && (params.pipelineProfile == "rnaseq" || params.pipelineProfile == "rnaseq_total"))
     """
     echo "strand: ${strand}"
     echo "rrna file: ${rrna}"
@@ -1001,20 +873,12 @@ process rnaseqmetrics {
       REF_FLAT=${refflat} \\
       STRAND=${strand} \\
       RIBOSOMAL_INTERVALS=${rrna}
-
-    #find ${rnaseqmetricsdir} -user $USER -exec chmod g+rw {} +
     """
-  // temp workaround - ribosomal intervals file for Rat is not workling in v1.0
-
   else
     """
     echo "picard rnaseqmetrics skipped"
     """
-
 }
-
-
-
 
 
 // qualimap us quite redundant given the other apps Used
@@ -1024,7 +888,6 @@ process qualimap {
   cpus { params.run_qualimap  ? params.cpu_high : params.cpu_min  }
   memory { params.run_qualimap  ?  params.mem_high : params.mem_min  }
 
-
   input:
   val x from rnaseqmetrics_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_qualimap_ch
@@ -1032,10 +895,7 @@ process qualimap {
   output:
   val "x" into qualimap_complete_ch
 
-  // when: params.run_qualimap
-
   script:
-  // gtf used for featurecounts
   if ( species == "Homo sapiens" ){
     gtf = params.gtf_hs}
   else if  ( species == "Mus musculus" ){
@@ -1048,13 +908,7 @@ process qualimap {
   if ( params.run_qualimap )
     """
     mkdir -p ${qualimapdir}
-
-    ## export JAVA_OPTS="-Djava.io.tmpdir=/data/tmp"
-    ## /data/bnf/sw/qualimap_v2.2.1/qualimap --java-mem-size=12G rnaseq -bam /data/bnf/bam/rnaseq/21KF00020.STAR.sort.bam -gtf /data/bnf/ref/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /data/bnf/postmap/rnaseq/21KF00020.STAR.qualimap.folder
-    # qualimap --java-mem-size=12G rnaseq -bam /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/star/21KF00082_Aligned.sortedByCoord.out.bam -gtf /projects/fs1/shared/uroscan/references/rsem/GRCh37/Homo_sapiens.GRCh37.75.gtf -pe -outdir /projects/fs1/shared/ctg-projects/uroscan/2021_024/nf-output/delivery/qualimap/21KF00082.STAR.qualimap.folder
-
     qualimap --java-mem-size=90G rnaseq -bam ${stardir}/${bam} -gtf ${gtf} -pe -outdir ${qualimapdir}/${sid}.STAR.qualimap.folder
-
     """
   else
     """
@@ -1063,12 +917,10 @@ process qualimap {
 }
 
 
-
 process rseqc {
   tag  { params.run_rseqc  ? "$sid" : "blank_run"  }
   cpus { params.run_rseqc  ? params.cpu_high : params.cpu_min  }
   memory { params.run_rseqc  ?  params.mem_high : params.mem_min  }
-
 
   input:
   val x from qualimap_complete_ch.collect()
@@ -1076,8 +928,6 @@ process rseqc {
 
   output:
   val "x" into rseqc_complete_ch
-  val "x" into rseqc_complete_report_ch
-  // when: params.run_rseqc
 
   script:
   // gtf used for featurecounts
@@ -1117,34 +967,15 @@ process rseqc {
 
 
 
-
-
-
-
-
-
-
-
 /* ===============================================================
-  *      BLADDER REPORT
+  *      UROSCAN - BLADDER REPORT
   =============================================================== */
 
-// /usr/bin/Rscript -e "library(rmarkdown, lib='/home/petter/R/x86_64-pc-linux-gnu-library/3.4'); rmarkdown::render('/data/bnf/scripts/ort/bladderreport_ctg_anonymous.Rmd',params=list(sampleid='21KF00020', rsem_in='/data/bnf/premap/rnaseq/21KF00020_0.rsem',star_qc='/data/bnf/tmp/rnaseq/21KF00020_0.sort.bam.folder/Log.final.out', clarity_id='ALL557A36'),output_file='/data/bnf/postmap/rnaseq/21KF00020.STAR.bladderreport_anonymous.html')"
-
-
-//
-// if ( params.run_bladderreport == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ bladderreport_complete_ch }
-// }
 process bladderreport {
 
   tag  { params.run_bladderreport  ? "$sid" : "blank_run"  }
   cpus { params.run_bladderreport  ? params.cpu_mid : params.cpu_min  }
   memory { params.run_bladderreport  ?  params.mem_mid : params.mem_min  }
-
-
 
   input:
   val x from rseqc_complete_report_ch.collect()
@@ -1154,12 +985,9 @@ process bladderreport {
   output:
   val "x" into bladderreport_complete_ch
 
-  // when: params.run_bladderreport
-
   script:
   bladderreport_scriptsdir = project_dir+'/bin/bladderreport'
   bladderreport_scriptname= params.bladderreport_scriptname
-
 
   if ( params.run_bladderreport )
   """
@@ -1167,37 +995,28 @@ process bladderreport {
     cp -r ${bladderreport_scriptsdir} ${bladderreportdir}/tmp_${sid}/
     cd ${bladderreportdir}/tmp_${sid}/bladderreport
 
+    ## Run Rscript to generate markdown pdf report
     Rscript -e "library('rmarkdown'); \\
       rmarkdown::render( \\
         '${bladderreportdir}/tmp_${sid}/bladderreport/${bladderreport_scriptname}',  \\
-        params = list(   \\
-          sampleid='${sid}', \\
-          rsem_in='${rsemdir}/${sid}.rsem.genes.results', \\
-          star_qc='${stardir}/${sid}_Log.final.out', \\
-          RIN='${RIN}', \\
-          koncentration='${concentration}'),  \\
-        output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
+          params = list(   \\
+            sampleid='${sid}', \\
+            rsem_in='${rsemdir}/${sid}.rsem.genes.results', \\
+            star_qc='${stardir}/${sid}_Log.final.out', \\
+            RIN='${RIN}', \\
+            koncentration='${concentration}'),  \\
+          output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
 
+    ## Run Chromium to generate html from pdf
     cd ${bladderreportdir}
     chromium --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
-
     mv -f ${bladderreportdir}/tmp_${sid}/bladderreport/${sid}.LundClassifier.rds ${bladderreportdir}/${sid}.LundClassifier.rds
-
-    ## find ${bladderreportdir} -user $USER -exec chmod g+rw {} +
-
   """
   else
-    """
+  """
     echo "run_bladderreport skipped"
-    """
+  """
 }
-
-
-
-
-
-
-
 
 
 
@@ -1218,8 +1037,8 @@ process bladderreport {
 // The customer will obtain a lighter multiQC carried out below
 
 
-process multiqc_ctg {
-  //publishDir "${multiqcctgdir}", mode: 'copy', overwrite: 'true'
+process multiqc {
+  //publishDir "${multiqc_dir}", mode: 'copy', overwrite: 'true'
   tag  { params.run_multiqc_ctg  ? "$projectid" : "blank_run"  }
   // cpus 8
   // memory '64 GB'
@@ -1249,13 +1068,16 @@ process multiqc_ctg {
   script:
   if ( params.run_multiqc_ctg )
     """
-      mkdir -p ${multiqcctgdir}
-      cd ${nf_output_dir}
-      multiqc -n ${projectid}_multiqc_report \\
-        --interactive \\
-        -o ${multiqcctgdir} . ${runfolderdir}
+    ## remove if multiqc is already present from failed run. Will not overwrite ...
+    rm -rf ${multiqc_dir}
+    mkdir -p ${multiqc_dir}
 
-      find ${multiqcctgdir} -user $USER -exec chmod g+rw {} +
+    cd ${delivery_dir}
+    multiqc -n ${mqcreport} \\
+      --interactive \\
+      -o ${multiqc_dir} .
+
+    find ${multiqc_dir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
@@ -1383,112 +1205,7 @@ process stage_delivery {
 
 }
 
-// move fastq files to delivery temp
-// -----------------------------
-process move_fastq {
 
-  //cpus 6
-  tag  { params.run_move_fastq  ? "$projectid" : "blank_run"  }
-  // memory '64 GB'
-  // time '3h'
-  // echo debug_mode
-  cpus { params.run_move_fastq  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_move_fastq  ?  params.mem_standard : params.mem_min  }
-
-
-  input:
-  val x from stage_delivery_complete_ch.collect()
-
-  output:
-  val "x" into move_fastq_complete_ch
-  val "x" into move_fastq_complete_2_ch
-
-  script:
-    if ( params.sharedflowcell &&  params.run_move_fastq)
-      """
-        mkdir -p ${deliverytemp}/fastq
-        if [ -d ${fastq_dir} ]; then
-          echo "pooled run. moving fastq foldler only."
-          mv -f ${fastq_dir} ${deliverytemp}/fastq
-        fi
-      """
-    else if ( !params.sharedflowcell &&  params.run_move_fastq )
-      """
-      if [ -d ${bcl2fastq_dir} ]; then
-        echo "non pooled data. moving comlplete bcl2fastq output foldler."
-        mv -f ${bcl2fastq_dir} ${deliverytemp}
-      elif [ -d ${fastq_dir} ]; then
-        echo "non pooled run but cannot locate bcl2fastq_dir. moving fastq foldler only."
-        mkdir -p ${deliverytemp}/fastq
-        mv -f ${fastq_dir} ${deliverytemp}/fastq
-      fi
-      """
-    else
-     """
-     echo "run_move_fastq skipped"
-     """
-}
-
-
-
-// Run customer multiQC (on delivery temp folder only).
-// -----------------------------
-// Not to be confused with ctg-multiqc that is run on all analyses and runfolder
-
-// if ( params.run_multiqc_delivery == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ multiqc_complete_ch }
-// }
-process multiqc_delivery {
-
-  tag  { params.run_multiqc_delivery  ? "${projectid}" : "blank_run"  }
-  // cpus 6
-  // memory '32 GB'
-  // time '3h'
-  // echo debug_mode
-  cpus { params.run_multiqc_delivery  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_multiqc_delivery  ?  params.mem_standard : params.mem_min  }
-
-
-
-  input:
-  val x from move_fastq_complete_ch.collect()
-
-  output:
-  val "x" into multiqc_complete_ch
-
-  // when: params.run_multiqc_delivery
-
-  script:
-  // if (! new File( mqcreport+'.html' ).exists() && params.run_multiqc_delivery)
- if ( params.run_multiqc_delivery  && params.pipelineProfile == "rnaseq"  )
-  """
-    ## remove if multiqc is already present from failed run. Will not overwrite ...
-    rm -rf ${multiqcdelivery_dir}
-    mkdir -p ${multiqcdelivery_dir}
-
-    cd ${deliverytemp}
-    multiqc -n ${mqcreport} \\
-      --interactive \\
-      -o ${multiqcdelivery_dir} .
-  """
-  else if ( params.run_multiqc_delivery  && params.pipelineProfile == "uroscan"  )
-  """
-    mkdir -p ${multiqcdelivery_dir}
-
-    if [[ -d "${multiqcctgdir}" ]]; then
-        cp -r ${multiqcctgdir}/* ${multiqcdelivery_dir}
-    elif [[ -d "${ctg_save_dir}/qc/multiqc-ctg" ]]; then
-        cp -r ${ctg_save_dir}/qc/multiqc-ctg/* ${multiqcdelivery_dir}
-    fi
-  """
-  else
-  """
-    echo "skipping run_multiqc_delivery"
-  """
-
-}
 
 
 //    md5 sum on delivery_dir
@@ -1499,7 +1216,7 @@ process multiqc_delivery {
 // 	 .from("x")
 //    .set{ md5sum_complete_ch }
 // }
-process md5sum_delivery {
+process md5sum {
   //cpus 8
   tag  { params.run_md5sum_delivery  ? "$projectid" : "blank_run"  }
   // memory '64 GB'
@@ -1520,11 +1237,11 @@ process md5sum_delivery {
   md5sumfile = delivery_dir + '/md5sum.txt'
 
   // if (! new File( md5sumfile ).exists() && params.run_md5sum_delivery)
-  if ( params.run_md5sum_delivery )
-  """
-   cd ${deliverytemp}
-   find . -type f -exec md5sum {} \\; > ${md5sumfile} ; echo
-  """
+  if ( params.run_md5sum )
+    """
+     cd ${deliverytemp}
+     find . -type f -exec md5sum {} \\; > ${md5sumfile} ; echo
+    """
   else
   """
   echo "skipping run_md5sum_delivery"
@@ -1542,109 +1259,12 @@ process md5sum_delivery {
 /* ===============================================================
   *     FINALIZE CTG SAVE & MOVE DELIVERY - save qc files and scripts
   =============================================================== */
-// CTG should store multiQC (ctg-multiqc) and fastqc for all samples
-// as of this version files are copied to ctg-qc dir. could change to the folder that also keep scripts and configs and sample sheets
-// save
-
-//  - multiQC (ctg_multiqc)
-//  - fastQC
-//
-//  - Sample Sheets in ./samplesheets/
-//  - Nextflow scripts, nextflow.config.project., rnaseq-main, nextflow.config, drivers, ./bin files etc (./scripts)
-
-//  - logs,  (the final nextflow genereated onComplee is copied in that segion)
-// if ( params.run_stage_ctg_save == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ stage_ctg_save_complete_ch }
-// }
-process stage_ctg_save {
-  //cpus 4
-  tag "${projectid}"
-  // memory '32 GB'
-  // time '3h'
-  cpus { params.run_stage_ctg_save  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_stage_ctg_save  ?  params.mem_standard : params.mem_min  }
-
-
-  input:
-  val x from multiqc_ctg_complete_2_ch.collect()
-  val x from move_fastq_complete_2_ch.collect()
-
-  output:
-  val "x" into stage_ctg_save_complete_ch
-
-  // when: params.run_stage_ctg_save
-
-
-  script:
-  if (params.run_stage_ctg_save)
-  """
-
-  ##  sample sheets
-  ## -----------------
-  cd ${project_dir}
-
-  mkdir -p ${ctg_save_samplesheets}
-
-  if [ -f ${samplesheet} ]; then
-    cp ${samplesheet} ${ctg_save_samplesheets}
-  fi
-
-  ##  logs
-  ##   -----------------
-  mkdir -p ${ctg_save_logs}
-
-
-  ## scripts dir (executables bins etc, version specific) and configs (project specific)
-  ##   --------------------------------------------------------------
-  mkdir -p ${ctg_save_scripts}
-
-  if [[ -d "${params.scriptsdir}" ]]; then
-    cp -r ${params.scriptsdir} ${ctg_save_scripts}
-  fi
-
-
-  ## configs (project specific) as well as the rscript log config
-  ##   --------------------------------------------------------------
-  mkdir -p ${ctg_save_configs}
-  if [[ -f "${project_dir}/nextflow.config.project.${projectid}" ]]; then
-    cp ${project_dir}/nextflow.config.project.${projectid} ${ctg_save_configs}
-  fi
-
-  if [[ -f "${project_dir}/nextflow.config" ]]; then
-    cp ${project_dir}/nextflow.config ${ctg_save_configs}
-  fi
-  if [[ -f "${runfolderdir}/log.rscript.samplesheet" ]]; then
-    cp ${runfolderdir}/log.rscript.samplesheet ${ctg_save_configs}
-  fi
-
-
-  ##  Move ctg qc dir from project folder to delivery location
-  ##   --------------------------------------------------------------
-  mv -f ${qcdir} ${ctg_save_dir}
-
-  ##  duplicate the fastqc analyses from delivery dir
-  ## -----------------------------------------
-  cp -r ${fastqcdir} ${ctg_save_dir}/qc/
-
-
-  ## CHOD
-  find ${ctg_save_dir} -user $USER -exec chmod g+rw {} +
-
-  """
-  else
-  """
-    echo "skipping run_stage_ctg_save"
-  """
-}
 
 
 
 
 // Finalize delivery_dir
 // -----------------------------
-// provess add README with dir size
 
 
 process finalize_pipeline {
@@ -1655,7 +1275,6 @@ process finalize_pipeline {
 
   input:
   val x from md5sum_complete_ch.collect()
-  val x from stage_ctg_save_complete_ch.collect()
 
   //val x from checkfiles_rscript_predelivery_ch.collect()
 
@@ -1669,24 +1288,14 @@ process finalize_pipeline {
   """
 
 
-    ##  Move delivery temp dir from project folder to delivery location
-    ##   --------------------------------------------------------------
-    mkdir -p ${delivery_dir}
-    mv -f ${deliverytemp}/* ${delivery_dir}
-
-
     cd ${delivery_dir}
-
-    ## echo "ctg delivery complete"               > $readme
-    ## echo "Project:   ${projectid}"             >> $readme
-    ## du -ch -d 0 . | grep 'total'               >> $readme
 
     find ${delivery_dir} -user $USER -exec chmod g+rw {} +
     find ${project_dir} -user $USER -exec chmod g+rw {} +
-    find ${ctg_save_dir} -user $USER -exec chmod g+rw {} +
+    find ${ctg_qc_dir} -user $USER -exec chmod g+rw {} +
   """
   else
-  """
+    """
     echo "skipping run_finalize_pipeline"
-  """
+    """
 }
