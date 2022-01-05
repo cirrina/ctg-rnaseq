@@ -33,7 +33,7 @@ nf_config_project="${project_dir}/nextflow.params.${projectid}"
 #######################
 #  == Initiation ==
 #######################
-fastq_custom=true ## set to false if no fastq_input_path is supplied (will defalt to {project_})
+# fastq_custom=true ## set to false if no fastq_input_dir is supplied (will defalt to {project_})
 prime_projectfolder_mode=false ## -p true,  if to generate project folder and configs, but not initiate the nextgflow
 resume=false ## used to resume nextflow pipeline, Need to be executed within project workfolder.
 exec_dir=$(pwd)
@@ -45,7 +45,7 @@ usage() {
     echo "------------------- "
     echo " usage : "
     echo "------------------- "
-    echo " rnaseq-driver [ -s samplesheet ] [ -p prime_projectfolder_only ] [ -r resume ] [ -f fastq_input_path ] [ -h help ] "  1>&2
+    echo " rnaseq-driver [ -s samplesheet ] [ -p prime_projectfolder_only ] [ -r resume ] [ -f fastq_input_dir ] [ -h help ] "  1>&2
     echo ""
     echo "------------------- "
     echo " arguments : "
@@ -75,7 +75,7 @@ usage() {
     echo " optionals : "
     echo "------------------- "
     echo " prime_projectfolder_mode:  -p : Set to 'true' if you do not start nextflow. A dry run that will generate project folder, config files etc but will not initiate nextflow."
-    echo " fastq_input_path:      -f : Set to a full path where all fastq files are located. individual filenames should be specified in ctg sample sheet. This flag will set 'run_blcl2fastq' to 'false' and all flags related to demux to false "
+    echo " fastq_input_dir:      -f : Set to a full path where all fastq files are located. individual filenames should be specified in ctg sample sheet. This flag will set 'run_blcl2fastq' to 'false' and all flags related to demux to false "
     echo " resume           -r : Nextflow-specific. If to resume nextflow run. Can only be used when executing in Project work dir, NOT from Illumina runfolder"
     echo " help             -h : print help message"
     echo "------------------- "
@@ -103,7 +103,7 @@ while getopts ":s:f:r:p:h" opt; do
     case $opt in
       s) samplesheet=$OPTARG
 	          ;;
-      f) fastq_input_path=$OPTARG
+      f) fastq_input_dir=$OPTARG
             ;;
       r) resume=true
        	    ;;
@@ -123,32 +123,30 @@ done
 shift "$(( OPTIND -1 ))"
 
 ## Check Sample Sheet. if file is present in work directory.
-if [ -z $samplesheet ]; then
+if [ -z ${samplesheet} ]; then
   echo ""; echo ""; echo "Error:"
   echo "You must specify sample sheet (in current dir): '-s' flag. "; echo ""
   exit_abnormal
 fi
-if [ ! -f $samplesheet ]; then
+if [ ! -f ${samplesheet} ]; then
   echo ""; echo ""; echo "Error:"
   echo "Sample Sheet does not exist (in current dir)"
   #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
   exit_abnormal
 fi
 
-## If -f is defined (fastq_input_path), set fastq_custom to true
-if [ -z $fastq_input_path ]; then
-  fastq_custom=false
+## If -f is defined (fastq_input_dir), set fastq_custom to true
+if [ -z ${fastq_input_dir} ]; then
+  echo ""; echo ""; echo "Error:"
+  echo "You must specify path where fastq files are located: '-f' flag. "; echo ""
+  exit_abnormal
 fi
-## check if supplied fastq_input_path is valid
-if [[ ${fastq_custom} == "true" ]]; then
-  fastq_custom=true
-  fastq_input_path=$(realpath $fastq_input_path)
-  echo ""; echo " Custom fastq mode set to: ${fastq_custom}"; echo ""
-  if [[ ! -d ${fastq_input_path} ]]; then
-    echo ""; echo ""; echo "Error:"
-    echo "fastq_input_path (-f) does not exist: ${fastq_input_path} "; echo ""
-    exit_abnormal
-  fi
+## check if supplied fastq_input_dir is valid
+fastq_input_dir=$(realpath $fastq_input_dir)
+if [[ ! -d ${fastq_input_dir} ]]; then
+  echo ""; echo ""; echo "Error:"
+  echo "fastq_input_dir (-f) does not exist: ${fastq_input_dir} "; echo ""
+  exit_abnormal
 fi
 
 
@@ -279,18 +277,7 @@ ctg_qc_dir=="${ctg_save_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 # e.g. scripts_dir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
 scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
 
-## Set fastq_dir - defaults to the output (delivery) path If not supplied through -f argument (above)
-if [[ ${fastq_custom} == "true" ]]; then
-  fastq_dir=${fastq_input_path}
-fi
-if [[ ${fastq_custom} == "false" ]]; then
-  fastq_dir="${project_dir}/nf-output/fastq/${projectid}" # defaults to blc2fastq output format - ../fastq/project_id
-  echo ""; echo " No Custom fastq specified. Using default: ${fastq_dir}"; echo ""
-  if [[ ! -d $fastq_dir ]]; then
-    echo " Fastq dir does not exist."
-    exit_abnormal
-  fi
-fi
+
 
 ##  Check if scripts_dir exist
 if [[ ! -d ${scripts_dir} ]]; then
@@ -417,12 +404,12 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo "  pipelineVersion   =  '${pipelineVersion}'                   " >> $nf_config_project
   echo "  script_execution_dir  =  '${script_exec_dir}'               " >> $nf_config_project
   echo ""                                                               >> $nf_config_project
-  echo "  // Project and run directries                               " >> $nf_config_project
+  echo "  // Project and run directories                               " >> $nf_config_project
   echo "  projectid          =  '${projectid}'                       " >> $nf_config_project
   echo "  project_dir         =  '${project_dir}'                      " >> $nf_config_project
   echo "  delivery_dir        =  '${delivery_dir}'                      " >> $nf_config_project
   echo "  ctg_qc_dir         =  '${ctg_qc_dir}'                   " >> $nf_config_project
-  echo "  fastq_dir           =  '${fastq_dir}'                        " >> $nf_config_project
+  echo "  fastq_input_dir    =  '${fastq_input_dir}'                        " >> $nf_config_project
   echo ""                                                               >> $nf_config_project
   echo "  sharedflowcell      =   ${sharedflowcell}                   " >> $nf_config_project
   echo "  species_all_samples =  '${species_all_samples}'              " >> $nf_config_project

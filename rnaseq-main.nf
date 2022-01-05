@@ -11,53 +11,58 @@ projectid           =  params.projectid    // ctg project id. e.g. 2021_024
 project_dir         =  params.project_dir   // .../shared/ctg-rnaseq/uroscan/2021_024 // NOT to be confused with project_dir
 delivery_dir        =  params.delivery_dir
 samplesheet         =  params.samplesheet           // name of simple sample sheet used for pipeline. Must includes file paths to fastq and bamsm, as well as species etc.
-fastq_dir           =  params.fastq_dir            // subdirectory fastq files are located. For a default run the output location from blc2fastq. fastq-files will be read according to sample sheet. Defaults to <bcl2fastq_dir>/<projectid>
+fastq_input_dir     =  params.fastq_input_dir            // subdirectory fastq files are located. For a default run the output location from blc2fastq. fastq-files will be read according to sample sheet. Defaults to <bcl2fastq_dir>/<projectid>
 ctg_qc_dir          =  params.ctg_qc_dir
 
+
 /* ===============================================================
-  *      DEFINE DIRECTORIES FROM PARAMS
+  *      DEFINE PATHS FROM INPUT PARAMS
   =============================================================== */
-output_dir =  project_dir+'/nf-output' // nextflow (temp) output directory for files genetated with the Pipeline that are NOT to be delivered
-file(output_dir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
+// Note that the primary output dir is the delivery_dir (to store all files to be delivered )
+// the nf_output_dir is used to store qc-files and temp files that are not included in the delivery
+nf_output_dir =  project_dir+'/nf-output' // nextflow (temp) output directory for files genetated with the Pipeline that are NOT to be delivered
+file(nf_output_dir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
 
-deliverysamplesheets = delivery_dir+'/samplesheet'
-deliveryscripts = delivery_dir+'/scripts'
-deliveryconfigs = delivery_dir+'/configs'
-deliverylogs = delivery_dir+'/logs'
+// deliverysamplesheets = delivery_dir+'/samplesheets'
+// deliveryscripts = delivery_dir+'/scripts'
+// deliveryconfigs = delivery_dir+'/configs'
+// deliverylogs = delivery_dir+'/logs'
 
 
+// Process & Module specific paths (Delivered to customer)
+fastq_dir = delivery_dir+'/fastq' // To where fastqfiles are moved (delivery path)
+stardir = delivery_dir+'/star'
+
+salmondir = delivery_dir+'/salmon'
+rsemdir = delivery_dir+'/rsem'
+bladderreportdir = delivery_dir+'/bladderreport'
 
 
-// the deliverytemp will be used to save analyses that are bound for delivery t ocustomer
-
-// output dirs to delivery
-deliverytemp  =  output_dir+'/delivery' // this temp delivery_dir is used within the nf workfolder/output_dir to store files that are comitted for delivery. A customer multiqc will be run only on this dir. Upon completion of all analyses this will be moved to delivery dir
-
-stardir = deliverytemp+'/star'
-stardir_filtered = deliverytemp+'/star_filtered'
-salmondir = deliverytemp+'/salmon'
-rsemdir = deliverytemp+'/rsem'
-bladderreportdir = deliverytemp+'/bladderreport'
-featurecountsdir = deliverytemp+'/featurecounts'
-
-deliveryqc = deliverytemp+'/qc'
 fastqcdir = deliverytemp+'/qc/fastqc'
 multiqcdelivery_dir  =  deliverytemp+'/qc/multiqc'
 mqcreport = deliverytemp+'/qc/multiqc' + '/' + projectid + '_multiqc_report'
-readme = delivery_dir +'/README_ctg_delivery_' + projectid
+
+// readme = delivery_dir +'/README_ctg_delivery_' + projectid
 
 
-// output for qc - temp workdirs
-qcdir = output_dir+'/qc'
+// Process & Module specific paths (Delivered to customer as QC)
+
+// output for qc
+qc_dir = delivery_dir+'/qc'
 qualimapdir = qcdir+'/qualimap'
 rseqcdir = qcdir+'/rseqc'
-
-
-markdupstempdir = qcdir+'/markdups_bam_tmp'
+featurecountsdir = delivery_dir+'/featurecounts'
 markdupsqcdir = qcdir+'/markdups'
 rnaseqmetricsdir = qcdir+'/rnaseqmetrics'
 multiqcctgdir = qcdir+'/multiqc-ctg'
 fastqscreendir = qcdir+'/fastqscreen'
+
+
+
+// tmp output dirs
+markdupstempdir = nf_output_dir+'/markdups_bam_tmp'
+stardir_filtered = nf_output_dir+'/star_filtered' // temporary folder used for filtered bam-files (no multi-map reads). These are used for featureCounts only due to problems with handling od large bam files.
+
 
 
 /// ctg sav dirs
@@ -65,12 +70,6 @@ ctg_save_samplesheets = ctg_save_dir+'/samplesheets'
 ctg_save_scripts = ctg_save_dir+'/scripts'
 ctg_save_configs = ctg_save_dir+'/configs'
 ctg_save_logs =  ctg_save_dir+'/logs'
-
-
-// Illumina runfolder stats
-interopdir_ilm = runfolderdir + '/InterOp'
-interopdir_ctg = runfolderdir + '/ctg-interop'
-
 
 
 
@@ -104,7 +103,7 @@ if (samplesheet   == '') {exit 1, "You must define a sample sheet path in the ne
 checkPathParamList = [
   params.project_root, params.delivery_root, ctg_qc_root,
   project_dir,
-  output_dir,
+  nf_output_dir,
   samplesheet
 ]
 for (param in checkPathParamList) {
@@ -141,7 +140,7 @@ def msg_startup = """\
     project id              :  ${projectid}
     project work dir        :  ${project_dir}
     nextflow execution dir  :  ${baseDir}
-    nextflow output dir     :  ${output_dir}
+    nextflow output dir     :  ${nf_output_dir}
     nextflow work dir       :  ${workDir}
     samplesheet             :  ${samplesheet}
 
@@ -1251,7 +1250,7 @@ process multiqc_ctg {
   if ( params.run_multiqc_ctg )
     """
       mkdir -p ${multiqcctgdir}
-      cd ${output_dir}
+      cd ${nf_output_dir}
       multiqc -n ${projectid}_multiqc_report \\
         --interactive \\
         -o ${multiqcctgdir} . ${runfolderdir}
