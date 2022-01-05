@@ -274,7 +274,7 @@ fi
 # set project work dir
 project_dir="${project_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 delivery_dir="${delivery_root}/${pipelineName}/${pipelineProfile}/${projectid}"
-ctg_save_dir=="${ctg_save_root}/${pipelineName}/${pipelineProfile}/${projectid}"
+ctg_qc_dir=="${ctg_save_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 ## scripts - where and what version of pipelie sctips to copy to project work dir
 # e.g. scripts_dir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
 scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
@@ -418,11 +418,11 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo "  script_execution_dir  =  '${script_exec_dir}'               " >> $nf_config_project
   echo ""                                                               >> $nf_config_project
   echo "  // Project and run directries                               " >> $nf_config_project
-  echo "  projectid           =  '${projectid}'                       " >> $nf_config_project
+  echo "  projectid          =  '${projectid}'                       " >> $nf_config_project
   echo "  project_dir         =  '${project_dir}'                      " >> $nf_config_project
-  echo "  delivery_dir        =  '${project_dir}'                      " >> $nf_config_project
-  echo "  ctg_save_dir        =  '${ctg_save_dir}'                   " >> $nf_config_project
-  echo "  fastqdir            =  '${fastq_dir}'                        " >> $nf_config_project
+  echo "  delivery_dir        =  '${delivery_dir}'                      " >> $nf_config_project
+  echo "  ctg_qc_dir         =  '${ctg_qc_dir}'                   " >> $nf_config_project
+  echo "  fastq_dir           =  '${fastq_dir}'                        " >> $nf_config_project
   echo ""                                                               >> $nf_config_project
   echo "  sharedflowcell      =   ${sharedflowcell}                   " >> $nf_config_project
   echo "  species_all_samples =  '${species_all_samples}'              " >> $nf_config_project

@@ -107,13 +107,18 @@ rnaseq-driver \
 
 
 
-# Configurations and input parameters
+# Input parameters and Configuration files
+
+For a regular run, pipeline input parameters need only to be controlled by the SampleSheet.
+
 Input parameters and variables are determined by:<br>
+
+
 
 *  `SampleSheet`: contains most required input parameters.
 *  `nextflow.config`: parameters that define the different nextflow profiles, including genome reference and container files.
 *  `nextflow.config.{projectId}`: auto-generated from the rnaseq-driver using parameters from 'SampleSheet' and file paths from the driver file.
-*  `rnaseq-driver`: contains file paths etc.
+*  `rnaseq-driver`: A few parameters are hardcoded in the rnaseq driver.
 
 
 ## Nextflow Profiles
@@ -312,9 +317,17 @@ uroscan. These are non-controlled references used as-is from the Lennart server.
 
 
 
+## nextflow.config
+
+
+
+## rnaseq-main.nf script
+
+
+
+
+
 # Pipeline Modules
-
-
 
 ## demultiplexing: bcl2fastq
 [bcl2fastq](https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf): Converts raw basecalls to fastq, and demultiplex samples based on indexes.  
