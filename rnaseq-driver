@@ -20,7 +20,7 @@ script_exec_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && p
 scripts_root="/projects/fs1/shared/ctg-dev/pipelines"
 project_root='/projects/fs1/shared/ctg-projects'
 delivery_root='/projects/fs1/shared/ctg-delivery' ## should be added pipelineProfile/ProjectID
-ctg_save_root='/projects/fs1/shared/ctg-qc/ctg-rnaseq' ## should be added pipelineProfile/ProjectID
+ctg_qc_root='/projects/fs1/shared/ctg-qc/ctg-rnaseq' ## should be added pipelineProfile/ProjectID
 
 ## Script & config names
 rnaseq_script="rnaseq-main.sh"
@@ -277,7 +277,7 @@ fi
 # set project work dir
 project_dir="${project_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 delivery_dir="${delivery_root}/${pipelineName}/${pipelineProfile}/${projectid}"
-ctg_qc_dir=="${ctg_save_root}/${pipelineName}/${pipelineProfile}/${projectid}"
+ctg_qc_dir=="${ctg_qc_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 ## scripts - where and what version of pipelie sctips to copy to project work dir
 # e.g. scripts_dir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
 scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
@@ -428,7 +428,7 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo "  // root directories                                         " >> $nf_config_project
   echo "  project_root       =  '${project_root}'                    " >> $nf_config_project
   echo "  delivery_root      =  '${delivery_root}'                   " >> $nf_config_project
-  echo "  ctg_save_root      =  '${ctg_save_root}'                   " >> $nf_config_project
+  echo "  ctg_qc_root      =  '${ctg_qc_root}'                   " >> $nf_config_project
   echo ""                                                               >> $nf_config_project
   echo " }"                                                             >> $nf_config_project
   echo ""                                                               >> $nf_config_project

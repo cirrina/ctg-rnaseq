@@ -205,7 +205,7 @@ Channel
   .splitCsv(header:true)
   .map { row -> tuple( row.Sample_ID, row.bam, row.Species, row.RIN, row.concentration ) }
   .tap { infobam }
-  .into { bam_checkbam_ch; bam_qualimap_ch; bam_rseqc_ch;  bam_bladderreport_ch }
+  .into { bam_checkbam_ch; bam_qualimap_ch; bam_rseqc_ch;  bam_bladderreport_ch, bam_rnaseqmetrics_ch}
 
 Channel
     .fromPath(chsheet)
@@ -459,7 +459,6 @@ process rsem {
 
   output:
   val "x" into rsem_complete_ch
-  val "x" into rsem_complete_report_ch
 
   script:
   // species and references (bowtie2 refs)
@@ -635,7 +634,8 @@ process markdups {
   set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
 
   output:
-  val "x" into markdups_complete_ch
+  val "x" into markdups_complete_1_ch
+  val "x" into markdups_complete_2_ch
   set sid, bam, strand, species, RIN, concentration into bam_filter_multimap_ch
 
   script:
@@ -679,7 +679,7 @@ process filter_multimap {
   memory { params.run_featurecounts  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from markdups_complete_ch.collect()
+  val x from markdups_complete_1_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_filter_multimap_ch
 
   output:
@@ -715,27 +715,26 @@ process featurecounts {
   script:
   fcounts_feature   =  'exon'
 
-  if( params.strandness_global == "forward" )
-    strand_numeric = 1
-  else if ( params.strandness_global == "reverse" )
-    strand_numeric = 2
-  else
-    strand_numeric = 0
+  if( params.strandness_global == "forward" ) {
+    strand_numeric = 1 }
+  else if ( params.strandness_global == "reverse" ) {
+    strand_numeric = 2 }
+  else {
+    strand_numeric = 0 }
 
   // gtf used for featurecounts
-  if ( params.species_global == "Homo sapiens" ){
-    gtf = params.gtf_hs}
-  else if  ( params.species_global == "Mus musculus" ){
-    gtf = params.gtf_mm}
-  else if  ( params.species_global == "Rattus norvegicus" ){
-      gtf = params.gtf_rn}
-  else{
-    gtf=""}
+  if ( params.species_global == "Homo sapiens" ) {
+    gtf = params.gtf_hs }
+  else if  ( params.species_global == "Mus musculus" ) {
+    gtf = params.gtf_mm }
+  else if  ( params.species_global == "Rattus norvegicus" ) {
+    gtf = params.gtf_rn }
+  else {
+    gtf="" }
 
-  if( params.run_featurecounts && params.paired_global)
+  if( params.run_featurecounts && params.paired_global )
     """
     mkdir -p ${featurecountsdir}
-    # cd ${stardir}
     cd ${stardir_filtered}
     bamstring=\$(echo ${bams} | sed 's/,/ /g' | sed 's/\\[//g' | sed 's/\\]//g' )
     echo \${bamstring}
@@ -747,10 +746,8 @@ process featurecounts {
       -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
       -p \\
       -s ${strand_numeric} \${bamstring}
-
-    #find ${featurecountsdir} -user $USER -exec chmod g+rw {} +
     """
-  else if( params.run_featurecounts && !params.paired_global)
+  else if( params.run_featurecounts && !params.paired_global )
     """
     mkdir -p ${featurecountsdir}
     cd ${stardir_filtered}
@@ -807,20 +804,19 @@ process rnaseqmetrics {
   memory { params.run_rnaseqmetrics  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from markdups_complete_ch.collect()
+  val x from markdups_complete_2_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_rnaseqmetrics_ch
 
   output:
   val "x" into rnaseqmetrics_complete_ch
 
   script:
-  // NONE, FIRST_READ_TRANSCRIPTION_STRAND, and SECOND_READ_TRANSCRIPTION_STRAND.
-  if ( strand == "forward" )
-    strand="FIRST_READ_TRANSCRIPTION_STRAND"
-  else if ( strand == "reverse" )
-    strand="SECOND_READ_TRANSCRIPTION_STRAND"
-  else
-    strand="NONE"
+  if ( strand == "forward" ) {
+    strand="FIRST_READ_TRANSCRIPTION_STRAND" }
+  else if ( strand == "reverse" ) {
+    strand="SECOND_READ_TRANSCRIPTION_STRAND" }
+  else {
+    strand="NONE" }
 
   if ( species == "Homo sapiens" ){
     refflat = params.picard_refflat_hs
@@ -867,12 +863,13 @@ process rnaseqmetrics {
     echo "refflat file: ${refflat}"
     mkdir -p ${rnaseqmetricsdir}
 
+    # note that rrna ribosomal intervals file seem not to work in present state.
     picard CollectRnaSeqMetrics \\
       INPUT=${stardir}/${bam} \\
       OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
       REF_FLAT=${refflat} \\
-      STRAND=${strand} \\
-      RIBOSOMAL_INTERVALS=${rrna}
+      STRAND=${strand}
+      ## RIBOSOMAL_INTERVALS=${rrna}
     """
   else
     """
@@ -970,16 +967,15 @@ process rseqc {
 /* ===============================================================
   *      UROSCAN - BLADDER REPORT
   =============================================================== */
+// Bladderreport need a temporary folder for each analysis since temp filles with non unique names are generated
 
 process bladderreport {
-
   tag  { params.run_bladderreport  ? "$sid" : "blank_run"  }
   cpus { params.run_bladderreport  ? params.cpu_mid : params.cpu_min  }
   memory { params.run_bladderreport  ?  params.mem_mid : params.mem_min  }
 
   input:
-  val x from rseqc_complete_report_ch.collect()
-  val x from rsem_complete_report_ch.collect()
+  val x from rsem_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_bladderreport_ch
 
   output:
@@ -987,10 +983,10 @@ process bladderreport {
 
   script:
   bladderreport_scriptsdir = project_dir+'/bin/bladderreport'
-  bladderreport_scriptname= params.bladderreport_scriptname
+  bladderreport_scriptname = params.bladderreport_scriptname
 
   if ( params.run_bladderreport )
-  """
+    """
     mkdir -p ${bladderreportdir}/tmp_${sid}
     cp -r ${bladderreport_scriptsdir} ${bladderreportdir}/tmp_${sid}/
     cd ${bladderreportdir}/tmp_${sid}/bladderreport
@@ -1011,59 +1007,39 @@ process bladderreport {
     cd ${bladderreportdir}
     chromium --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
     mv -f ${bladderreportdir}/tmp_${sid}/bladderreport/${sid}.LundClassifier.rds ${bladderreportdir}/${sid}.LundClassifier.rds
-  """
+    """
   else
-  """
+    """
     echo "run_bladderreport skipped"
-  """
+    """
 }
 
 
 
 /* ===============================================================
 * ===============================================================
-  *     ----------- POST ANALYSIS SECTION -------
+  *     ----------- POST ANALYSIS QC SECTION -------
   ===============================================================
   =============================================================== */
 
 
 
-
-
-/* ===============================================================
-  *     ctg multiqc - on all analyses - runfolder included
-  =============================================================== */
-// This multiQC is for CTG infouse and not to the customer.
-// The customer will obtain a lighter multiQC carried out below
-
-
 process multiqc {
-  //publishDir "${multiqc_dir}", mode: 'copy', overwrite: 'true'
   tag  { params.run_multiqc_ctg  ? "$projectid" : "blank_run"  }
-  // cpus 8
-  // memory '64 GB'
-  // time '3h'
-  // echo debug_mode
   cpus { params.run_multiqc_ctg  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_multiqc_ctg  ?  params.mem_standard : params.mem_min  }
-
-
 
   input:
   val x from rm_mmapfiltered_complete_ch.collect()
   val x from fastqc_complete_ch.collect()
-  //val x from markdups_complete_ch.collect()
   val x from rseqc_complete_ch.collect()
   val x from fastqscreen_complete_ch.collect()
   val x from rsem_complete_ch.collect()
-  val x from bladderreport_complete_ch.collect()
   val x from salmon_complete_ch.collect()
 
   output:
   val "x" into multiqc_ctg_complete_ch
   val "x" into multiqc_ctg_complete_2_ch
-
-  // when: params.run_multiqc_ctg
 
   script:
   if ( params.run_multiqc_ctg )
@@ -1121,6 +1097,8 @@ process stage_delivery {
 
   input:
   val x from multiqc_ctg_complete_ch.collect()
+  val x from bladderreport_complete_ch.collect()
+
 
   output:
   val "x" into stage_delivery_complete_ch
@@ -1208,14 +1186,8 @@ process stage_delivery {
 
 
 
-//    md5 sum on delivery_dir
+//    md5 sum on fastq and bam files
 // -----------------------------
-// generate md5 sum on all files included in delivery temp folder
-// if ( params.run_md5sum_delivery == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ md5sum_complete_ch }
-// }
 process md5sum {
   //cpus 8
   tag  { params.run_md5sum_delivery  ? "$projectid" : "blank_run"  }
@@ -1246,10 +1218,7 @@ process md5sum {
   """
   echo "skipping run_md5sum_delivery"
   """
-  // else
-  //   """
-  //     echo "${md5sumfile} already exists. skipping."
-  //   """
+
 }
 
 
@@ -1286,7 +1255,6 @@ process finalize_pipeline {
   script:
   if (params.run_finalize_pipeline)
   """
-
 
     cd ${delivery_dir}
 

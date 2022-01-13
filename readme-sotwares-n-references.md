@@ -81,35 +81,116 @@ rnaseq-driver \
   -r
 ```
 
-# Default directory structure
-
-// [nas-sync/upload]: ls4 Illumina runfolder upload sync dir, shared/ctg-projects/nas-sync/upload/
-//    └──– [runfolder] = Illumina runfolder.
-//      |--- Data ....
-//      |
-//      └──-
-
-// [basedir]: ls4 ctg projets base directory, e.g. shared/ctg-projects/rnaseq
-//   └──–– [projectdir] = workdir = nf execution dir = baseDir. e.g. shared/ctg-projects/rnaseq/<projectid>
-//      |--- [fastq] (if demux)
-//      |      |- <project_id>
-//      |      |      └── fastq-files.fastq.gz
-//      |      |- Reports
-//      |      |- Stats
-//      |      └─ "Undetermined ... fastq.gz ". Remember to NOT COPY these if pooled sample
-//      |---  "nextflow.config"
-//      |---  "ctg-rnaesq.nf"
-//      |---  "sample sheet original IEM"
-//      |---  [nfworkdir] = workDir: shared/ctg-projects/rnaseq/work; used by Nextflow
-//      └──-  [outputdir]: shared/ctg-projects/rnaseq/nf-output
+# Default ls4 directory structure
 
 
+## ls4 file structure (v3.x)
+
+
+### RunFolders (to be used by preceeding demux scripts)
+```
+## ILUMMINA RUNFOLDER DIR
+## default upload dir for NovaSeq runfolders
+
+/projects/fs1/nas-sync/upload
+    └── {runfolder} = Illumina runfolder.
+      |--- Data ....
+      |
+      └── 
+```
+
+### FASTQ files from ctg-demux (expected input)
+```
+## FASTQ files
+## ctg-demux2 default output of 
+
+/projects/fs1/shared/bcl2fastq-fastq
+    └──– {RunFolder} = Illumina runfolder.
+      |---  {Stats}
+      |---  {Reports} = 
+      |---  Undetermined_S0_R...fastq.gz = fastq files with reads not assigned to supplied Indexes. 
+      |---  {ProjectId X} = ProjectId as supplied in SampleSheet [Data] column under "SampleProject". May be multiple projects per Flowcell/RunfFolder.
+      |---  ...
+      └──-  {ProjectId X} =  ProjectId as supplied in SampleSheet [Data] column under "SampleProject"
+
+
+```
+
+
+### ctg-rnaseq scripts file structure
+
+```
+scripts_root="/projects/fs1/shared/ctg-dev/pipelines"
+
+```
+
+
+### project_dir: ctg-rnaseq pipeline workfolder
+```
+## base dir for nextflow work directory (project_dir) 
+project_root='/projects/fs1/shared/ctg-projects'
+
+workdir = nf execution dir = baseDir. e.g. shared/ctg-projects/rnaseq/<projectid>
+shared/ctg-projects/rnaseq/nf-outpu
+
+/projects/fs1/shared/ctg-projects  = project_root
+   └── {PipelineName} = 
+      └── {PipelineProfile} = 
+		└── {ProjectId} = 
+	      |--  "nextflow.config"
+	      |--  "ctg-rnaesq.nf"
+	      |--  "sample sheet original IEM"
+	      |--  [nfworkdir] = workDir: shared/ctg-projects/rnaseq/work; used by Nextflow
+	      └──  [outputdir]: shared/ctg-projects/rnaseq/nf-output
+      
+      
+    workDir: shared/ctg-projects/rnaseq/work; used by Nextflow  
+```
+
+### output_dir: ctg-rnaseq output & delivery folder 
+```
+
+## Output & Delivery dir
+/projects/fs1/shared/ctg-projects  = delivery_root
+   └── {PipelineName} = 
+      └── {PipelineProfile} = 
+		└── {ProjectId} = 
+		        
+	      |-- fastq = Files will be MOVED to here if supplied from other dir. ??? Use option 'fastqNoDeliver' if not???
+	      |-- star (if demux)
+	      |-- qc (if demux)
+	        |-- multiqc (if demux)
+	        
+	      
+	      └── "Undetermined ... fastq.gz ". Remember to NOT COPY these if pooled sample
+
+
+      
+delivery_root='/projects/fs1/shared/ctg-delivery' ## should be added pipelineProfile/ProjectID
+ctg_save_root='/projects/fs1/shared/ctg-qc/ctg-rnaseq' ## should be added pipelineProfile/ProjectID
+
+      
+      
+```
 
 
 
-# Input parameters and Configuration files
+### ctg_qc_dir: ctg-rnaseq output & delivery folder 
 
-For a regular run, pipeline input parameters need only to be controlled by the SampleSheet.
+```
+ctg_save_root
+```
+
+
+# Sscript Input 
+
+For a regular run, pipeline input parameters need only to be controlled by the SampleSheet. Fastq file location will default to the output of ctg-demux2 script and (if not there) default to the expected delivery dir location. If other location provide using -f flag below. 
+
+
+## Arguments
+
+# Parameters and Configuration files
+
 
 Input parameters and variables are determined by:<br>
 
@@ -901,3 +982,8 @@ fastq_input_dir (custom_fastq is true) IF NOT defaults to fastq_output_dir
 fastq_output_dir
 
 if NO fastq_input dir
+
+
+?? Use option 'fastqNoDeliver' if not???
+
+check files default .. 
