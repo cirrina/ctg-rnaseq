@@ -112,20 +112,17 @@ def msg_startup = """\
     project id              :  ${projectid}
     project work dir        :  ${project_dir}
     nextflow execution dir  :  ${baseDir}
-    nextflow output dir     :  ${nf_tmp_dir}
+    nextflow tmp output dir :  ${nf_tmp_dir}
     nextflow work dir       :  ${workDir}
     samplesheet             :  ${samplesheet}
-
    """
        .stripIndent()
 println( msg_startup )
 
 
-
 workflow.onComplete {
 
   def msg_completed = """\
-
   	Pipeline execution summary
   	---------------------------
   	Completed at : ${workflow.complete}
@@ -140,40 +137,28 @@ workflow.onComplete {
   def error = """\
 		${workflow.errorReport}
 	   """
-
-
-  // base = csv.getBaseName()
   logfile.text = msg_startup.stripIndent()
   logfile.append( msg_completed.stripIndent() )
   logfile.append( error )
-
-  // if ( new File( logfile ).exists() && ! new File( logfile_sav ).exists())  { new File( logfile_sav ) << new File( logfile ).text }
 
   println( msg_completed )
 }
 
 
-def msg_modules = """\
-
-    Run modules
-    ---------------------------------
-    run_blcl2fastq    :  ${params.run_blcl2fastq}
-    fastqc        :  ${params.run_fastqc}
-
-   """
-   .stripIndent()
-
-println( msg_modules )
+// def msg_modules = """\
+//     Run modules
+//     ---------------------------------
+//     fastqc            :    ${params.run_fastqc}
+//     """
+//     .stripIndent()
+//
+// println( msg_modules )
 
 
 
 /* ===============================================================
   *    PROCESS SAMPLE SHEET & DEFINE CHANNELS
   =============================================================== */
-
-// Process ctg IEM style sample sheet & save
-// samplesheet_nextflow="${project_dir}/SampleSheet-nexflow.csv"
-
 // Read and process sample sheet. Save to SampleSheet-nexflow.csv
 // samplesheet to be parsed as input channel (take everything below [Data] section).
 sheet = file(params.samplesheet)
@@ -1121,25 +1106,24 @@ process stage_delivery {
     cp -r ${samplesheet} ${samplesheetsdir}
     cp -r ${sheet_nf} ${samplesheetsdir}
 
+
     ##  scripts & configs  (executables bins etc, version specific) and configs (project specific)
     ## --------------------------------------------------------------
     mkdir -p ${deliveryscripts}
     cp -r ${project_dir}/rnaseq-driver ${deliveryscripts}
     cp -r ${project_dir}/rnaseq-main.nf ${deliveryscripts}
     cp -r ${project_dir}/bin ${deliveryscripts}
-    cp -r ${project_dir}/nextflow.config.* ${deliveryscripts}  
+    cp -r ${project_dir}/nextflow.config.* ${deliveryscripts}
+
+
+
     """
   else
     """
     echo "run_setup_deliverytemp skipped"
     """
 
-
 }
-
-
-
-
 
 
 
@@ -1149,13 +1133,6 @@ process stage_delivery {
   *     FINALIZE CTG SAVE & MOVE DELIVERY - save qc files and scripts
   =============================================================== */
 
-
-
-
-// Finalize delivery_dir
-// -----------------------------
-
-
 process finalize_pipeline {
 
   tag  { params.run_finalize_pipeline  ? "${projectid}" : "blank_run"  }
@@ -1163,25 +1140,27 @@ process finalize_pipeline {
   cpus params.cpu_min
 
   input:
-  val x from md5sum_complete_ch.collect()
-
-  //val x from checkfiles_rscript_predelivery_ch.collect()
+  val x from  stage_delivery_complete_ch.collect()
 
   output:
-  val "x" into finalize_pipeline_ch
-
-
+  val "x" into finalize_pipeline_complete_ch
 
   script:
   if (params.run_finalize_pipeline)
-  """
+    """
 
+    ## Copy QC files to ctg-qc
+    ## -----------------------
+    cp -r ${multiqcdir} ${ctg_qc_dir}
+    cp -r ${fastqcdir} ${ctg_qc_dir}
     cd ${delivery_dir}
 
+    ## Chmod all dirs
+    ## -----------------------
     find ${delivery_dir} -user $USER -exec chmod g+rw {} +
     find ${project_dir} -user $USER -exec chmod g+rw {} +
     find ${ctg_qc_dir} -user $USER -exec chmod g+rw {} +
-  """
+    """
   else
     """
     echo "skipping run_finalize_pipeline"
