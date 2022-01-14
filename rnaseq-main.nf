@@ -33,6 +33,8 @@ salmondir = delivery_dir+'/salmon'
 rsemdir = delivery_dir+'/rsem'
 bladderreportdir = delivery_dir+'/bladderreport'
 featurecountsdir = delivery_dir+'/featurecounts'
+samplesheetsdir = delivery_dir+'/samplesheets'
+deliveryscripts = delivery_dir+'/scripts'
 
 // QC dirs
 qcdir = delivery_dir+'/qc'
@@ -545,26 +547,21 @@ process star  {
 
 
   if ( params.run_star )
-  """
-  mkdir -p ${stardir}
+    """
+    mkdir -p ${stardir}
+    STAR --genomeDir ${genome} \\
+      --readFilesIn ${starfiles} \\
+      --runThreadN ${task.cpus}  \\
+      --readFilesCommand zcat \\
+      --outSAMtype BAM SortedByCoordinate \\
+      --limitBAMsortRAM 10000000000 \\
+      --outFileNamePrefix ${stardir}/${sid}_
 
-  ### added genomeLoad remove - star crashes if not for version 2.5x uroscan pipeline
-  ## STAR  --genomeDir ${genome} --genomeLoad Remove
-
-  STAR --genomeDir ${genome} \\
-    --readFilesIn ${starfiles} \\
-    --runThreadN ${task.cpus}  \\
-    --readFilesCommand zcat \\
-    --outSAMtype BAM SortedByCoordinate \\
-    --limitBAMsortRAM 10000000000 \\
-    --outFileNamePrefix ${stardir}/${sid}_
-
-  #find ${stardir} -user $USER -exec chmod g+rw {} +
-  """
+    """
   else
-  """
-  echo "skipping star"
-  """
+    """
+    echo "skipping star"
+    """
 
 }
 
@@ -634,8 +631,7 @@ process markdups {
   set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
 
   output:
-  val "x" into markdups_complete_1_ch
-  val "x" into markdups_complete_2_ch
+  val "x" into markdups_complete_ch
   set sid, bam, strand, species, RIN, concentration into bam_filter_multimap_ch
 
   script:
@@ -679,7 +675,7 @@ process filter_multimap {
   memory { params.run_featurecounts  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from markdups_complete_1_ch.collect()
+  val x from markdups_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_filter_multimap_ch
 
   output:
@@ -767,32 +763,6 @@ process featurecounts {
     """
 }
 
-// Remove temoorary filtered bams
-process rm_filter_mmap {
-  tag  { params.run_featurecounts  ? "$sid" : "blank_run"  }
-  cpus { params.run_featurecounts  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_featurecounts  ?  params.mem_standard : params.mem_min  }
-
-  input:
-  val x from featurecounts_complete_ch.collect()
-
-  output:
-  val "x" into rm_mmapfiltered_complete_ch
-
-  script:
-  if ( params.run_featurecounts )
-    """
-    if [[ -d ${stardir_filtered} ]]; then
-      rm -rf ${stardir_filtered}
-    fi
-    """
-  else
-    """
-    echo "rm_mmapfiltered"
-    """
-}
-
-
 
 /* ===============================================================
   *     OTHER QC APPS
@@ -804,7 +774,7 @@ process rnaseqmetrics {
   memory { params.run_rnaseqmetrics  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from markdups_complete_2_ch.collect()
+  val x from markdups_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_rnaseqmetrics_ch
 
   output:
@@ -1018,19 +988,19 @@ process bladderreport {
 
 /* ===============================================================
 * ===============================================================
-  *     ----------- POST ANALYSIS QC SECTION -------
+  *     ----------- POST ANALYSIS - MULTIQC  -------
   ===============================================================
   =============================================================== */
 
 
 
 process multiqc {
-  tag  { params.run_multiqc_ctg  ? "$projectid" : "blank_run"  }
-  cpus { params.run_multiqc_ctg  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_multiqc_ctg  ?  params.mem_standard : params.mem_min  }
+  tag  { params.run_multiqc  ? "$projectid" : "blank_run"  }
+  cpus { params.run_multiqc  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_multiqc  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from rm_mmapfiltered_complete_ch.collect()
+  val x from featurecounts_complete_ch.collect()
   val x from fastqc_complete_ch.collect()
   val x from rseqc_complete_ch.collect()
   val x from fastqscreen_complete_ch.collect()
@@ -1038,76 +1008,89 @@ process multiqc {
   val x from salmon_complete_ch.collect()
 
   output:
-  val "x" into multiqc_ctg_complete_ch
-  val "x" into multiqc_ctg_complete_2_ch
+  val "x" into multiqc_complete_ch
 
   script:
-  if ( params.run_multiqc_ctg )
+  if ( params.run_multiqc )
     """
-    ## remove if multiqc is already present from failed run. Will not overwrite ...
-    rm -rf ${multiqc_dir}
-    mkdir -p ${multiqc_dir}
-
+    ## use -f flag to overwrite if multiqc is already present from failed run.
     cd ${delivery_dir}
     multiqc -n ${mqcreport} \\
       --interactive \\
+      -f \\
       -o ${multiqc_dir} .
 
-    find ${multiqc_dir} -user $USER -exec chmod g+rw {} +
     """
   else
     """
-    echo "run_multiqc_ctg skipped"
+    echo "run_multiqc skipped"
+    """
+}
+
+
+/* ===============================================================
+* ===============================================================
+  *     ----------- POST ANALYSIS - nd5sum  -------
+  ===============================================================
+  =============================================================== */
+// perform md5sums on FASTQ and BAM directories
+
+process md5sum {
+  tag  { params.run_md5sum_delivery  ? "$projectid" : "blank_run"  }
+  cpus { params.run_md5sum_delivery  ? params.cpu_high : params.cpu_min  }
+  memory { params.run_md5sum_delivery  ?  params.mem_high : params.mem_min  }
+
+  input:
+  val x from multiqc_complete_ch.collect()
+
+  output:
+  val "x" into md5sum_complete_ch
+
+  script:
+  if ( params.run_md5sum )
+    """
+    if [[ -d "${fastq_dir}" ]]; then
+      find ${fastq_dir} -type f -exec md5sum {} \\; > ${fastq_dir}/md5sum_fastq.txt ; echo
+    fi
+    if [[ -d "${stardir}" ]]; then
+      find ${stardir} -type f -exec md5sum {} \\; > ${stardir}/md5sum_star.txt ; echo
+    fi
+    if [[ -d "${featurecountsdir}" ]]; then
+      find ${featurecountsdir} -type f -exec md5sum {} \\; > ${featurecountsdir}/md5sum_featurecounts.txt ; echo
+    fi
+    """
+  else
+    """
+    echo "skipping run_md5sum_delivery"
     """
 }
 
 
 
+/* ===============================================================
+* ===============================================================
+  *     ----------- POST ANALYSIS COPY N CLEANUP  -------
+  ===============================================================
+  =============================================================== */
+
 
 /* ===============================================================
-  *     Genaerate Delivery folder (temp folder within project dir)
+  *     Stage the delivery folder - Scripts SampleSheets & logs
   =============================================================== */
-// generate a delivery folder and collect all files n folders to deliver
-// run additional multiqc and md5 summ
-// This temp delivery folder can be moved to delivery site on ls4 (nas sync) after nextflow sctipt completion.
-// this delivery in additional shell script.
-// move fastq files to delivery folder
-// if not pooled, deliver the complete bcl2fastq directory including stats and undetermined fastq
-
-// setup a deliveryfolder in nextflow dir.
-// This will later be moved to /nas-sync/ctg-delivery
-// if ( params.run_setup_deliverytemp == false ) {
-//    Channel
-// 	 .from("x")
-//    .set{ setup_deliverytemp_complete_ch }
-// }
-
-
-
+// remove tmp files
+// copy SampleSheets & Scripts
 
 process stage_delivery {
-  // cpus 4
   tag  { params.run_stage_delivery  ? "$projectid" : "blank_run"  }
-  // memory '64 GB'
-  // time '3h'
   cpus { params.run_stage_delivery  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_stage_delivery  ?  params.mem_standard : params.mem_min  }
 
-
-
   input:
-  val x from multiqc_ctg_complete_ch.collect()
+  val x from multiqc_complete_ch.collect()
   val x from bladderreport_complete_ch.collect()
-
 
   output:
   val "x" into stage_delivery_complete_ch
-
-  // when: params.run_setup_deliverytemp
-
-  // add scripts
-  // add sample sheets
-  // move fastq
 
   script:
   if ( params.run_stage_delivery )
@@ -1128,52 +1111,23 @@ process stage_delivery {
       rm -rf ${markdupstempdir}
     fi
 
-
+    if [[ -d ${stardir_filtered} ]]; then
+      rm -rf ${stardir_filtered}
+    fi
 
     ##  copy sample sheet to delivery
     ## ------------------------------
-    mkdir -p ${deliverysamplesheets}
-    if [ -f ${samplesheet} ]; then
-      cp ${samplesheet} ${deliverysamplesheets}/
-    fi
+    mkdir -p ${samplesheetsdir}
+    cp -r ${samplesheet} ${samplesheetsdir}
+    cp -r ${sheet_nf} ${samplesheetsdir}
 
-    ##  logs
-    ## -----------------
-    ## mkdir -p ${deliverylogs}
-
-
-    ##  scripts dir (executables bins etc, version specific) and configs (project specific)
+    ##  scripts & configs  (executables bins etc, version specific) and configs (project specific)
     ## --------------------------------------------------------------
     mkdir -p ${deliveryscripts}
-
-    if [[ -d "${params.scriptsdir}" ]]; then
-      cp -r ${params.scriptsdir} ${deliveryscripts}
-    fi
-
-
-    ## configs (project specific) as well as the rscript log config
-    ##   --------------------------------------------------------------
-    mkdir -p ${deliveryconfigs}
-    if [[ -f "${project_dir}/nextflow.config.project.${projectid}" ]]; then
-      cp ${project_dir}/nextflow.config.project.${projectid} ${deliveryconfigs}
-    fi
-
-    if [[ -f "${project_dir}/nextflow.config" ]]; then
-      cp ${project_dir}/nextflow.config ${deliveryconfigs}
-    fi
-    if [[ -f "${runfolderdir}/log.rscript.samplesheet" ]]; then
-      cp ${runfolderdir}/log.rscript.samplesheet ${deliveryconfigs}
-    fi
-
-
-
-
-
-    ## chmods
-    ## --------
-    find ${deliverytemp} -user $USER -exec chmod g+rw {} +
-
-
+    cp -r ${project_dir}/rnaseq-driver ${deliveryscripts}
+    cp -r ${project_dir}/rnaseq-main.nf ${deliveryscripts}
+    cp -r ${project_dir}/bin ${deliveryscripts}
+    cp -r ${project_dir}/nextflow.config.* ${deliveryscripts}  
     """
   else
     """
@@ -1186,40 +1140,6 @@ process stage_delivery {
 
 
 
-//    md5 sum on fastq and bam files
-// -----------------------------
-process md5sum {
-  //cpus 8
-  tag  { params.run_md5sum_delivery  ? "$projectid" : "blank_run"  }
-  // memory '64 GB'
-  // time '3h'
-  cpus { params.run_md5sum_delivery  ? params.cpu_high : params.cpu_min  }
-  memory { params.run_md5sum_delivery  ?  params.mem_high : params.mem_min  }
-
-
-  input:
-  val x from multiqc_complete_ch.collect()
-
-  output:
-  val "x" into md5sum_complete_ch
-
-  // when: params.run_md5sum_delivery
-
-  script:
-  md5sumfile = delivery_dir + '/md5sum.txt'
-
-  // if (! new File( md5sumfile ).exists() && params.run_md5sum_delivery)
-  if ( params.run_md5sum )
-    """
-     cd ${deliverytemp}
-     find . -type f -exec md5sum {} \\; > ${md5sumfile} ; echo
-    """
-  else
-  """
-  echo "skipping run_md5sum_delivery"
-  """
-
-}
 
 
 
