@@ -190,7 +190,7 @@ Channel
 Channel
   .fromPath(sheet_nf)
   .splitCsv(header:true)
-  .map { row -> tuple( row.Sample_ID, row.bam, row.Species, row.RIN, row.concentration ) }
+  .map { row -> tuple( row.Sample_ID, row.bam, row.Strandness, row.Species, row.RIN, row.concentration ) }
   .tap { infobam }
   .into { bam_checkbam_ch; bam_qualimap_ch; bam_rseqc_ch; bam_bladderreport_ch; bam_rnaseqmetrics_ch }
 
@@ -773,11 +773,11 @@ process rnaseqmetrics {
 
   script:
   if ( strand == "forward" ) {
-    strand="FIRST_READ_TRANSCRIPTION_STRAND" }
-  else if ( strand == "reverse" ) {
-    strand="SECOND_READ_TRANSCRIPTION_STRAND" }
+    strand_input="FIRST_READ_TRANSCRIPTION_STRAND" }
+  else if ( params.strandness_global == "reverse" ) {
+    strand_input="SECOND_READ_TRANSCRIPTION_STRAND" }
   else {
-    strand="NONE" }
+    strand_input="NONE" }
 
   if ( species == "Homo sapiens" ){
     refflat = params.picard_refflat_hs
@@ -795,7 +795,7 @@ process rnaseqmetrics {
 
   if ( params.run_rnaseqmetrics && params.pipelineProfile == "uroscan")
     """
-    echo "strand: ${strand}"
+    echo "strand: ${strand_input}"
     echo "refflat file: ${refflat}"
     mkdir -p ${rnaseqmetricsdir}
 
@@ -803,11 +803,11 @@ process rnaseqmetrics {
         INPUT=${stardir}/${bam} \\
         OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
         REF_FLAT=${refflat} \\
-        STRAND=${strand}
+        STRAND=${strand_input}
     """
   else if ( params.run_rnaseqmetrics && species == "Rattus norvegicus")
     """
-    echo "strand: ${strand}"
+    echo "strand: ${strand_input}"
     echo "refflat file: ${refflat}"
     mkdir -p ${rnaseqmetricsdir}
 
@@ -815,11 +815,11 @@ process rnaseqmetrics {
         INPUT=${stardir}/${bam} \\
         OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
         REF_FLAT=${refflat} \\
-        STRAND=${strand}
+        STRAND=${strand_input}
     """
   else if ( params.run_rnaseqmetrics && (params.pipelineProfile == "rnaseq" || params.pipelineProfile == "rnaseq_total"))
     """
-    echo "strand: ${strand}"
+    echo "strand: ${strand_input}"
     echo "rrna file: ${rrna}"
     echo "refflat file: ${refflat}"
     mkdir -p ${rnaseqmetricsdir}
@@ -829,7 +829,7 @@ process rnaseqmetrics {
       INPUT=${stardir}/${bam} \\
       OUTPUT=${rnaseqmetricsdir}/${sid}_bam.collectRNAseq.metrics.txt \\
       REF_FLAT=${refflat} \\
-      STRAND=${strand}
+      STRAND=${strand_input}
       ## RIBOSOMAL_INTERVALS=${rrna}
     """
   else

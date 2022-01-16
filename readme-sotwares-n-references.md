@@ -2,22 +2,21 @@
 # ctg-rnaseq pipeline
 ------------
 
-Primary data processing pipeline for Illumina RNA-seq data produced at CTG. Built to run using Nextflow and (multiple) Singularity containers. The pipeline is designed to start from an FASTQ files to generate different qc measures, alignment and transcript summarization.
+Primary data processing pipeline for Illumina RNA-seq data produced at CTG. Built to run on lunarc lsens4 cluster using Nextflow and (multiple) Singularity containers. The pipeline is designed to start from FASTQ files and will generate qc measures, fastq alignment and transcript summarization.
 
-The pipeline is designed to handle multiple different RNAseq Assays (library preparation methods), and reference Species. Different assays will require differences in read strandness, read trimming etc. These input parameters are set in the SampleSheet and the profile-specific nextflow.config files (see below).
+The pipeline can handle different RNAseq Assays (library preparation kits), and reference Species. Different assays will require differences in read strandness, read trimming etc. These input parameters are set in the SampleSheet and the profile-specific nextflow.config files (see below).
 
-**Note on Demultiplexing and Fastq:** As of versions ≥2.2.x the pipeline assumes fastq files as starting input. Demultiplexing is no longer performed within the pipeline. In a standard run, demux is performed on an entire RunFolder using the `/ctg-tools/bin/ctg-demux2` tool.
+**Note on Demultiplexing and Fastq:**  As of versions ≥2.2.x the pipeline assumes fastq files as starting input (`-f`). Demultiplexing is no longer performed within the actual pipeline. Instead demux is typically performed on an entire RunFolder using the `/ctg-tools/bin/ctg-demux2` tool.
 
-**Note on ProjectId/Sample_Project** Only **one project** is allowed per pipeline run. `ProjectId` is supplied through the SampleSheet [Header]. Thus, for a run, all individual `Sample_Project` entries in the SampleSheet [Data] section must be same as `ProjectId` for all **samples**.
+**Note on ProjectId/Sample_Project:**  Only **one project** is allowed per pipeline run. `ProjectId` is supplied through the SampleSheet `[Header]` section. Thus, for a run, all individual `Sample_Project` entries in the SampleSheet `[Data]` section must be same as `ProjectId` for all samples. Run `ctg-parse-samplesheet` to generate a proper sample-specific input sheet named `SampleSheet-ctg-ProjectXXX.csv`.
 
-**Note on multiple Species:** The pipeline is designed for **one and the same species within a project**. This is due to that transcript summarization i must be performed using the same refence GFF file. If multiple species are used, then run multiple pipeline runs, each defined by a unique project IDs, e.g. 2021_148_hs and 2021_148_mm, respectively .
+**Note on multiple Species:** The pipeline is designed for **one and the same species within a project**. This due to transcript summarization is performed using onw unique refence GFF file. If multiple species are used, then run multiple pipeline runs, each defined by a unique ProjectIDs & SampleSheets, e.g. `2021_148_hs` and `2021_148_mm`, respectively .
 
+**Note nextflow profiles {PipelineProfile}:**  The pipeline is designed for three different profiles/main configurations:
 
-**nextflow profiles {PipelineProfile}**
-The pipeline is designed for three different profiles/main configurations.<br>
-- rnaseq: Sequencing of a mRNA libraries generated at CTG.
-- rnaseq_total: Sequencing of total RNA libraries generated at CTG.
-- uroscan: The UroScanSeq pipeline. Processing and generation of *bladderreports* as part of the UroSCan project.
+  - rnaseq: Sequencing of a mRNA libraries generated at CTG.
+  - rnaseq_total: Sequencing of total RNA libraries generated at CTG.
+  - uroscan: The UroScanSeq pipeline. Processing and generation of *bladderreports* as part of the UroSCan project.
 
 
 
@@ -31,12 +30,12 @@ The pipeline is intiated by executing a driver script `rnaseq-driver`. The diver
 
 
 
-### Quickstart guide v2.2.x
+### Quickstart ctg-rnaseq v2.2.x
 
-1. The driver assumes that FASTQ files have been generated and that .fastq and .bam filenames for each sample are supplied in SampleSheet (fastq_1, fastq_2 and bam columns). Typically, fastq and SampleSheet input are prepared by running `ctg-parse-samplesheet` followed by `ctg-demux2` tool (python CTG_SampleSheet crunching followed by bcl2fastq demux). 
-2. Edit your samplesheet to fullfill all requirements. See section `SampleSheet`. A SampleSheet must be supplied and present within the pipeline execution dir.  
-3. Note that **.fastq** and **.bam** file names must be **defined in the SampleSheet**. FASTQ files are ALL expected to be supplied in the SAME directory. SampleSheet provides filename(s) and -f argument provides FASTQ path.
-4. Run the `rnaseq-driver` from `Illumina Sequencing Runfolder` (if first time & no project dir has been created)
+1. The driver assumes that FASTQ files have been generated and that the FASTQ directory is supplied through `-f` flag. Also, sample specific FASTQ and BAM filenames must be supplied in SampleSheet (fastq_1, fastq_2 and bam [Data] columns). Typically, run python CTG_SampleSheet crunching script, followed by bcl2fastq demux (`ctg-parse-samplesheet` and `ctg-demux2`).
+2. Edit your samplesheet to fullfill all requirements (see below). A SampleSheet must be supplied and present within the pipeline execution dir. Note that **.fastq** and **.bam** file names must be **defined in the SampleSheet**. FASTQ files are ALL expected to be supplied in the SAME directory. SampleSheet provides filename(s) and -f argument provides FASTQ path.
+3. Make sure that `PipelineVersion`, `PipelineProfile` are correctly supplied in SampleSheet.
+4. Run the `rnaseq-driver` from within `Illumina Sequencing Runfolder` ()
 5. **OR** run the `naseq-driver`from within the `Project work folder`. This requires that path to fastq directory is specified (`-f` flag). Typically this is performed when resuming a failed run or changing a projects paramters using the config files.
 6. Optional: A project runfolder can be primed without starting the nextflow pipeline. Use the `-p`, *prime run* flag. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files.
 
@@ -44,10 +43,11 @@ The pipeline is intiated by executing a driver script `rnaseq-driver`. The diver
 Example: initiate within a new NovaSeq RunFolder (v2.2.x).:
 
 ```
-## check and prepare samplesheet for demux using `parse-samplesheet` script
-/projects/fs1/shared/ctg-tools/bin/ctg-parse-samplesheet/1.2/parse-samplesheet.bash -s CTG_SampleSheet.test_rnaseq.csv
+## parse samplesheet using `parse-samplesheet` script. 
+## To generate runfolder-specific demux samplesheet as well as project specific ctg samplesheets for ctg-rnaseq pipeline.
+/projects/fs1/shared/ctg-tools/bin/ctg-parse-samplesheet/1.3/parse-samplesheet.bash -s CTG_SampleSheet.test_rnaseq.csv
 
-## run bcl2fastq demux using 'ctg-demux2'
+## run bcl2fastq demux within runfolder using 'ctg-demux2'
 ctg-demux2 SampleSheet-demux-220110_A00681_0559_AHVNTTDRXY.csv
 
 ## run the rnaseq-driver
@@ -57,7 +57,7 @@ ctg-demux2 SampleSheet-demux-220110_A00681_0559_AHVNTTDRXY.csv
   
 ```
 
-Re-run a failed run. Done from within the project folder. Filepath to fastq diectory is needed :
+Re-run a failed run. Done from within the project folder. Use this if scripts are not to be overwritten (if you have modified configs & scripts) :
 
 ```
 rnaseq-driver \
