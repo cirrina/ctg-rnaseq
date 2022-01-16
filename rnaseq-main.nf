@@ -273,20 +273,20 @@ process move_fastq {
   if( params.paired_global && params.run_move_fastq)
     """
     mkdir -p ${fastq_dir}
-    file1=$(find ${fastq_dir} -type f -name ${read1})
-    file2=$(find ${fastq_dir} -type f -name ${read2})
-    if [[ -z ${file1} ]]; then
+    file1=\$(find ${fastq_dir} -type f -name ${read1})
+    file2=\$(find ${fastq_dir} -type f -name ${read2})
+    if [[ -z \${file1} ]]; then
       mv ${fastq_input_dir}/${read1} ${fastq_dir}
     fi
-    if [[ -z ${file2} ]]; then
+    if [[ -z \${file2} ]]; then
       mv ${fastq_input_dir}/${read2} ${fastq_dir}
     fi
     """
   else if( !params.paired_global && params.run_move_fastq)
     """
     mkdir -p ${fastq_dir}
-    file1=$(find ${fastq_dir} -type f -name ${read1})
-    if [[ -z ${file1} ]]; then
+    file1=\$(find ${fastq_dir} -type f -name ${read1})
+    if [[ -z \${file1} ]]; then
       mv ${fastq_input_dir}/${read1} ${fastq_dir}
     fi
     """
@@ -310,7 +310,10 @@ process fastqc {
   set sid, read1, read2, species from fastqc_ch  // from move_fastqc_ch
 
   output:
-  val "x" into fastqc_complete_ch
+  val "x" into fastqc_complete_ch_1
+  val "x" into fastqc_complete_ch_2
+  val "x" into fastqc_complete_ch_3
+  val "x" into fastqc_complete_ch_4
   set sid, read1, read2, species into star_ch
   set sid, read1, read2, species into salmon_ch
   set sid, read1, read2, species into rsem_ch
@@ -389,7 +392,7 @@ process salmon  {
   memory { params.run_salmon  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from fastqc_complete_ch.collect()
+  val x from fastqc_complete_ch_1.collect()
   set sid, read1, read2, species from salmon_ch // from checkfiles_fastq
 
   output:
@@ -441,11 +444,12 @@ process rsem {
   memory { params.run_rsem  ?  params.mem_high : params.mem_min  }
 
   input:
-  val x from fastqc_complete_ch.collect()
+  val x from fastqc_complete_ch_2.collect()
   set sid, read1, read2, species from rsem_ch // from checkfiles_fastq
 
   output:
-  val "x" into rsem_complete_ch
+  val "x" into rsem_complete_ch_1
+  val "x" into rsem_complete_ch_2
 
   script:
   // species and references (bowtie2 refs)
@@ -508,7 +512,7 @@ process star  {
   memory { params.run_star  ?  params.mem_high : params.mem_min  }
 
   input:
-  val x from fastqc_complete_ch.collect()
+  val x from fastqc_complete_ch_3.collect()
   set sid, read1, read2, species from star_ch // from checkfiles_fastq
 
   output:
@@ -562,7 +566,7 @@ process checkfiles_bam {
 
   output:
   val "x" into checkfiles_bam_complete_ch
-  set sid, bam, strand, species, RIN, concentration into bam_checkbam_ch
+  set sid, bam, strand, species, RIN, concentration into bam_indexbam_ch
 
   script:
   if( params.run_checkfiles_bam )
@@ -616,7 +620,8 @@ process markdups {
   set sid, bam, strand, species, RIN, concentration from bam_markdups_ch
 
   output:
-  val "x" into markdups_complete_ch
+  val "x" into markdups_complete_ch_1
+  val "x" into markdups_complete_ch_2
   set sid, bam, strand, species, RIN, concentration into bam_filter_multimap_ch
 
   script:
@@ -660,7 +665,7 @@ process filter_multimap {
   memory { params.run_featurecounts  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from markdups_complete_ch.collect()
+  val x from markdups_complete_ch_1.collect()
   set sid, bam, strand, species, RIN, concentration from bam_filter_multimap_ch
 
   output:
@@ -760,7 +765,7 @@ process rnaseqmetrics {
   memory { params.run_rnaseqmetrics  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from markdups_complete_ch.collect()
+  val x from markdups_complete_ch_2.collect()
   set sid, bam, strand, species, RIN, concentration from bam_rnaseqmetrics_ch
 
   output:
@@ -931,7 +936,7 @@ process bladderreport {
   memory { params.run_bladderreport  ?  params.mem_mid : params.mem_min  }
 
   input:
-  val x from rsem_complete_ch.collect()
+  val x from rsem_complete_ch_1.collect()
   set sid, bam, strand, species, RIN, concentration from bam_bladderreport_ch
 
   output:
@@ -987,10 +992,10 @@ process multiqc {
 
   input:
   val x from featurecounts_complete_ch.collect()
-  val x from fastqc_complete_ch.collect()
+  val x from fastqc_complete_ch_4.collect()
   val x from rseqc_complete_ch.collect()
   val x from fastqscreen_complete_ch.collect()
-  val x from rsem_complete_ch.collect()
+  val x from rsem_complete_ch_2.collect()
   val x from salmon_complete_ch.collect()
 
   output:
