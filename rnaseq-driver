@@ -25,9 +25,6 @@ ctg_qc_root='/projects/fs1/shared/ctg-qc/ctg-rnaseq' ## should be added pipeline
 ## Script & config names
 rnaseq_script="rnaseq-main.sh"
 nf_script="rnaseq-main.nf"
-nf_config_project="${project_dir}/nextflow.params.${projectid}"
-
-
 
 
 #######################
@@ -41,43 +38,16 @@ exec_dir=$(pwd)
 # usage message
 usage() {
     echo ""
-    echo ""
+    echo " rnaseq-driver [ -s samplesheet ] [ -p prime_projectfolder_only ] [ -r resume ] [ -f fastq_input_dir ] \
+[ -h help ] "  1>&2
+
     echo "------------------- "
-    echo " usage : "
-    echo "------------------- "
-    echo " rnaseq-driver [ -s samplesheet ] [ -p prime_projectfolder_only ] [ -r resume ] [ -f fastq_input_dir ] [ -h help ] "  1>&2
-    echo ""
-    echo "------------------- "
-    echo " arguments : "
-    echo "------------------- "
-    echo " samplesheet    -s : IEM style laboratory SampleSheet. Project and pipeline specific parameters must be added "
-    echo ""
-    echo " (see https://github.com/cirrina/rnaseq/blob/main/README.md for details)"
-    echo ""
-    echo " Required [header] rows for SampleSheet include:"
-    echo ""
-    echo " ProjectId:        CTG project id, e.g. '2021_026'. Will define downstream analysis folder and filenames."
-    echo "                   If a project is run multiple times with different settings. Modify the project id and sample sheet accordingly."
-    echo " RunFolder:        Name (not full path) of Illumina runfolder, e.g. . Set to NA if unknown and custom fastq files are run"
-    echo " PipelineName:     The CTG analysis pipeline, e.g. ctg-rnaseq"
-    echo " PipelineVersion:  The CTG analysis pipeline version. Must match the ctg pipeline naming nomenclature, e.g. '2.0.0' or 'dev' etc"
-    echo " PipelineProfile:  Determines the --proile flag of nextflow execution. Currently 'rnaseq' or 'uroscan' is supported."
-    echo " Barcode:          Illumina flowcell barcode"
-    echo " Runfolder:        Name of the runfolder directory (dirname not full path)"
-    echo " Instrument:       Name of instrument and chemistry vesrsion, NovaSeq1.5 or NovaSeq1.0"
-    echo " FlowCell:         What flowcell is used"
-    echo " SharedFlowCell:  'true' or 'false'. If the pool/flowcell includes more than one customer projects."
-    echo " PoolName:         Name of ctg pool, i.e. name of the library pool added to flowcell, e.g. 'CTGpool_0150'"
-    echo " Species:          Species for all samples in current sample sheet (species_global), e.g. Homo sapiens. Set to 'Multiple' if multiple species - this assumes that no alignment is performed."
-    echo ""
-    echo ""
-    echo "------------------- "
-    echo " optionals : "
-    echo "------------------- "
+    echo " samplesheet      -s : IEM style laboratory SampleSheet. Project and pipeline specific parameters must be added "
+    echo " fastq_input_dir  -f : Set to a full path where all fastq files are located. individual filenames should be specified in ctg sample sheet. This flag will set 'run_blcl2fastq' to 'false' and all flags related to demux to false "
     echo " prime_projectfolder_mode:  -p : Set to 'true' if you do not start nextflow. A dry run that will generate project folder, config files etc but will not initiate nextflow."
-    echo " fastq_input_dir:      -f : Set to a full path where all fastq files are located. individual filenames should be specified in ctg sample sheet. This flag will set 'run_blcl2fastq' to 'false' and all flags related to demux to false "
     echo " resume           -r : Nextflow-specific. If to resume nextflow run. Can only be used when executing in Project work dir, NOT from Illumina runfolder"
     echo " help             -h : print help message"
+    echo " (see https://github.com/cirrina/rnaseq/blob/main/README.md for details)"
     echo "------------------- "
     echo ""
     echo ""
@@ -85,11 +55,10 @@ usage() {
 
 exit_abnormal() {
   usage
-  echo "";echo "";echo ""
+  echo "";echo "";
   echo "----------------------- "
   echo "  ERROR  "
   echo "----------------------- "
-  echo "";echo "";echo ""
   echo "";echo "";echo ""
   exit 1
 }
@@ -111,10 +80,10 @@ while getopts ":s:f:r:p:h" opt; do
             ;;
       h) exit_abnormal
         ;;
-      \?) echo echo ""; echo "Error:";"Invalid option -$OPTARG" >&2
+      \?) echo echo ""; echo " Error ctg-rnaseq : ";"Invalid option -$OPTARG" >&2
         exit_abnormal ;;
-      :) echo ""; echo "Error:"; echo " -${OPTARG} requires an argument!"
-	     exit_abnormal ;;
+      :) echo ""; echo "Error:"; echo " -${OPTARG} requires an argument!"echo ""; echo ""
+	     exit 1 ;;
     esac
 done
 
@@ -126,27 +95,27 @@ shift "$(( OPTIND -1 ))"
 if [ -z ${samplesheet} ]; then
   echo ""; echo ""; echo "Error:"
   echo "You must specify sample sheet (in current dir): '-s' flag. "; echo ""
-  exit_abnormal
+  exit 1
 fi
 if [ ! -f ${samplesheet} ]; then
   echo ""; echo ""; echo "Error:"
   echo "Sample Sheet does not exist (in current dir)"
   #echo "- Please specify correct samplesheet, or create a CTG_SampleSheet.csv in current runfolder"
-  exit_abnormal
+  exit 1
 fi
 
 ## If -f is defined (fastq_input_dir), set fastq_custom to true
 if [ -z ${fastq_input_dir} ]; then
   echo ""; echo ""; echo "Error:"
   echo "You must specify path where fastq files are located: '-f' flag. "; echo ""
-  exit_abnormal
+  exit 1
 fi
 ## check if supplied fastq_input_dir is valid
 fastq_input_dir=$(realpath $fastq_input_dir)
 if [[ ! -d ${fastq_input_dir} ]]; then
   echo ""; echo ""; echo "Error:"
   echo "fastq_input_dir (-f) does not exist: ${fastq_input_dir} "; echo ""
-  exit_abnormal
+  exit 1
 fi
 
 
@@ -179,17 +148,17 @@ if [ -z "$projectid" ]; then
   echo ""; echo "Error: "
   echo " ProjectId is not properly supplied in samplesheet."
   echo " CTG Project id must be given as 'ProjectId' within the [Header] section of sample sheet"; echo""; echo ""
-  exit_abnormal
+  exit 1
 fi
 if [[ $projectid =~ ' ' ]]; then
   echo ""; echo ""; echo "Error: "
   echo " Warning: project id must not inlude white space ' '"; echo""; echo ""
-  exit_abnormal
+  exit 1
 fi
 if [[ $projectid =~ \\. ]]; then
   echo ""; echo ""; echo "Error: "
   echo " Warning: project id must not inlude a dot '.'"; echo""; echo ""
-  exit_abnormal
+  exit 1
 fi
 
 
@@ -206,7 +175,7 @@ if [ -z "$pipelineName" ]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo "Warning: 'PiepelineName' is not properly supplied in samplesheet. \
  Must be given as 'PipelineName, rnaseq' within the [Header] section of sample sheet"; echo""; echo ""
-  exit_abnormal
+  exit 1
 fi
 # PipelineVersion
 ## --------------------------
@@ -214,15 +183,15 @@ if [ -z "$pipelineVersion" ]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
   echo "Warning: 'PiepelineVersion' is not properly supplied in samplesheet. \
  Must be given as 'PipelineVersion, 3.0.0' within the [Header] section of sample sheet"; echo""; echo ""
-  exit_abnormal
+  exit 1
 fi
 
 ## Profile uroscan or rnaseq or rnaseq_total
 if [ -z "$pipelineProfile" ]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
-  echo "Warning: 'pipelineProfile' is not properly supplied in samplesheet. \
- Must be given as 'uroscan, rnaseq or rnaseq_total' within the [Header] section of sample sheet"; echo""; echo ""
-  exit_abnormal
+  echo "Warning: 'pipelineProfile' is not properly supplied in samplesheet.";
+  echo " Should be 'uroscan, rnaseq or rnaseq_total' within the [Header] section of sample sheet"; echo""; echo ""
+  exit 1
 fi
 if [[ $pipelineProfile == "rnaseq" ]]; then
   echo "  ... pipelineProfile: $pipelineProfile"
@@ -232,9 +201,9 @@ elif [[ $pipelineProfile == "uroscan"  ]]; then
   echo "  ... pipelineProfile: $pipelineProfile"
 else
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
-  echo "Warning: 'pipelineProfile' is not properly supplied in samplesheet. \
- Must be given as 'uroscan or rnaseq' within the [Header] section of sample sheet"; echo""; echo ""
-  exit_abnormal
+  echo "Warning: 'pipelineProfile' is not properly supplied in samplesheet.";
+  echo " Should be 'uroscan, rnaseq or rnaseq_total' within the [Header] section of sample sheet"; echo""; echo ""
+  exit 1
 fi
 
 
@@ -245,27 +214,39 @@ fi
 # indicate shared species, i.e. for all samples. Will only be used for modules that input ALL samples. Default is to use the species option supplied as column header in [Data] section.
 species_global=$(awk -F, '$1 == "Species"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... species_global, from samplesheet [Header]: ${species_global}"
+if [[ ${species_global} != "Homo sapiens" ]] && [[ ${species_global} != "Mus musculus"  ]] && [[ ${species_global} != "Rattus norwegicus"  ]]; then
+  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+  echo " species_global is not properly supplied in samplesheet.";
+  echo " Must be supplied as 'Species' within the [Header] section of sample sheet";
+  echo " Accepted values are Homo sapiens, Mus musculus and Rattus norwegicus";
+  echo""; echo ""
+  exit 1
+fi
+
+
 paired_global=$(awk -F, '$1 == "Paired"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... paired_global, from samplesheet [Header]: ${paired_global}"
-if [[ ${paired_global} != "true" ]] || [[ ${paired_global} != "false"  ]]; then
+if [[ ${paired_global} != "true" ]] && [[ ${paired_global} != "false"  ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo " paired_global is not properly supplied in samplesheet."; echo " Must be supplied as 'Paired' 'true' OR 'false' within the [Header] section of sample sheet"; echo""; echo ""
-  exit_abnormal
+  exit 1
 fi
-strandness_global=$(awk -F, '$1 == "Paired"' ${samplesheet} | awk -F, '{print $2}')
-echo "  ... paired_global, from samplesheet [Header]: ${paired_global}"
-if [[ ${strandness_global} != "forward" ]] || [[ ${strandness_global} != "reverse"  ]]; then
+
+strandness_global=$(awk -F, '$1 == "Strandness"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... strandness_global, from samplesheet [Header]: ${paired_global}"
+if [[ ${strandness_global} != "forward" ]] && [[ ${strandness_global} != "reverse"  ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo " strandness_global is not properly supplied in samplesheet."; echo " Must be supplied as 'Strandness' 'forward' OR 'reverse' within the [Header] section of sample sheet"; echo""; echo ""
-  exit_abnormal
+  exit 1
 fi
+
 sharedflowcell=$(awk -F, '$1 == "SharedFlowCell"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... SharedFlowCell: ${sharedflowcell}"
-if [[ ${sharedflowcell} != "true" ]] || [[ ${sharedflowcell} != "false"  ]]; then
+if [[ ${sharedflowcell} != "true" ]] && [[ ${sharedflowcell} != "false"  ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo " SharedFlowCell is not properly supplied in samplesheet. \
   Must be supplied as 'SharedFlowCell' 'true' OR 'false' within the [Header] section of sample sheet"; echo" This to indicate wether multiple customer projects are present within the runfolder data"; echo ""
-  exit_abnormal
+  exit 1
 fi
 
 
@@ -277,26 +258,16 @@ fi
 # set project work dir
 project_dir="${project_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 delivery_dir="${delivery_root}/${pipelineName}/${pipelineProfile}/${projectid}"
-ctg_qc_dir=="${ctg_qc_root}/${pipelineName}/${pipelineProfile}/${projectid}"
+ctg_qc_dir="${ctg_qc_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 ## scripts - where and what version of pipelie sctips to copy to project work dir
 # e.g. scripts_dir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
 scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
-
-
-
-##  Check if scripts_dir exist
-if [[ ! -d ${scripts_dir} ]]; then
-  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
-  echo " scripts_dir does not exist: ${scripts_dir} "; echo ""
-  echo " Make sure PipelineName and PipelineVersion are correctly supplied in SampleSheet"; echo " AND that they match a directory whtin the scripts_root folder: ${scripts_root}."
-  exit_abnormal
-else
 
 ## if -p true, prime_projectfolder_mode. must be executed outside execution dir.
 if [[ ${prime_projectfolder_mode} == "true" && "${exec_dir}" == "${project_dir}" ]]; then
   echo ""; echo " Can not prime workfolder with the same path as the one where script is executed"; echo ""
   echo " You must specify a different projectId wihtin your SampleSheet"
-  exit_abnormal
+  exit 1
 fi
 
 
@@ -310,7 +281,7 @@ if [[ $resume == "true" ]]; then
     echo " Nextflow resume flag -r must used when executing script from the project folder defined by projectId in samplesheet"
     echo " Move to project directory and initiate resume"
     echo""; echo ""
-    exit_abnormal
+    exit 1
   fi
   echo " RESUME mode"
   echo " ... trying to resume nextflow"
@@ -332,10 +303,17 @@ fi
 
 if [[ "${exec_dir}" != "${project_dir}" ]]; then
 
-  echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
-  echo " Executing script outside defined project workfolder."
+  echo ""; echo ""; echo " Executing script outside defined project workfolder."
   projectfolder_setup_mode=true
   echo "  ... ... projectfolder_setup_mode: ${projectfolder_setup_mode}"
+
+  ##  Check if scripts_dir exist
+  if [[ ! -d ${scripts_dir} ]]; then
+    echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+    echo " scripts_dir does not exist: ${scripts_dir} "; echo ""
+    echo " Make sure PipelineName and PipelineVersion are correctly supplied in SampleSheet"; echo " AND that they match a directory whtin the scripts_root folder: ${scripts_root}."
+    exit 1
+  fi
 
   ## verify that script execution dir matches the path in which this script was executed
   if [[ "${script_exec_dir}" != "${scripts_dir}" ]]; then
@@ -378,60 +356,61 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo ""
 
   ## Create project directory
+  ## ------------------------
   mkdir -p ${project_dir}
-  cd ${project_dir}
-
   ## Copy scripts from version specific pipeline scripts dir
   cp -r ${scripts_dir}/* ${project_dir}/ # copy all scripts to workfolder. Will overwrite netflow.config
-
   ## Copy samplesheet to project workfolder
   cp ${samplesheet} ${project_dir}
+  cd ${project_dir}
+
 
   # Create nextflow configuration file -- nextflow.params_${projectid} --
   #######################################################################
+  nf_config_project="${project_dir}/nextflow.config.params.${projectid}"
+
   echo ""
   echo " ... Writing nextflow parameters to project-specific config: ${nf_config_project}"
 
   ## Write nextflow params to file
-  echo ""  > $nf_config_project
-  echo "//  nextflow configuration file"                              >> $nf_config_project
-  echo "//  Project:  ${projectid}"                                   >> $nf_config_project
-  echo ""                                                             >> $nf_config_project
-  echo "//  project specific parameters"                              >> $nf_config_project
-  echo "//  will override params in 'nextflow.config' "               >> $nf_config_project
-  echo "//"                                                           >> $nf_config_project
-  echo ""                                                             >> $nf_config_project
-  echo " params {"                                                      >> $nf_config_project
-  echo ""                                                               >> $nf_config_project
-  echo "  // Pipeline                                                 " >> $nf_config_project
-  echo "  pipelineName       =  '${pipelineName}'                      " >> $nf_config_project
-  echo "  pipelineProfile    =  '${pipelineProfile}'                   " >> $nf_config_project
-  echo "  pipelineVersion    =  '${pipelineVersion}'                   " >> $nf_config_project
-  echo "  script_execution_dir  =  '${script_exec_dir}'               " >> $nf_config_project
-  echo ""                                                               >> $nf_config_project
-  echo "  // Project and run directories                               " >> $nf_config_project
-  echo "  projectid          =  '${projectid}'                       " >> $nf_config_project
-  echo "  project_dir        =  '${project_dir}'                      " >> $nf_config_project
-  echo "  delivery_dir       =  '${delivery_dir}'                      " >> $nf_config_project
-  echo "  ctg_qc_dir         =  '${ctg_qc_dir}'                   " >> $nf_config_project
-  echo "  fastq_input_dir    =  '${fastq_input_dir}'                        " >> $nf_config_project
-  echo ""                                                               >> $nf_config_project
-  echo "  sharedflowcell     =   ${sharedflowcell}                   " >> $nf_config_project
-  echo "  species_global     =  '${species_global}'                     " >> $nf_config_project
-  echo "  paired_global      =  '${paired_global}'                     " >> $nf_config_project
-  echo "  strandness_global  =  '${strandness_global}'              " >> $nf_config_project
-  echo ""                                                               >> $nf_config_project
-  echo "  //  samplesheets                                            " >> $nf_config_project
-  echo "  samplesheet        =  '${samplesheet_ctg}'               " >> $nf_config_project
-  echo "  samplesheet_nf     =  '${samplesheet_nextflow}'          " >> $nf_config_project
-  echo ""                                                               >> $nf_config_project
-  echo "  // root directories                                         " >> $nf_config_project
-  echo "  project_root       =  '${project_root}'                    " >> $nf_config_project
-  echo "  delivery_root      =  '${delivery_root}'                   " >> $nf_config_project
-  echo "  ctg_qc_root      =  '${ctg_qc_root}'                   " >> $nf_config_project
-  echo ""                                                               >> $nf_config_project
-  echo " }"                                                             >> $nf_config_project
-  echo ""                                                               >> $nf_config_project
+  echo ""  > ${nf_config_project}
+  echo "//  nextflow configuration file"                              >> ${nf_config_project}
+  echo "//  Project:  ${projectid}"                                   >> ${nf_config_project}
+  echo ""                                                             >> ${nf_config_project}
+  echo "//  project specific parameters"                              >> ${nf_config_project}
+  echo "//  will override params in 'nextflow.config' "               >> ${nf_config_project}
+  echo "//"                                                           >> ${nf_config_project}
+  echo ""                                                             >> ${nf_config_project}
+  echo " params {"                                                      >> ${nf_config_project}
+  echo ""                                                               >> ${nf_config_project}
+  echo "  // Pipeline                                                 " >> ${nf_config_project}
+  echo "  pipelineName       =  '${pipelineName}'                      " >> ${nf_config_project}
+  echo "  pipelineProfile    =  '${pipelineProfile}'                   " >> ${nf_config_project}
+  echo "  pipelineVersion    =  '${pipelineVersion}'                   " >> ${nf_config_project}
+  echo "  script_execution_dir  =  '${script_exec_dir}'               " >> ${nf_config_project}
+  echo ""                                                               >> ${nf_config_project}
+  echo "  // Project and run directories                               " >> ${nf_config_project}
+  echo "  projectid          =  '${projectid}'                       " >> ${nf_config_project}
+  echo "  project_dir        =  '${project_dir}'                      " >> ${nf_config_project}
+  echo "  delivery_dir       =  '${delivery_dir}'                      " >> ${nf_config_project}
+  echo "  ctg_qc_dir         =  '${ctg_qc_dir}'                   " >> ${nf_config_project}
+  echo "  fastq_input_dir    =  '${fastq_input_dir}'                        " >> ${nf_config_project}
+  echo ""                                                               >> ${nf_config_project}
+  echo "  sharedflowcell     =   ${sharedflowcell}                   " >> ${nf_config_project}
+  echo "  species_global     =  '${species_global}'                     " >> ${nf_config_project}
+  echo "  paired_global      =  '${paired_global}'                     " >> ${nf_config_project}
+  echo "  strandness_global  =  '${strandness_global}'              " >> ${nf_config_project}
+  echo ""                                                               >> ${nf_config_project}
+  echo "  //  samplesheets                                            " >> ${nf_config_project}
+  echo "  samplesheet        =  '${samplesheet}'               " >> ${nf_config_project}
+  echo ""                                                               >> ${nf_config_project}
+  echo "  // root directories                                         " >> ${nf_config_project}
+  echo "  project_root       =  '${project_root}'                    " >> ${nf_config_project}
+  echo "  delivery_root      =  '${delivery_root}'                   " >> ${nf_config_project}
+  echo "  ctg_qc_root      =  '${ctg_qc_root}'                   " >> ${nf_config_project}
+  echo ""                                                               >> ${nf_config_project}
+  echo " }"                                                             >> ${nf_config_project}
+  echo ""                                                               >> ${nf_config_project}
 
   #  Priming of project folder complete
   ## --------------------------------
@@ -474,15 +453,15 @@ fi
 ###################################################################
 ## Check if nextflow config files are present
 cd ${project_dir}
-if [ ! -f ${nf_config_project} ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
+if [ ! -f ${nf_config_project} ]; then # | ! -f "${exec_dir}/nextflow.config" | ! -f "${exec_dir}/rnaseq.nf"
   echo ""; echo "Error:"
   echo "'${nf_config_project}' does not exist in current dir. Generate this in projectfolder_setup_mode or crete one from template."; echo ""; echo ""
-  exit_abnormal
+  exit 1
 fi
-if [ ! -f "${project_dir}/nextflow.config" ]; then # | ! -f "${execdir}/nextflow.config" | ! -f "${execdir}/rnaseq.nf"
+if [ ! -f "${project_dir}/nextflow.config" ]; then # | ! -f "${exec_dir}/nextflow.config" | ! -f "${exec_dir}/rnaseq.nf"
   echo ""; echo "Error:"
   echo "'nextflow.config' file does not exist in project work directory"; echo ""; echo ""
-  exit_abnormal
+  exit 1
 fi
 
 
@@ -498,7 +477,7 @@ echo " ... pipelineName      : $pipelineName";
 echo " ... pipelineVersion   : $pipelineVersion";
 echo " ... pipelineProfile   : $pipelineProfile";
 echo " ... project id    : $projectid";
-echo " ... project dir   : $execdir";
+echo " ... project dir   : $exec_dir";
 echo ""; echo "";
 
 # Prompt user to approve running in current directory and input
@@ -512,10 +491,10 @@ if [[ $prompt != "y" ]]; then
 fi
 
 ## intiate the nextflow command. include project specific config & profile -p
-nohup nextflow run $nf_script -c $nf_config_project -profile ${pipelineProfile} > log.nextflow.progress &
+nohup nextflow run $nf_script -c ${nf_config_project} -profile ${pipelineProfile} > log.nextflow.progress &
 
 echo "";echo ""
-echo "  Running :   nextflow run $nf_pipe -c $nf_config_project -profile ${pipelineProfile}"
+echo "  Running :   nextflow run $nf_pipe -c ${nf_config_project} -profile ${pipelineProfile}"
 echo "";
 echo "  ########################## "
 echo "      S U B M I T T E D "

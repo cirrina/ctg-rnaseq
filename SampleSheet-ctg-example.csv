@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,
 ProjectId,2021_024,,,,,,,,,
 PipelineName,ctg-rnaseq,,,,,,,,,
-PipelineVersion,dev,,,,,,,,,
+PipelineVersion,2.2.0.beta.dev,,,,,,,,,
 PipelineProfile,uroscan,,,,,,,,,
 Barcode,,,,,,,,,,
 Runfolder,,,,,,,,,,

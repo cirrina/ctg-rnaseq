@@ -1,5 +1,5 @@
 
-]
+
 /* ===============================================================
   *      PARAMS FROM CONFIGS
   =============================================================== */
@@ -181,21 +181,21 @@ for ( line in all_lines ) {
   *     Define Channels based from SampleSheet
   =============================================================== */
 Channel
-  .fromPath(chsheet)
+  .fromPath(sheet_nf)
   .splitCsv(header:true)
   .map { row -> tuple( row.Sample_ID, row.fastq_1, row.fastq_2, row.Species ) }
   .tap{ infoall }
   .set { fastq_ch }
 
 Channel
-  .fromPath(chsheet)
+  .fromPath(sheet_nf)
   .splitCsv(header:true)
   .map { row -> tuple( row.Sample_ID, row.bam, row.Species, row.RIN, row.concentration ) }
   .tap { infobam }
-  .into { bam_checkbam_ch; bam_qualimap_ch; bam_rseqc_ch;  bam_bladderreport_ch, bam_rnaseqmetrics_ch}
+  .into { bam_checkbam_ch; bam_qualimap_ch; bam_rseqc_ch; bam_bladderreport_ch; bam_rnaseqmetrics_ch }
 
 Channel
-    .fromPath(chsheet)
+    .fromPath(sheet_nf)
     .splitCsv(header:true)
     .map { row -> tuple( row.bam ) }
     .tap{ infoallfcounts }
@@ -229,21 +229,21 @@ process checkfiles_fastq {
   script:
   if( params.paired_global )
     """
-    file1=$(find ${fastq_input_dir} -type f -name ${read1})
-    file2=$(find ${fastq_input_dir} -type f -name ${read2})
-    if [[ -z ${file1} ]]; then
+    file1=\$(find ${fastq_input_dir} -type f -name ${read1})
+    file2=\$(find ${fastq_input_dir} -type f -name ${read2})
+    if [[ -z \${file1} ]]; then
       echo "Warning: Cannot locate fastq_1 file supplied dir: ${fastq_input_dir}/${read1}"
       exit 2
     fi
-    if [[ -z ${file2} ]]; then
+    if [[ -z \${file2} ]]; then
     echo "Warning: Cannot locate fastq_1 file supplied dir: ${fastq_input_dir}/${read2}"
       exit 2
     fi
     """
   else
     """
-    file1=$(find ${fastq_input_dir} -type f -name ${read1})
-    if [[ -z ${file1} ]]; then
+    file1=\$(find ${fastq_input_dir} -type f -name ${read1})
+    if [[ -z \${file1} ]]; then
       echo "Warning: Cannot locate fastq_1 file supplied dir: ${fastq_input_dir}/${read1}"
       exit 2
     fi
