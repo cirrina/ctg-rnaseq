@@ -192,7 +192,7 @@ if [ -z "$pipelineProfile" ]; then
   echo " Should be 'uroscan, rnaseq or rnaseq_total' within the [Header] section of sample sheet"; echo""; echo ""
   exit 1
 fi
-if [[ $pipelineProfile == "rnaseq" ]]; then
+if [[ $pipelineProfile == "rnaseq_mrna" ]]; then
   echo "  ... pipelineProfile: $pipelineProfile"
 elif [[ $pipelineProfile == "rnaseq_total"  ]]; then
   echo "  ... pipelineProfile: $pipelineProfile"
@@ -201,7 +201,7 @@ elif [[ $pipelineProfile == "uroscan"  ]]; then
 else
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
   echo "Warning: 'pipelineProfile' is not properly supplied in samplesheet.";
-  echo " Should be 'uroscan, rnaseq or rnaseq_total' within the [Header] section of sample sheet"; echo""; echo ""
+  echo " Should be 'uroscan, rnaseq_mrna or rnaseq_total' within the [Header] section of sample sheet"; echo""; echo ""
   exit 1
 fi
 

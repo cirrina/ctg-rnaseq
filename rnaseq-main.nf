@@ -817,7 +817,7 @@ process rnaseqmetrics {
         REF_FLAT=${refflat} \\
         STRAND=${strand_input}
     """
-  else if ( params.run_rnaseqmetrics && (params.pipelineProfile == "rnaseq" || params.pipelineProfile == "rnaseq_total"))
+  else if ( params.run_rnaseqmetrics && (params.pipelineProfile == "rnaseq_mrna" || params.pipelineProfile == "rnaseq_total"))
     """
     echo "strand: ${strand_input}"
     echo "rrna file: ${rrna}"
