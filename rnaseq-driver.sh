@@ -451,8 +451,9 @@ fi
 
 
 
+
 ###################################################################
-# == 5 == Final Check expected f\les needed for nextflow initiation
+# == 5a == Final Check expected f\les needed for nextflow initiation
 ###################################################################
 ## Check if nextflow config files are present
 cd ${project_dir}
@@ -467,6 +468,24 @@ if [ ! -f "${project_dir}/nextflow.config" ]; then # | ! -f "${exec_dir}/nextflo
   exit 1
 fi
 
+###################################################################
+# == 5b == Update run_modules deoending on PipelineProfile
+###################################################################
+if [[ $pipelineProfile == "rnaseq_mrna" ]]; then
+  ## update the fastq_input_dir (-f argument) in config file
+  sed "s|run_rsem.*|run_rsem            =  \'false\'|g" $nf_config > tmp.txt ; mv tmp.txt $nf_config
+  sed "s|run_salmon.*|run_salmon            =  \'false\'|g" $nf_config > tmp.txt ; mv tmp.txt $nf_config
+  sed "s|run_bladderreport.*|run_bladderreport            =  \'false\'|g" $nf_config > tmp.txt ; mv tmp.txt $nf_config
+elif [[ $pipelineProfile == "rnaseq_total"  ]]; then
+  sed "s|run_rsem.*|run_rsem            =  \'false\'|g" $nf_config > tmp.txt ; mv tmp.txt $nf_config
+  sed "s|run_salmon.*|run_salmon           =  \'false\'|g" $nf_config > tmp.txt ; mv tmp.txt $nf_config
+  sed "s|run_bladderreport.*|run_bladderreport       =  \'false\'|g" $nf_config > tmp.txt ; mv tmp.txt $nf_config
+elif [[ $pipelineProfile == "uroscan"  ]]; then
+  sed "s|run_rsem.*|run_rsem            =  \'true\'|g" $nf_config > tmp.txt ; mv tmp.txt $nf_config
+  sed "s|run_salmon.*|run_salmon            =  \'true\'|g" $nf_config > tmp.txt ; mv tmp.txt $nf_config
+  sed "s|run_bladderreport.*|run_bladderreport            =  \'true\'|g" $nf_config > tmp.txt ; mv tmp.txt $nf_config
+  sed "s|run_featurecounts.*|run_featurecounts            =  \'true\'|g" $nf_config > tmp.txt ; mv tmp.txt $nf_config
+fi
 
 
 ################################################
@@ -480,7 +499,8 @@ echo " ... pipelineName      : $pipelineName";
 echo " ... pipelineVersion   : $pipelineVersion";
 echo " ... pipelineProfile   : $pipelineProfile";
 echo " ... project id    : $projectid";
-echo " ... project dir   : $exec_dir";
+echo " ... project dir   : $project_dir";
+echo " ... delivery dir  : $delivery_dir";
 echo ""; echo "";
 
 # Prompt user to approve running in current directory and input
