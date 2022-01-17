@@ -20,10 +20,9 @@ script_exec_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && p
 scripts_root="/projects/fs1/shared/ctg-dev/pipelines"
 project_root='/projects/fs1/shared/ctg-projects'
 delivery_root='/projects/fs1/shared/ctg-delivery' ## should be added pipelineProfile/ProjectID
-ctg_qc_root='/projects/fs1/shared/ctg-qc/ctg-rnaseq' ## should be added pipelineProfile/ProjectID
+ctg_qc_root='/projects/fs1/shared/ctg-qc/' ## should be added pipelineProfile/ProjectID
 
 ## Script & config names
-rnaseq_script="rnaseq-main.sh"
 nf_script="rnaseq-main.nf"
 
 

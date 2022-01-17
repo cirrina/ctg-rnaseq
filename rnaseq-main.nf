@@ -1002,6 +1002,8 @@ process multiqc {
   val "x" into multiqc_complete_ch
 
   script:
+  mqcreport = multiqcdir + '/' + projectid + '_multiqc_report'
+
   if ( params.run_multiqc )
     """
     ## use -f flag to overwrite if multiqc is already present from failed run.
@@ -1009,7 +1011,7 @@ process multiqc {
     multiqc -n ${mqcreport} \\
       --interactive \\
       -f \\
-      -o ${multiqc_dir} .
+      -o ${multiqcdir} .
 
     """
   else
@@ -1027,9 +1029,9 @@ process multiqc {
 // perform md5sums on FASTQ and BAM directories
 
 process md5sum {
-  tag  { params.run_md5sum_delivery  ? "$projectid" : "blank_run"  }
-  cpus { params.run_md5sum_delivery  ? params.cpu_high : params.cpu_min  }
-  memory { params.run_md5sum_delivery  ?  params.mem_high : params.mem_min  }
+  tag  { params.run_md5sum  ? "$projectid" : "blank_run"  }
+  cpus { params.run_md5sum  ? params.cpu_high : params.cpu_min  }
+  memory { params.run_md5sum  ?  params.mem_high : params.mem_min  }
 
   input:
   val x from multiqc_complete_ch.collect()
@@ -1077,7 +1079,7 @@ process stage_delivery {
   memory { params.run_stage_delivery  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from multiqc_complete_ch.collect()
+  val x from md5sum_complete_ch.collect()
   val x from bladderreport_complete_ch.collect()
 
   output:
@@ -1109,20 +1111,19 @@ process stage_delivery {
     ##  copy sample sheet to delivery
     ## ------------------------------
     mkdir -p ${samplesheetsdir}
-    cp -r ${samplesheet} ${samplesheetsdir}
-    cp -r ${sheet_nf} ${samplesheetsdir}
+    cd ${project_dir}
+    cp ${samplesheet} ${samplesheetsdir}/
+    cp ${sheet_nf} ${samplesheetsdir}/
 
 
     ##  scripts & configs  (executables bins etc, version specific) and configs (project specific)
     ## --------------------------------------------------------------
+
     mkdir -p ${deliveryscripts}
-    cp -r ${project_dir}/rnaseq-driver ${deliveryscripts}
-    cp -r ${project_dir}/rnaseq-main.nf ${deliveryscripts}
-    cp -r ${project_dir}/bin ${deliveryscripts}
-    cp -r ${project_dir}/nextflow.config.* ${deliveryscripts}
-
-
-
+    cp ${project_dir}/rnaseq-driver ${deliveryscripts}/
+    cp ${project_dir}/rnaseq-main.nf ${deliveryscripts}/
+    cp -r ${project_dir}/bin ${deliveryscripts}/
+    cp ${project_dir}/nextflow.config.* ${deliveryscripts}/
     """
   else
     """
@@ -1154,15 +1155,14 @@ process finalize_pipeline {
   script:
   if (params.run_finalize_pipeline)
     """
-
     ## Copy QC files to ctg-qc
     ## -----------------------
     cp -r ${multiqcdir} ${ctg_qc_dir}
     cp -r ${fastqcdir} ${ctg_qc_dir}
-    cd ${delivery_dir}
 
     ## Chmod all dirs
     ## -----------------------
+    cd ${delivery_dir}
     find ${delivery_dir} -user $USER -exec chmod g+rw {} +
     find ${project_dir} -user $USER -exec chmod g+rw {} +
     find ${ctg_qc_dir} -user $USER -exec chmod g+rw {} +

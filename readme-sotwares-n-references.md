@@ -21,71 +21,79 @@ The pipeline can handle different RNAseq Assays (library preparation kits), and 
 
 
 # Running the ctg-rnaseq pipeline
-The pipeline is intiated by executing a driver script `rnaseq-driver`. The diver will:
+The pipeline is intiated using `rnaseq-driver.sh` that will:
 
 * Prime a work directory (copy scripts and configs to this dir)
-* Check the SampleSheet (illegal characters, indexes etc). See SampleSheet below.
-* Generate a run/project-specific nextflow config.
-* Initiate the `nextflow-main` piepline script.
-
+* Generate a run/project-specific nextflow config files
+* Initiate the `nextflow-main.nf` piepline script
 
 
 ### Quickstart ctg-rnaseq v2.2.x
 
-1. The driver assumes that FASTQ files have been generated and that the FASTQ directory is supplied through `-f` flag. Also, sample specific FASTQ and BAM filenames must be supplied in SampleSheet (fastq_1, fastq_2 and bam [Data] columns). Typically, run python CTG_SampleSheet crunching script, followed by bcl2fastq demux (`ctg-parse-samplesheet` and `ctg-demux2`).
-2. Edit your samplesheet to fullfill all requirements (see below). A SampleSheet must be supplied and present within the pipeline execution dir. Note that **.fastq** and **.bam** file names must be **defined in the SampleSheet**. FASTQ files are ALL expected to be supplied in the SAME directory. SampleSheet provides filename(s) and -f argument provides FASTQ path.
-3. Make sure that `PipelineVersion`, `PipelineProfile` are correctly supplied in SampleSheet.
-4. Run the `rnaseq-driver` from within `Illumina Sequencing Runfolder` ()
-5. **OR** run the `naseq-driver`from within the `Project work folder`. This requires that path to fastq directory is specified (`-f` flag). Typically this is performed when resuming a failed run or changing a projects paramters using the config files.
-6. Optional: A project runfolder can be primed without starting the nextflow pipeline. Use the `-p`, *prime run* flag. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files.
+
+1. SampleSheet must be supplied using `-s` flag. The samplesheet is the main placeholder for input arguments, see SampleSheet section below. **.fastq** and **.bam** file names must be defined in the SampleSheet (`fastq_1`, `fastq_2` and `bam` columns in `[Data]` section). Usually provided by running `ctg-parse-samplesheet` script (`ctg-samplesheet-ProjectXX.csv`).
+2. The driver assumes that FASTQ file directory input through `-f` flag. Note that fastq-files wille be **moved from input dir to delivery dir**.
+3. Make sure that `PipelineVersion` and `PipelineProfile` are correctly supplied in SampleSheet.
+4. Run the `rnaseq-driver.sh` from within `Illumina Sequencing Runfolder`
+5. **OR** run the `naseq-driver`from within the `Project work folder`. Typically this is performed when resuming a failed run or when changing a projects' paramters using the config files.
+
+A project runfolder can be primed without starting the nextflow pipeline. Use the `-p`, *prime run* flag. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files.
 
 
 Example: initiate within a new NovaSeq RunFolder (v2.2.x).:
 
 ```
-## parse samplesheet using `parse-samplesheet` script. 
-## To generate runfolder-specific demux samplesheet as well as project specific ctg samplesheets for ctg-rnaseq pipeline.
+## 1. A standard pipeline run is preceeded by running `ctg-parse-samplesheet` and `ctg-demux2` scripts.
+
+## `parse-samplesheet` 
+##  generate demux samplesheet (one or more projects) as well as project specific ctg samplesheets for ctg-rnaseq pipeline.
 /projects/fs1/shared/ctg-tools/bin/ctg-parse-samplesheet/1.3/parse-samplesheet.bash -s CTG_SampleSheet.test_rnaseq.csv
 
-## run bcl2fastq demux within runfolder using 'ctg-demux2'
+## 'ctg-demux2' - run bcl2fastq demux for complete runfolder
 ctg-demux2 SampleSheet-demux-220110_A00681_0559_AHVNTTDRXY.csv
 
-## run the rnaseq-driver
-/projects/fs1/shared/ctg-dev/ctg-rnaseq/2.2.0.beta/rnaseq-driver \
+
+## 2. Initiate pipeline using `rnaseq-driver.sh`
+/projects/fs1/shared/ctg-dev/ctg-rnaseq/2.2.0/rnaseq-driver.sh \
   -s  SampleSheet-ctg-test_rnaseq.csv \
   -f /projects/fs1/shared/bcl2fastq-fastq/220110_A00681_0559_AHVNTTDRXY/test_rnaseq
   
 ```
 
-Re-run a failed run. Done from within the project folder. Use this if scripts are not to be overwritten (if you have modified configs & scripts) :
+Re-run a failed run: Done from within the project folder. Use this if scripts are not to be overwritten (if you have modified configs & scripts) :
 
 ```
-rnaseq-driver \
-  -s 2021_024_SampleSheet-demux.csv \
-  -f nf-output/fastq/2021_024
+cd {project_dir}
+rnaseq-driver.sh \
+  -s SampleSheet-ctg-2021_024.csv \
+  -f /projects/fs1/shared/ctg-delivery/ctg-rnaseq/rnaseq/2021_024/fastq/2021_024/
 ```
+
 Prime a work folder (but do not start a run)
 
 ```
-/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.0.0/rnaseq-driver \
+/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.2.0/rnaseq-driver.sh \
   -s 2021_024_SampleSheet-IEM.csv -p true
 ```
 
 Resume a failed nextflow run:
 
 ```
-rnaseq-driver \
+rnaseq-driver.sh \
   -s 2021_024_SampleSheet-demux.csv \
   -r
 ```
 
+# FASTQ file input
+FASTQ files are ALL expected to be supplied in the SAME directory. 
 
+**.fastq** and **.bam** file names must be **defined in the SampleSheet**. (`fastq_1`, `fastq_2` and `bam` columns in `[Data]` section). A standard pipeline run is preceeded by running `ctg-parse-samplesheet` and `ctg-demux2` scrtips.
 
 # Trouble-shooting
 
 ### Hard-coded file paths & folders
-1. Hard-coded file paths in `rnaseq-driver`, `rnaesq-main`, and `nextflow.config` are ok.
-2. Check file paths in `rnaseq-driver`
+1. Hard-coded file paths in `rnaseq-driver.sh`, `rnaesq-main`, and `nextflow.config` are ok.
+2. Check file paths in `rnaseq-driver.sh`
 	* `scripts_root`: Root directory for script versions (see script version section).  
 	* `singularity_container_rscript`: Container used by R-script samplesheet check.
 	* `project_root`: Root directory for where nextflow is run, configs and samplesheets are saved etc. This directory is currently synced ("backupped") on the ldb server.
@@ -135,7 +143,7 @@ scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
      ├── ...
      ├── 2.1.6
      └── 3.0.1
-       |--  rnaseq-driver
+       |--  rnaseq-driver.sh
        |--  rnaseq-main.nf
        |--  nextflow.config
        └──  bin
@@ -280,28 +288,28 @@ Module specific references: e.g. fastqScreen, rseqc etc are places in separate f
 ### project_dir:  ctg-rnaseq pipeline workfolder
 
 ```
-## `project_dir` is set by `rnaseq-driver` script by parameters read from SampleSheet.
+## `project_dir` is set by `rnaseq-driver.sh` script by parameters read from SampleSheet.
 project_root='/projects/fs1/shared/ctg-projects'
 project_dir="${project_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 nf_config_project="${project_dir}/nextflow.config.param.${projectid}"
 
 
-##  `rnaseq-driver` sets up the project work dir:
+##  `rnaseq-driver.sh` sets up the project work dir:
 
 {project_root}
-   └── {PipelineName} = Read by `rnaseq-driver` from SampleSheet
-      └── {PipelineProfile} = Read by `rnaseq-driver` from SampleSheet
+   └── {PipelineName} = Read by `rnaseq-driver.sh` from SampleSheet
+      └── {PipelineProfile} = Read by `rnaseq-driver.sh` from SampleSheet
 		└── {ProjectId} = {project_dir}
-	      |--  rnaseq-driver = the driver setup sctipt. if resue a failed script then use this.
+	      |--  rnaseq-driver.sh = the driver setup sctipt. if resue a failed script then use this.
 	      |--  rnaseq-main.nf = primary nextflow pipeline script
 	      |--  nextflow.config = generic nextflow config copied from the (version specific) scripts dir.
-	      |--  nextflow.config.{projectid} = project specific config file generated by `rnaseq-driver`
+	      |--  nextflow.config.{projectid} = project specific config file generated by `rnaseq-driver.sh`
 	      |--  CTG_SampleSheet_{projectid} = samplesheet, default copied to here from initial exevution of script.
 	      |--  README.md = This file - documentation copied from the pipeline scripts dir.
 	      └──  bin = copied from the (version specific) scripts dir.
       
       
-##  additional files & folders set up by `rnaseq-main.nf` pipeline when initiated by `rnaseq-driver`
+##  additional files & folders set up by `rnaseq-main.nf` pipeline when initiated by `rnaseq-driver.sh`
 
 {project_root}
    └── {PipelineName}  
@@ -309,7 +317,7 @@ nf_config_project="${project_dir}/nextflow.config.param.${projectid}"
 		└── {ProjectId} = {project_dir}
 	      |--  ...
 	      |--  log.nextflow.complete = {logfile} logfile generated upon nextflow completion
-	      |--  log.nextflow.progress = nohup nextflow output logfile. Set by 'rnaseq-driver'
+	      |--  log.nextflow.progress = nohup nextflow output logfile. Set by 'rnaseq-driver.sh'
 	      |--  .nextflow = netflow execution log folder, one generated for each pipeline execution 
 	      |--  work = nextflow workDir used to store files and commands for processes. Will 
 	      └──  nf-output = shared/ctg-projects/rnaseq/nf-output
@@ -327,7 +335,7 @@ Note on `fastq_dir`: This folder defaults to `delivery_dir/fastq` and is not the
 
 
 ```
-## `delivery-dir` is set by `rnaseq-driver` by pipeline & project names read from SampleSheet.
+## `delivery-dir` is set by `rnaseq-driver.sh` by pipeline & project names read from SampleSheet.
 
 delivery_root='/projects/fs1/shared/ctg-delivery'
 delivery_dir="${delivery_root}/${pipelineName}/${pipelineProfile}/${projectid}"
@@ -380,7 +388,7 @@ qcdir = delivery_dir+'/qc'
 	      |     └──  SampleSheet-nexflow.csv
 	      └──  scripts
             |--  bin
-            |--  rnaseq-driver
+            |--  rnaseq-driver.sh
 	        |--  rnaseq-main.nf
             |--  nextflow.config
             └──  nextflow.config.{projectifd}  	   
@@ -443,8 +451,8 @@ Input parameters and variables are determined by:<br>
 
 *  `SampleSheet`: contains most required input parameters.
 *  `nextflow.config`: parameters that define the different nextflow profiles, including genome reference and container files.
-*  `nextflow.config.{projectId}`: auto-generated from the rnaseq-driver using parameters from 'SampleSheet' and file paths from the driver file.
-*  `rnaseq-driver`: A few parameters are hardcoded in the rnaseq driver.
+*  `nextflow.config.{projectId}`: auto-generated from the rnaseq-driver.sh using parameters from 'SampleSheet' and file paths from the driver file.
+*  `rnaseq-driver.sh`: A few parameters are hardcoded in the rnaseq driver.
 
 
 ## Nextflow Profiles
@@ -1021,12 +1029,12 @@ Main change in strategy to adapt to Pers pipelines.
 1. fastq files. Default is now to obtain fastq-files from the demux output path. `shared/bcl2fastq-output-fastq`. Check at this location. If there, then prepare to move fastq files to `delivery/projid/fastq`. If no there, use the `-f` flag to define
 
 
-2. change driver. A new driver strategy should be to move the  `rnaseq-driver` to `\ctg-tools`. This driver shoud be a **light**. The main function is to be a wrapper that identifies the correct script version, create a project dir (if needed) and executes the pipeline. **Q!** Should project scripts be overwritten or NOT?.
+2. change driver. A new driver strategy should be to move the  `rnaseq-driver.sh` to `\ctg-tools`. This driver shoud be a **light**. The main function is to be a wrapper that identifies the correct script version, create a project dir (if needed) and executes the pipeline. **Q!** Should project scripts be overwritten or NOT?.
 
 	* input SampleSheet. Should contain ALL relevant params (exept for -p prime and -r resume, and -f fastq)
 	* identify the version to be run
 	* Create the project dir and copy all relevant files to there
-	* execute `rnaseq-main.sh` scritp that in much crresponds to the old `rnaseq-driver`
+	* execute `rnaseq-main.sh` scritp that in much crresponds to the old `rnaseq-driver.sh`
 
 
 
@@ -1042,7 +1050,7 @@ Fastq and
 !! NOTE the script is desiged to genereate an ouput (delivery) folder to beprepared for customer delivery. Therfore, if custom fastq file dir is provided, fastq files are MOVED to  the delivery dir. E.g., the default run will provide fastq files in a dir generated by bcl2fastq. This ENTIRE FOLDER will be MOVED to the auto-generated fastq file location
 
 
- #### rnaseq-driver:
+ #### rnaseq-driver.sh:
  Primary aim.
  start the rnaseq-pipeline with SPECIFIED VERSION
 
@@ -1059,7 +1067,7 @@ MOVE FASTQ FILES?
 #### Script initiation
 
 
-#### rnaseq-driver -- should be insensitive to changes in version. should be made available to run from within global env
+#### rnaseq-driver.sh -- should be insensitive to changes in version. should be made available to run from within global env
 
 The rnaseq-primer sctipt will expect
   -f fastq flag
@@ -1127,7 +1135,7 @@ MOVE to /delivery_root/
 
 
 #### rnasq_main.sh
-The rnasq_main.sh sctipt is initated by the rnaseq-driver script. Parameters will be passed on from inpt in rnaseq-driver
+The rnasq_main.sh sctipt is initated by the rnaseq-driver.sh script. Parameters will be passed on from inpt in rnaseq-driver.sh
 -f ()
 
 -
@@ -1155,7 +1163,7 @@ nextflow.config.run_modules: What modules to run. Default decided from what Pile
 
 
 
-#### rnaseq-driver -- should be moved to ctg-tools
+#### rnaseq-driver.sh -- should be moved to ctg-tools
 
 1/ Runfolder mode (runfolder_mode = true)
  generate project folder
@@ -1217,7 +1225,7 @@ check files default ..
 1. The driver assumes that FASTQ files have been generated and that filenames are supplied in SampleSheet. This will correspond to output from `ctg-demux2` script (python CTG_SampleSheet crunching followed by bcl2fastq demux). 
 4. Edit your samplesheet to fullfill all requirements. See section `SampleSheet`. A SampleSheet must be supplied and present within the pipeline execution dir.  
 5. Note that **.fastq** and **.bam** file names must be **defined in the SampleSheet**. FASTQ files are ALL expected to be supplied in the SAME directory. SampleSheet provides filename(s) and -f argument provides FASTQ path.
-6. Run the `rnaseq-driver` from `Illumina Sequencing Runfolder` (if first time & no project dir has been created)
+6. Run the `rnaseq-driver.sh` from `Illumina Sequencing Runfolder` (if first time & no project dir has been created)
 7. **OR** run the `naseq-driver`from within the `Project work folder`. This requires that path to fastq directory is specified (`-f` flag). Typically this is performed when resuming a failed run or changing a projects paramters using the config files.
 8. Optional: A project runfolder can be primed without starting the nextflow pipeline. Use the `-p`, *prime run* flag. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files.
 
@@ -1225,28 +1233,28 @@ check files default ..
 Example initiate from within Illumina runfolder (v2.1.x).:
 
 ```
-/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.0.0/rnaseq-driver \
+/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.0.0/rnaseq-driver.sh \
   -s 2021_024_SampleSheet-IEM.csv
 ```
 
 Re-run a failed run. Done from within the project folder. Filepath to fastq diectory is needed :
 
 ```
-rnaseq-driver \
+rnaseq-driver.sh \
   -s 2021_024_SampleSheet-demux.csv \
   -f nf-output/fastq/2021_024
 ```
 Prime a work folder (but do not start a run)
 
 ```
-/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.0.0/rnaseq-driver \
+/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.0.0/rnaseq-driver.sh \
   -s 2021_024_SampleSheet-IEM.csv -p true
 ```
 
 Resume a failed nextflow run:
 
 ```
-rnaseq-driver \
+rnaseq-driver.sh \
   -s 2021_024_SampleSheet-demux.csv \
   -r
 ```
@@ -1260,8 +1268,8 @@ The `project_id` (supplied by `ProjectId` in SampleSheet) will owerwrite the `Sa
 # Trouble-shooting
 
 ### Hard-coded file paths & folders
-1. Hard-coded file paths in `rnaseq-driver`, `rnaesq-main`, and `nextflow.config` are ok.
-2. Check file paths in `rnaseq-driver`
+1. Hard-coded file paths in `rnaseq-driver.sh`, `rnaesq-main`, and `nextflow.config` are ok.
+2. Check file paths in `rnaseq-driver.sh`
 	* `scripts_root`: Root directory for script versions (see script version section).  
 	* `singularity_container_rscript`: Container used by R-script samplesheet check.
 	* `project_root`: Root directory for where nextflow is run, configs and samplesheets are saved etc. This directory is currently synced ("backupped") on the ldb server.
