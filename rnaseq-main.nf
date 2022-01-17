@@ -1159,6 +1159,7 @@ process finalize_pipeline {
     ## -----------------------
     cp -r ${multiqcdir} ${ctg_qc_dir}
     cp -r ${fastqcdir} ${ctg_qc_dir}
+    cp ${samplesheet} ${ctg_qc_dir}/
 
     ## Chmod all dirs
     ## -----------------------
