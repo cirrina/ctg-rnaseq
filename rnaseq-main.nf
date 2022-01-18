@@ -39,8 +39,8 @@ deliveryscripts = delivery_dir+'/scripts'
 // QC dirs
 qcdir = delivery_dir+'/qc'
 
-fastqcdir = qcdir+'/qc/fastqc'
-multiqcdir  =  qcdir+'/qc/multiqc'
+fastqcdir = qcdir+'/fastqc'
+multiqcdir  =  qcdir+'/multiqc'
 qualimapdir = qcdir+'/qualimap'
 rseqcdir = qcdir+'/rseqc'
 markdupsqcdir = qcdir+'/markdups'
@@ -267,7 +267,6 @@ process move_fastq {
 
   output:
   set sid, read1, read2, species into fastqc_ch
-  //set sid, read1, read2, species into fastqc_ch
 
   script:
   if( params.paired_global && params.run_move_fastq)
@@ -609,7 +608,7 @@ process index_bam {
     """
 }
 
-
+// picard markdups
 process markdups {
   tag  { params.run_markdups  ? "$sid" : "blank_run"  }
   cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
@@ -759,6 +758,7 @@ process featurecounts {
   *     OTHER QC APPS
   =============================================================== */
 
+// picard rnaseqmetrics
 process rnaseqmetrics {
   tag  { params.run_rnaseqmetrics  ? "$sid" : "blank_run"  }
   cpus { params.run_rnaseqmetrics  ? params.cpu_standard : params.cpu_min  }
