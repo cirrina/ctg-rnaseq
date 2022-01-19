@@ -232,7 +232,7 @@ if [[ ${paired_global} != "true" ]] && [[ ${paired_global} != "false"  ]]; then
 fi
 
 strandness_global=$(awk -F, '$1 == "Strandness"' ${samplesheet} | awk -F, '{print $2}')
-echo "  ... strandness_global, from samplesheet [Header]: ${paired_global}"
+echo "  ... strandness_global, from samplesheet [Header]: ${strandness_global}"
 if [[ ${strandness_global} != "forward" ]] && [[ ${strandness_global} != "reverse"  ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo " strandness_global is not properly supplied in samplesheet."; echo " Must be supplied as 'Strandness' 'forward' OR 'reverse' within the [Header] section of sample sheet"; echo""; echo ""
@@ -426,6 +426,24 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   chmod -R 775 ${project_dir}
   cd ${project_dir}
 
+  ## Set profile defaults in nextflow.config
+  if [[ $pipelineProfile == "rnaseq_mrna" ]]  ; then
+    ## update the fastq_input_dir (-f argument) in config file
+    sed "s|run_rsem.*|run_rsem            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
+    sed "s|run_salmon.*|run_salmon            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
+    sed "s|run_bladderreport.*|run_bladderreport            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
+  elif [[ $pipelineProfile == "rnaseq_total"  ]]; then
+    sed "s|run_rsem.*|run_rsem            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
+    sed "s|run_salmon.*|run_salmon           =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
+    sed "s|run_bladderreport.*|run_bladderreport       =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
+  elif [[ $pipelineProfile == "uroscan" ]]; then
+    sed "s|run_rsem.*|run_rsem            =  true|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
+    sed "s|run_salmon.*|run_salmon            =  true|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
+    sed "s|run_bladderreport.*|run_bladderreport            =  true|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
+    sed "s|run_featurecounts.*|run_featurecounts            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
+  fi
+
+
   if [[ $prime_projectfolder_mode == "true" ]]; then
     echo ""
     echo " prime_projectfolder_mode is TRUE "
@@ -447,7 +465,7 @@ if [[ "${exec_dir}" == "${project_dir}" ]]; then
   projectfolder_setup_mode=false
 
   ## update the fastq_input_dir (-f argument) in config file
-  sed "s|fastq_input_dir.*|fastq_input_dir            =  \'$fastq_input_dir\'|g" nextflow.config_project > tmp.txt ; mv tmp.txt nextflow.config_project
+  sed "s|fastq_input_dir.*|fastq_input_dir            =  \'$fastq_input_dir\'|g" ${nf_config_project} > tmp.txt ; mv tmp.txt ${nf_config_project}
 fi
 
 
@@ -472,21 +490,7 @@ fi
 ###################################################################
 # == 5b == Update run_modules deoending on PipelineProfile
 ###################################################################
-if [[ $pipelineProfile == "rnaseq_mrna" && ${prime_projectfolder_mode} == "true" ]]  ; then
-  ## update the fastq_input_dir (-f argument) in config file
-  sed "s|run_rsem.*|run_rsem            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
-  sed "s|run_salmon.*|run_salmon            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
-  sed "s|run_bladderreport.*|run_bladderreport            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
-elif [[ $pipelineProfile == "rnaseq_total" && ${prime_projectfolder_mode} == "true" ]]; then
-  sed "s|run_rsem.*|run_rsem            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
-  sed "s|run_salmon.*|run_salmon           =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
-  sed "s|run_bladderreport.*|run_bladderreport       =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
-elif [[ $pipelineProfile == "uroscan" && ${prime_projectfolder_mode} == "true" ]]; then
-  sed "s|run_rsem.*|run_rsem            =  true|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
-  sed "s|run_salmon.*|run_salmon            =  true|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
-  sed "s|run_bladderreport.*|run_bladderreport            =  true|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
-  sed "s|run_featurecounts.*|run_featurecounts            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
-fi
+
 
 
 ################################################

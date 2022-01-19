@@ -486,7 +486,7 @@ process rsem {
         --num-threads ${task.cpus} \\
         --paired-end \\
         --bowtie2 \\
-        --bowtie2-path /opt/software/uroscan_env/bin \\
+        --bowtie2-path /opt/software/rsem-bowtie2-env/bin \\
         --estimate-rspd \\
         --append-names \\
         --no-bam-output \\
