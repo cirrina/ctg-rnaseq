@@ -515,7 +515,8 @@ process star  {
   set sid, read1, read2, species from star_ch // from checkfiles_fastq
 
   output:
-  val "x" into star_complete_ch
+  val "x" into star_complete_ch_1
+  val "x" into star_complete_ch_2
 
   script:
   if ( species == "Homo sapiens" ){
@@ -560,7 +561,7 @@ process checkfiles_bam {
   memory params.mem_min
 
   input:
-  val x from star_complete_ch.collect() // checkbam_ch - when star is completed
+  val x from star_complete_ch_1.collect() // checkbam_ch - when star is completed
   set sid, bam, strand, species, RIN, concentration from bam_checkbam_ch
 
   output:
@@ -937,6 +938,7 @@ process bladderreport {
 
   input:
   val x from rsem_complete_ch_1.collect()
+  val x from star_complete_ch_2.collect()
   set sid, bam, strand, species, RIN, concentration from bam_bladderreport_ch
 
   output:
