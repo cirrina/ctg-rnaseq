@@ -399,7 +399,7 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo ""                                                               >> ${nf_config_project}
   echo "  sharedflowcell     =   ${sharedflowcell}                   " >> ${nf_config_project}
   echo "  species_global     =  '${species_global}'                     " >> ${nf_config_project}
-  echo "  paired_global      =  '${paired_global}'                     " >> ${nf_config_project}
+  echo "  paired_global      =   ${paired_global}                     " >> ${nf_config_project}
   echo "  strandness_global  =  '${strandness_global}'              " >> ${nf_config_project}
   echo ""                                                               >> ${nf_config_project}
   echo "  //  samplesheets                                            " >> ${nf_config_project}
@@ -427,12 +427,15 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   cd ${project_dir}
 
   ## Set profile defaults in nextflow.config
+  ## also, remove the bladderrepoort folder for profiles rnaseq_total and rnaseq_mrna. Only used for uroscan
   if [[ $pipelineProfile == "rnaseq_mrna" ]]  ; then
     ## update the fastq_input_dir (-f argument) in config file
+    rm -rf ${project_dir}/bin/bladderreport
     sed "s|run_rsem.*|run_rsem            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
     sed "s|run_salmon.*|run_salmon            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
     sed "s|run_bladderreport.*|run_bladderreport            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
   elif [[ $pipelineProfile == "rnaseq_total"  ]]; then
+    rm -rf ${project_dir}/bin/bladderreport
     sed "s|run_rsem.*|run_rsem            =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
     sed "s|run_salmon.*|run_salmon           =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config
     sed "s|run_bladderreport.*|run_bladderreport       =  false|g" nextflow.config > tmp.txt ; mv tmp.txt nextflow.config

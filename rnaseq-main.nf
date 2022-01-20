@@ -1122,7 +1122,7 @@ process stage_delivery {
     ## --------------------------------------------------------------
 
     mkdir -p ${deliveryscripts}
-    cp ${project_dir}/rnaseq-driver ${deliveryscripts}/
+    cp ${project_dir}/rnaseq-driver.sh ${deliveryscripts}/
     cp ${project_dir}/rnaseq-main.nf ${deliveryscripts}/
     cp -r ${project_dir}/bin ${deliveryscripts}/
     cp ${project_dir}/nextflow.config.* ${deliveryscripts}/
@@ -1131,7 +1131,6 @@ process stage_delivery {
     """
     echo "run_setup_deliverytemp skipped"
     """
-
 }
 
 
