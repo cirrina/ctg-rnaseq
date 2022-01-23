@@ -1160,11 +1160,11 @@ process finalize_pipeline {
     ## -----------------------
     cp -r ${multiqcdir} ${ctg_qc_dir}
     cp -r ${fastqcdir} ${ctg_qc_dir}
-    cp ${samplesheet} ${ctg_qc_dir}/
+    cd ${project_dir}
+    cp ${samplesheet} ${ctg_qc_dir}
 
     ## Chmod all dirs
     ## -----------------------
-    cd ${delivery_dir}
     find ${delivery_dir} -user $USER -exec chmod g+rw {} +
     find ${project_dir} -user $USER -exec chmod g+rw {} +
     find ${ctg_qc_dir} -user $USER -exec chmod g+rw {} +
