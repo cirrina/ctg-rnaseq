@@ -42,13 +42,13 @@ A project runfolder can be primed without starting the nextflow pipeline. Use th
 Example: initiate within a new NovaSeq RunFolder (v2.2.x).:
 
 ```
-## 1. A standard pipeline run is preceeded by running `ctg-parse-samplesheet` and `ctg-demux2` scripts.
+## A standard pipeline run is preceeded by running `ctg-parse-samplesheet` and `ctg-demux2` scripts.
 
-## `parse-samplesheet` 
+## 1. `parse-samplesheet` 
 ##  generate demux samplesheet (one or more projects) as well as project specific ctg samplesheets for ctg-rnaseq pipeline.
 /projects/fs1/shared/ctg-tools/bin/ctg-parse-samplesheet/1.3/parse-samplesheet.bash -s CTG_SampleSheet.test_rnaseq.csv
 
-## 'ctg-demux2' - run bcl2fastq demux for complete runfolder
+## 2. 'ctg-demux2' - run bcl2fastq demux for complete runfolder
 ctg-demux2 SampleSheet-demux-220110_A00681_0559_AHVNTTDRXY.csv
 
 
@@ -75,7 +75,7 @@ Prime a work folder (but do not start a run)
   -s 2021_024_SampleSheet-IEM.csv -p true
 ```
 
-Resume a failed nextflow run:
+Resume a failed nextflow run (may not be functional yet):
 
 ```
 rnaseq-driver.sh \
@@ -83,10 +83,184 @@ rnaseq-driver.sh \
   -r
 ```
 
-# FASTQ file input
+
+
+# Script Execution & Input args
+
+For a regular run, pipeline input parameters need only to be controlled by the SampleSheet. Fastq file location will default to the output of ctg-demux2 script and (if not there) default to the expected delivery dir location. If other location provide using -f flag below. 
+
+
+
+
+
+## Arguments Parameters and Configuration files
+
+Input parameters and variables are determined by:<br>
+
+-f --fastq_input_dir: FASTQ files are ALL expected to be supplied in the SAME directory. SampleSheet provides filename(s) and -f argument provides FASTQ path.
+
+*  `SampleSheet`: contains most required input parameters.
+*  `nextflow.config`: parameters that define the different nextflow profiles, including genome reference and container files.
+*  `nextflow.config.{projectId}`: auto-generated from the rnaseq-driver.sh using parameters from 'SampleSheet' and file paths from the driver file.
+*  `rnaseq-driver.sh`: A few parameters are hardcoded in the rnaseq driver.
+
+
+## FASTQ file input
 FASTQ files are ALL expected to be supplied in the SAME directory. 
 
 **.fastq** and **.bam** file names must be **defined in the SampleSheet**. (`fastq_1`, `fastq_2` and `bam` columns in `[Data]` section). A standard pipeline run is preceeded by running `ctg-parse-samplesheet` and `ctg-demux2` scrtips.
+
+
+## Nextflow Configs
+Two different nextflow.configs are used to pass variables to the nextflow pipeline. The project specific `nextflow.config.params.{projectId}` is auto generated and carries variables from the samoplesheet to the actual nextflow script. `nextflow.config.params.{projectId}` is initiated by nextflow through the `-c` flag and will override (if reduntant) the `nextflow config`.
+
+
+## SampleSheet
+The SampleSheet is the main source of input parameters for the pipeline. The SampleSheet is structured in accordance to [Illumnina IEM software](https://support.illumina.com/sequencing/sequencing_software/experiment_manager/downloads.html ) requirements (and can therefore also be used as input for the bcl2fastq software). The ctg samplesheet will include a number of additional placeholders wihtin the [Header] section that are used as holders for metadata and is used by the ctg-pipelines.
+
+- [bcl2fastq](https://support.illumina.com/sequencing/sequencing_software/bcl2fastq-conversion-software.html) demultixing software compatible (IEM style csv samplesheet)
+- Metadata variables added that are used by the ctg-rnaseq pipeline.
+- Sample names, including fastq and bam file namings.
+
+
+### Nextflow Profiles (set in samplesheet)
+A nextflow config profile must be defined and is  set in `SampleSheet` (below) using `PipelineProfile ` variable. A profile is a set of nextflow configuration attributes that can be activated/chosen when launching a pipeline execution by using the `-profile` option. By convention the `standard` profile is implicitly used when no other profile is specified by the user (not implemeted here - a profile must be defined).
+
+Available profiles:
+
+* rnaseq_mrna
+* rnaseq_total
+* uroscan
+
+**Note:** When using the profiles feature in your config file do **NOT** set attributes in the same scope both inside and outside a profiles context. e.g if using `process` attributes, all of these have to be defined within the different profiles sections.
+
+
+### Samplesheet requirements:
+Should be in the format of Illumina IEM sample sheet. For a sample sheet with multiple projkects (as outputed from the lab) may include multiple
+
+**[Header]:** The file must start with a [Header] section. Whithin this section additional metadata can be added.<br>
+**PipelineName:** In this case always "ctg-rnaseq".<br>
+**PipelineVersion:** Should specify the pipeline version e.g. 2.1.5. This will define what scripts are dowloaded to the work directiory.<br>
+**PipelineProfile:** Will determine what nextflow profile to initiate. Nextflow profile parameters are defined in the `nextflow.config`. Avalable profiles are: rnaseq, rnaseq_total or uroscan. See seciton on Nextflow profiles.<br>
+**RunFolder:** The Illumina Runfolder Name. <br>
+**ProjectId**,2021_145,,,,,,,,,,,,,,,,,,,,,,<br>
+**PoolName**,CTGpool_0174,,,,,,,,,,,,,,,,,,,,,,<br>
+**Instrument** Type,NovaSeq1.5,,,,,,,,,,,,,,,,,,,,,,<br>
+**FlowCell**,"NovaSeq 6000 S1 Reagent Kit, 100 cycles v1.5 (20028319)",,,,,,,,,,,,,,,,,,,,,,<br>
+**SharedFlowCell**,false,,,,,,,,,,,,,,,,,,,,,,<br>
+**LaneDivider**,false,,,,,,,,,,,,,,,,,,,,,,<br>
+**Species**,Other,,,,,,,,,,,,,,,,,,,,,,<br>
+**Assay**,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,,,,,,,,,,,,,,,,,,,,,,<br>
+**Index** Adapters,SMARTer RNA Unique Dual Index Kit -96U Set A,,,,,,,,,,,,,,,,,,,,,,<br>
+**Strandness**,reverse,,,,,,,,,,,,,,,,,,,,,,<br>
+**Paired**,false,,,,,,,,,,,,,,,,,,,,,,<br>
+
+The **Bold** fields below must be correctly specified!  
+**Note on [Header] `Species` and `Pooled`:** These `[Header]` variables are not included by IEM and **must be added**.  
+**Note on [Data] Sample_ID:** : Olny Sample_ID values are required. **Sample_Name** will be forced to the same value as Sample_ID. This to force the file structure output from bcl2fastq demux to be consistant. Sample_ID ≠ Sample_Name will produce additioonal folder structure.    
+**Note [Data] Sample_Project:** This column will be force overwritten by the `iem-samplesheet-processor.R` script to the same project id value as defined when executing the pipeline.  
+
+**Note on [Header] Instrument Type:**  Can be NovaSeq or NovaSeq1.0 protocol.  
+**Note on [Header] Assay:**  Allowed Assay values are listed in `./bin/checklist-iem.csv`. Assays are specified using same nomenclature as within the IEM software.  
+**Note on [Header] Index Adapters:**  Allowed Index Adapters values (and Assay combinations) are listed in `./bin/checklist-iem.csv`. Specified using same nomenclature as within the IEM software.    
+**Note on [Settings] Adapter:**  Adapters will be cross-checked using the`./bin/checklist-iem.csv` file. The Adapter value must match the value specified under respective Index Adapter.
+**Note on [Reads]:** This section is used to determine if the run is **paired or not**. Note that the actual read lenths are **probably** not used by bcl2fastq, pooling of different Assay types may complicate thisgs,
+
+
+
+
+### IEM samplesheet example:
+Parameters in bold are used by the rnaseq pipeline:
+
+**[Header],,,,,,,,,,,,,,,,,,,,,,,**<br>
+**Pipeline**,ctg-rnaseq,,,,<br>
+**PipelineVersion**,2.2.1,,,,,,,,,,,,,,,,,,,,,,<br>
+**PipelineProfile**,rnaseq_total,,,,,,,,,,,,,,,,,,,,,,<br>
+**RunFolder**,,,,,,,,,,,,,,,,,,,,,,,<br>
+**ProjectId**,2021_145,,,,,,,,,,,,,,,,,,,,,,<br>
+**PoolName**,CTGpool_0174,,,,,,,,,,,,,,,,,,,,,,<br>
+**Instrument** Type,NovaSeq1.5,,,,,,,,,,,,,,,,,,,,,,<br>
+**FlowCell**,"NovaSeq 6000 S1 Reagent Kit, 100 cycles v1.5 (20028319)",,,,,,,,,,,,,,,,,,,,,,<br>
+**SharedFlowCell**,false,,,,,,,,,,,,,,,,,,,,,,<br>
+**LaneDivider**,false,,,,,,,,,,,,,,,,,,,,,,<br>
+**Species**,Other,,,,,,,,,,,,,,,,,,,,,,<br>
+**Assay**,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,,,,,,,,,,,,,,,,,,,,,,<br>
+**Index** Adapters,SMARTer RNA Unique Dual Index Kit -96U Set A,,,,,,,,,,,,,,,,,,,,,,<br>
+**Strandness**,reverse,,,,,,,,,,,,,,,,,,,,,,<br>
+**Paired**,false,,,,,,,,,,,,,,,,,,,,,,<br>
+IEMFileVersion,5,,,,,,,,,,,,,,,,,,,,,,<br>
+Experiment Name,NovaSeq_XP,,,,,,,,,,,,,,,,,,,,,,<br>
+Date,,,,,,,,,,,,,,,,,,,,,,,<br>
+Workflow,GenerateFASTQ,,,,,,,,,,,,,,,,,,,,,,<br>
+Application,NovaSeq FASTQ Only,,,,,,,,,,,,,,,,,,,,,,<br>
+Chemistry,Amplicon,,,,,,,,,,,,,,,,,,,,,,<br>
+,,,,,,,,,,,,,,,,,,,,,,,<br>
+**[Reads],,,,,,,,,,,,,,,,,,,,,,,**<br>
+**101**,,,,,,,,,,,,,,,,,,,,,,,<br>
+**101**,,,,,,,,,,,,,,,,,,,,,,,<br>
+,,,,,,,,,,,,,,,,,,,,,,,<br>
+**[Settings],,,,,,,,,,,,,,,,,,,,,,,**<br>
+**Adapter**,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,,,,,,,,,,,,,<br>
+**AdapterRead2**,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,,,,,,,,,,,,,<br>
+**Read1StartFromCycle**,1,,,,,,,,,,,,,,,,,,,,,,<br>
+**Read2StartFromCycle**,4,,,,,,,,,,,,,,,,,,,,,,<br>
+,,,,,,,,,,,,,,,,,,,,,,,<br>
+**[Data],,,,,,,,,,,,,,,,,,,,,,,**<br>
+**Sample_ID**,Sample_Name,**Sample_Project**,Sample_Pool,Species,RIN,concentration,sample_order,pipeline_pofile,Assay,Index_Adapters,Strandness,Read1StartFromCycle,Read2StartFromCycle,Adapter,AdapterRead2,Paired,Read_1_cycles,Read_2_cycles,**Index_Plate_Well,I7_Index_ID,index,I5_Index_ID,index2**<br>
+LUIN_03,LUIN_03,2021_145,CTGpool_0174,Other,NA,,1,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,F11,U086,GAACCGCG,U086,TAAGGTCA<br>
+LUIN_06,LUIN_06,2021_145,CTGpool_0174,Other,NA,,2,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,G11,U087,CTCACCAA,U087,TTGCCTAG<br>
+LUIN_14,LUIN_14,2021_145,CTGpool_0174,Other,NA,,3,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,H11,U088,TCTGTTGG,U088,CCATTCGA<br>
+LUIN_26,LUIN_26,2021_145,CTGpool_0174,Other,NA,,4,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,A12,U089,TATCGCAC,U089,ACACTAAG<br>
+LUIN_29,LUIN_29,2021_145,CTGpool_0174,Other,NA,,5,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,B12,U090,CGCTATGT,U090,GTGTCGGA<br>
+LUIN_31,LUIN_31,2021_155,CTGpool_0174,Other,NA,,6,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,C12,U091,GTATGTTC,U091,TTCCTGTT<br>
+MAAK_03,MAAK_03,2021_155,CTGpool_0174,Other,NA,,7,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,D12,U092,ACGCACCT,U092,CCTTCACC<br>
+MAIV_22,MAIV_22,2021_155,CTGpool_0174,Other,NA,,8,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,E12,U093,TACTCATA,U093,GCCACAGG<br>
+MAIV_24,MAIV_24,2021_165,CTGpool_0174,Other,NA,,9,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,F12,U094,CGTCTGCG,U094,ATTGTGAA<br>
+
+----
+
+
+
+
+## Dependencies
+Running the ctg-rnaseq pipeline on aurora lsens4 clusters requires:
+
+### N E X T F L O W
+[Nextflow](https://www.nextflow.io/) version 19.04.1 build 5072 was used as of ctg-rnaseq 2.1.6.
+
+### Slurm
+[The Slurm Workflow Manager](https://slurm.schedmd.com/tutorials.html) version 17.02.1-2 was used as of ctg-rnaseq 2.1.6.
+
+### Singularity
+Containers are built using [Singularity](https://sylabs.io/singularity). As of of ctg-rnaseq 2.1.6, singularity version 3.7.0-1.el7 was installed on LS4.
+
+
+
+## ctg-rnaseq & ctg-singualrity on Git
+Main git repository [https://github.com/cirrina/ctg-rnaseq](https://github.com/cirrina/ctg-rnaseq/tags)
+
+
+### Git version tags
+Versions are stored as tags in git repository [https://github.com/cirrina/ctg-rnaseq/tags](https://github.com/cirrina/ctg-rnaseq/tags)
+Versisons are specified as X.Y.ZZ, e.g. version 2.1.6 and tagged in the git site.
+
+### Download tagged versions from Git
+
+Script for download & extraction og a specified repo (not only ctg-rnaseq):
+
+```
+#!/bin/bash
+read -p 'Git cirrina repo, e.g. singularity-ctg-rnaseq: ' gitRepo
+read -p 'Git cirrina repo tag, e.g. 1.2.0: ' gitTag
+cd /Users/david/scripts/git-version-tags
+wget https://github.com/cirrina/${gitRepo}/archive/refs/tags/${gitTag}.tar.gz
+tar -zxvf ${gitTag}.tar.gz
+rm -rf ${gitTag}.tar.gz
+```
+
+
+
+
 
 # Trouble-shooting
 
@@ -108,7 +282,6 @@ FASTQ files are ALL expected to be supplied in the SAME directory.
 
 
 ## Input File structure
-
 
 
 ### ctg-rnasesq scripts & versions
@@ -171,11 +344,6 @@ Different types of containers have been generated: **(i)** pipeline specific tha
       └──  singularity-rseqc_4.0.0-1.0.1.sif   
 
 ```
-
-
-
-
-
 
 
 ### Genome References
@@ -276,7 +444,6 @@ Module specific references: e.g. fastqScreen, rseqc etc are places in separate f
 
 
 ```
-
 
 
 
@@ -434,186 +601,6 @@ ctg_qc_dir=="${ctg_qc_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 
 
 
-# Script Execution & Input args
-
-For a regular run, pipeline input parameters need only to be controlled by the SampleSheet. Fastq file location will default to the output of ctg-demux2 script and (if not there) default to the expected delivery dir location. If other location provide using -f flag below. 
-
-
-## Arguments
-
-# Parameters and Configuration files
-
-
-Input parameters and variables are determined by:<br>
-
--f --fastq_input_dir: FASTQ files are ALL expected to be supplied in the SAME directory. SampleSheet provides filename(s) and -f argument provides FASTQ path.
-
-*  `SampleSheet`: contains most required input parameters.
-*  `nextflow.config`: parameters that define the different nextflow profiles, including genome reference and container files.
-*  `nextflow.config.{projectId}`: auto-generated from the rnaseq-driver.sh using parameters from 'SampleSheet' and file paths from the driver file.
-*  `rnaseq-driver.sh`: A few parameters are hardcoded in the rnaseq driver.
-
-
-## Nextflow Profiles
-A nextflow config profile must be defined and is  set in `SampleSheet` (below) using `PipelineProfile ` variable. A profile is a set of nextflow configuration attributes that can be activated/chosen when launching a pipeline execution by using the `-profile` option. By convention the `standard` profile is implicitly used when no other profile is specified by the user (not implemeted here - a profile must be defined).
-
-Available profiles:
-
-* rnaseq
-* rnaseq_total
-* uroscan
-
-**Note:** When using the profiles feature in your config file do **NOT** set attributes in the same scope both inside and outside a profiles context. e.g if using `process` attributes, all of these have to be defined within the different profiles sections.
-
-## Nextflow Configs
-Two different nextflow.configs are used to pass variables to the nextflow pipeline. The project specific `nextflow.config.{projectId}` is auto generated and carries variables from the samoplesheet to the actual nextflow script. `nextflow.config.{projectId}` is initiated by nextflow through the `-c` flag and will override (if reduntant) the `nextflow config`.
-
-
-## SampleSheet
-The SampleSheet is the main source of input parameters for the pipeline. The SampleSheet is structured in accordance to [Illumnina IEM software](https://support.illumina.com/sequencing/sequencing_software/experiment_manager/downloads.html ) requirements (and can therefore also be used as input for the bcl2fastq software). The ctg samplesheet will include a number of additional placeholders wihtin the [Header] section that are used as holders for metadata and is used by the ctg-pipelines.
-
-- [bcl2fastq](https://support.illumina.com/sequencing/sequencing_software/bcl2fastq-conversion-software.html) demultixing software compatible (IEM style csv samplesheet)
-- Metadata variables added that are used by the ctg-rnaseq pipeline.
-- Sample names, including fastq and bam file namings.
-
-
-
-### Samplesheet requirements:
-Should be in the format of Illumina IEM sample sheet. For a sample sheet with multiple projkects (as outputed from the lab) may include multiple
-
-**[Header]:** The file must start with a [Header] section. Whithin this section additional metadata can be added.<br>
-**PipelineName:** In this case always "ctg-rnaseq".<br>
-**PipelineVersion:** Should specify the pipeline version e.g. 2.1.5. This will define what scripts are dowloaded to the work directiory.<br>
-**PipelineProfile:** Will determine what nextflow profile to initiate. Nextflow profile parameters are defined in the `nextflow.config`. Avalable profiles are: rnaseq, rnaseq_total or uroscan. See seciton on Nextflow profiles.<br>
-**RunFolder:** The Illumina Runfolder Name. <br>
-**ProjectId**,2021_145,,,,,,,,,,,,,,,,,,,,,,<br>
-**PoolName**,CTGpool_0174,,,,,,,,,,,,,,,,,,,,,,<br>
-**Instrument** Type,NovaSeq1.5,,,,,,,,,,,,,,,,,,,,,,<br>
-**FlowCell**,"NovaSeq 6000 S1 Reagent Kit, 100 cycles v1.5 (20028319)",,,,,,,,,,,,,,,,,,,,,,<br>
-**SharedFlowCell**,false,,,,,,,,,,,,,,,,,,,,,,<br>
-**LaneDivider**,false,,,,,,,,,,,,,,,,,,,,,,<br>
-**Species**,Other,,,,,,,,,,,,,,,,,,,,,,<br>
-**Assay**,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,,,,,,,,,,,,,,,,,,,,,,<br>
-**Index** Adapters,SMARTer RNA Unique Dual Index Kit -96U Set A,,,,,,,,,,,,,,,,,,,,,,<br>
-**Strandness**,reverse,,,,,,,,,,,,,,,,,,,,,,<br>
-**Paired**,false,,,,,,,,,,,,,,,,,,,,,,<br>
-
-The **Bold** fields below must be correctly specified!  
-**Note on [Header] `Species` and `Pooled`:** These `[Header]` variables are not included by IEM and **must be added**.  
-**Note on [Data] Sample_ID:** : Olny Sample_ID values are required. **Sample_Name** will be forced to the same value as Sample_ID. This to force the file structure output from bcl2fastq demux to be consistant. Sample_ID ≠ Sample_Name will produce additioonal folder structure.    
-**Note [Data] Sample_Project:** This column will be force overwritten by the `iem-samplesheet-processor.R` script to the same project id value as defined when executing the pipeline.  
-
-**Note on [Header] Instrument Type:**  Can be NovaSeq or NovaSeq1.0 protocol.  
-**Note on [Header] Assay:**  Allowed Assay values are listed in `./bin/checklist-iem.csv`. Assays are specified using same nomenclature as within the IEM software.  
-**Note on [Header] Index Adapters:**  Allowed Index Adapters values (and Assay combinations) are listed in `./bin/checklist-iem.csv`. Specified using same nomenclature as within the IEM software.    
-**Note on [Settings] Adapter:**  Adapters will be cross-checked using the`./bin/checklist-iem.csv` file. The Adapter value must match the value specified under respective Index Adapter.
-**Note on [Reads]:** This section is used to determine if the run is **paired or not**. Note that the actual read lenths are **probably** not used by bcl2fastq, pooling of different Assay types may complicate thisgs,
-
-
-
-
-### IEM samplesheet example:
-Parameters in bold are used by the rnaseq pipeline:
-
-**[Header],,,,,,,,,,,,,,,,,,,,,,,**<br>
-**Pipeline**,ctg-rnaseq,,,,<br>
-**PipelineVersion**,2.2.1,,,,,,,,,,,,,,,,,,,,,,<br>
-**PipelineProfile**,rnaseq_total,,,,,,,,,,,,,,,,,,,,,,<br>
-**RunFolder**,,,,,,,,,,,,,,,,,,,,,,,<br>
-**ProjectId**,2021_145,,,,,,,,,,,,,,,,,,,,,,<br>
-**PoolName**,CTGpool_0174,,,,,,,,,,,,,,,,,,,,,,<br>
-**Instrument** Type,NovaSeq1.5,,,,,,,,,,,,,,,,,,,,,,<br>
-**FlowCell**,"NovaSeq 6000 S1 Reagent Kit, 100 cycles v1.5 (20028319)",,,,,,,,,,,,,,,,,,,,,,<br>
-**SharedFlowCell**,false,,,,,,,,,,,,,,,,,,,,,,<br>
-**LaneDivider**,false,,,,,,,,,,,,,,,,,,,,,,<br>
-**Species**,Other,,,,,,,,,,,,,,,,,,,,,,<br>
-**Assay**,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,,,,,,,,,,,,,,,,,,,,,,<br>
-**Index** Adapters,SMARTer RNA Unique Dual Index Kit -96U Set A,,,,,,,,,,,,,,,,,,,,,,<br>
-**Strandness**,reverse,,,,,,,,,,,,,,,,,,,,,,<br>
-**Paired**,false,,,,,,,,,,,,,,,,,,,,,,<br>
-IEMFileVersion,5,,,,,,,,,,,,,,,,,,,,,,<br>
-Experiment Name,NovaSeq_XP,,,,,,,,,,,,,,,,,,,,,,<br>
-Date,,,,,,,,,,,,,,,,,,,,,,,<br>
-Workflow,GenerateFASTQ,,,,,,,,,,,,,,,,,,,,,,<br>
-Application,NovaSeq FASTQ Only,,,,,,,,,,,,,,,,,,,,,,<br>
-Chemistry,Amplicon,,,,,,,,,,,,,,,,,,,,,,<br>
-,,,,,,,,,,,,,,,,,,,,,,,<br>
-**[Reads],,,,,,,,,,,,,,,,,,,,,,,**<br>
-**101**,,,,,,,,,,,,,,,,,,,,,,,<br>
-**101**,,,,,,,,,,,,,,,,,,,,,,,<br>
-,,,,,,,,,,,,,,,,,,,,,,,<br>
-**[Settings],,,,,,,,,,,,,,,,,,,,,,,**<br>
-**Adapter**,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,,,,,,,,,,,,,<br>
-**AdapterRead2**,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,,,,,,,,,,,,,<br>
-**Read1StartFromCycle**,1,,,,,,,,,,,,,,,,,,,,,,<br>
-**Read2StartFromCycle**,4,,,,,,,,,,,,,,,,,,,,,,<br>
-,,,,,,,,,,,,,,,,,,,,,,,<br>
-**[Data],,,,,,,,,,,,,,,,,,,,,,,**<br>
-**Sample_ID**,Sample_Name,**Sample_Project**,Sample_Pool,Species,RIN,concentration,sample_order,pipeline_pofile,Assay,Index_Adapters,Strandness,Read1StartFromCycle,Read2StartFromCycle,Adapter,AdapterRead2,Paired,Read_1_cycles,Read_2_cycles,**Index_Plate_Well,I7_Index_ID,index,I5_Index_ID,index2**<br>
-LUIN_03,LUIN_03,2021_145,CTGpool_0174,Other,NA,,1,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,F11,U086,GAACCGCG,U086,TAAGGTCA<br>
-LUIN_06,LUIN_06,2021_145,CTGpool_0174,Other,NA,,2,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,G11,U087,CTCACCAA,U087,TTGCCTAG<br>
-LUIN_14,LUIN_14,2021_145,CTGpool_0174,Other,NA,,3,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,H11,U088,TCTGTTGG,U088,CCATTCGA<br>
-LUIN_26,LUIN_26,2021_145,CTGpool_0174,Other,NA,,4,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,A12,U089,TATCGCAC,U089,ACACTAAG<br>
-LUIN_29,LUIN_29,2021_145,CTGpool_0174,Other,NA,,5,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,B12,U090,CGCTATGT,U090,GTGTCGGA<br>
-LUIN_31,LUIN_31,2021_155,CTGpool_0174,Other,NA,,6,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,C12,U091,GTATGTTC,U091,TTCCTGTT<br>
-MAAK_03,MAAK_03,2021_155,CTGpool_0174,Other,NA,,7,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,D12,U092,ACGCACCT,U092,CCTTCACC<br>
-MAIV_22,MAIV_22,2021_155,CTGpool_0174,Other,NA,,8,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,E12,U093,TACTCATA,U093,GCCACAGG<br>
-MAIV_24,MAIV_24,2021_165,CTGpool_0174,Other,NA,,9,rnaseq_total,SMARTer Stranded Total RNA-Seq Kit v2 Pico Input Mammalian,SMARTer RNA Unique Dual Index Kit -96U Set A,reverse,1,4,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,false,101,,F12,U094,CGTCTGCG,U094,ATTGTGAA<br>
-
-----
-
-
-
-
-## Dependencies
-Running the ctg-rnaseq pipeline on aurora lsens4 clusters requires:
-
-### N E X T F L O W
-[Nextflow](https://www.nextflow.io/) version 19.04.1 build 5072 was used as of ctg-rnaseq 2.1.6.
-
-### Slurm
-[The Slurm Workflow Manager](https://slurm.schedmd.com/tutorials.html) version 17.02.1-2 was used as of ctg-rnaseq 2.1.6.
-
-### Singularity
-Containers are built using [Singularity](https://sylabs.io/singularity). As of of ctg-rnaseq 2.1.6, singularity version 3.7.0-1.el7 was installed on LS4.
-
-
-
-## ctg-rnaseq & ctg-singualrity on Git
-Main git repository [https://github.com/cirrina/ctg-rnaseq](https://github.com/cirrina/ctg-rnaseq/tags)
-
-
-### Git version tags
-Versions are stored as tags in git repository [https://github.com/cirrina/ctg-rnaseq/tags](https://github.com/cirrina/ctg-rnaseq/tags)
-Versisons are specified as X.Y.ZZ, e.g. version 2.1.6 and tagged in the git site.
-
-### Download tagged versions from Git
-
-Script for download & extraction og a specified repo (not only ctg-rnaseq):
-
-```
-#!/bin/bash
-read -p 'Git cirrina repo, e.g. singularity-ctg-rnaseq: ' gitRepo
-read -p 'Git cirrina repo tag, e.g. 1.2.0: ' gitTag
-cd /Users/david/scripts/git-version-tags
-wget https://github.com/cirrina/${gitRepo}/archive/refs/tags/${gitTag}.tar.gz
-tar -zxvf ${gitTag}.tar.gz
-rm -rf ${gitTag}.tar.gz
-```
-
-
-
-# Genome References
-
-The ctg-rnaseq uses multiple references. Some are used as-is whereas others are modified.
-Notes on reference libraries on lsens
-
-# Singularity containers
-    - https://github.com/cirrina/singularity-bladderreport
-    - https://github.com/cirrina/singularity-ctg-rnaseq
-    - https://github.com/cirrina/singularity-uroscan
-
-
 
 # Bin
 
@@ -635,9 +622,6 @@ uroscan. These are non-controlled references used as-is from the Lennart server.
 
 
 # Pipeline Modules
-
-## demultiplexing: bcl2fastq
-[bcl2fastq](https://support.illumina.com/content/dam/illumina-support/documents/documentation/software_documentation/bcl2fastq/bcl2fastq2-v2-20-software-guide-15051736-03.pdf): Converts raw basecalls to fastq, and demultiplex samples based on indexes.  
 
 ### SampleSheet
 Sample sheet must be given in Illumina IEM csv format. See SampleSheet section below.
@@ -673,20 +657,6 @@ bcl2fastq -R ${runfolderdir} \\
 
 find ${bcl2fastq_dir} -user $USER -exec chmod g+rw {} +
 ```
-
-### notes on bcl2fastq
-**demux in ctg-rnaseq pipeline**
-In versions ≤2.1.x, demultiplexing is included whithin the main nextflow pipeline.
-
-**the -r -p and -w flags**<br>
-The most demanding step is the processing step (-p option). Assign this step the most threads.
-u The reading and writing stages are simple and do not need many threads. This consideration is important
-for a local hard drive. Too many threads cause too many parallel read-write actions and suboptimal
-performance.
-**Character limitations**<brr>
-- [Data]: The Sample_Project, Sample_ID, and Sample_Name columns accept alphanumeric characters, hyphens (-),
-and underscores (_).
-- [Header]. Make sure htat no regional characters are used. Other problematic signs are the + sign.
 
 
 
@@ -752,8 +722,7 @@ References were prepared for uoscan pipeline with shell script (from CMD):
 - change --paired-end to alternative for non paired end runs. {paired} variable.
 
 
-<br>
-<br>
+
 ## STAR
 Uroscan and rnaseq is run using different versions of star
 
