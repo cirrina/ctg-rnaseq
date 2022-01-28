@@ -423,14 +423,17 @@ process star  {
   if ( params.run_star )
     """
     mkdir -p ${stardir}
-    STAR --genomeDir ${genome} \\
-      --readFilesIn ${starfiles} \\
-      --runThreadN ${task.cpus}  \\
-      --readFilesCommand zcat \\
-      --outSAMtype BAM SortedByCoordinate \\
-      --limitBAMsortRAM 10000000000 \\
-      --outFileNamePrefix ${stardir}/${sid}_
-
+    if [ ! -f ${stardir}/${sid}_Log.final.out ]; then
+      STAR --genomeDir ${genome} \\
+        --readFilesIn ${starfiles} \\
+        --runThreadN ${task.cpus}  \\
+        --readFilesCommand zcat \\
+        --outSAMtype BAM SortedByCoordinate \\
+        --limitBAMsortRAM 10000000000 \\
+        --outFileNamePrefix ${stardir}/${sid}_
+    else
+      echo "star results already present"
+    fi
     """
   else
     """
@@ -642,17 +645,25 @@ process rsem {
   if ( params.run_rsem && params.pipelineProfile == "uroscan" )
     """
     mkdir -p ${rsemdir}
-    rsem-calculate-expression \\
-        --num-threads ${task.cpus} \\
-        --paired-end \\
-        --bowtie2 \\
-        --bowtie2-path /opt/software/rsem-bowtie2-env/bin \\
-        --estimate-rspd \\
-        --append-names \\
-        --no-bam-output \\
-        ${rsemfiles} \\
-        ${genome} \\
-        ${rsemdir}/${sid}.rsem
+
+    ## Add check if files exists - then do not initiate rsem
+    ## this due to multiple crashes and very long time of execution
+
+    if [ ! -f ${rsemdir}/${sid}.rsem.genes.results ]; then
+      rsem-calculate-expression \\
+          --num-threads ${task.cpus} \\
+          --paired-end \\
+          --bowtie2 \\
+          --bowtie2-path /opt/software/rsem-bowtie2-env/bin \\
+          --estimate-rspd \\
+          --append-names \\
+          --no-bam-output \\
+          ${rsemfiles} \\
+          ${genome} \\
+          ${rsemdir}/${sid}.rsem
+    else
+      echo "rsem output already found"
+    fi
     """
   else
     """
