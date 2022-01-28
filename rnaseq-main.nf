@@ -1045,13 +1045,16 @@ process md5sum {
   if ( params.run_md5sum )
     """
     if [[ -d "${fastq_dir}" ]]; then
-      find ${fastq_dir} -type f -exec md5sum {} \\; > ${fastq_dir}/md5sum_fastq.txt ; echo
+      cd ${fastq_dir}
+      find . -type f -exec md5sum {} \\; > md5sum_fastq.txt ; echo
     fi
     if [[ -d "${stardir}" ]]; then
-      find ${stardir} -type f -exec md5sum {} \\; > ${stardir}/md5sum_star.txt ; echo
+      cd ${stardir}
+      find . -type f -exec md5sum {} \\; > md5sum_star.txt ; echo
     fi
     if [[ -d "${featurecountsdir}" ]]; then
-      find ${featurecountsdir} -type f -exec md5sum {} \\; > ${featurecountsdir}/md5sum_featurecounts.txt ; echo
+      cd ${featurecountsdir}
+      find . -type f -exec md5sum {} \\; > md5sum_featurecounts.txt ; echo
     fi
     """
   else
