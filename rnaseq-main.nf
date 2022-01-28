@@ -309,10 +309,11 @@ process fastqc {
   set sid, read1, read2, species from fastqc_ch  // from move_fastqc_ch
 
   output:
-  val "x" into fastqc_complete_ch_1
-  val "x" into fastqc_complete_ch_2
-  val "x" into fastqc_complete_ch_3
-  val "x" into fastqc_complete_ch_4
+  val "x" into fastqc_complete_ch
+  // val "x" into fastqc_complete_ch_1
+  // val "x" into fastqc_complete_ch_2
+  // val "x" into fastqc_complete_ch_3
+  //val "x" into fastqc_complete_ch_4
   set sid, read1, read2, species into star_ch
   set sid, read1, read2, species into salmon_ch
   set sid, read1, read2, species into rsem_ch
@@ -351,6 +352,7 @@ process fastqscreen {
 
 
     input:
+    val x from fastqc_complete_ch.collect()
     set sid, read1, read2, species from fastqscreen_ch //
 
     output:
@@ -380,127 +382,6 @@ process fastqscreen {
 
 
 
-
-/* ===============================================================
-  *      -- SALMON  --
-  =============================================================== */
-
-process salmon  {
-  tag  { params.run_salmon  ? "$sid" : "blank_run"  }
-  cpus { params.run_salmon  ? params.cpu_standard : params.cpu_min  }
-  memory { params.run_salmon  ?  params.mem_standard : params.mem_min  }
-
-  input:
-  val x from fastqc_complete_ch_1.collect()
-  set sid, read1, read2, species from salmon_ch // from checkfiles_fastq
-
-  output:
-  val "x" into salmon_complete_ch
-
-  script:
-  if ( species == "Homo sapiens" ){
-    transcripts=params.salmon_transcripts_hs }
-  else if ( species == "Mus musculus" ){
-    transcripts=params.salmon_transcripts_mm  }
-  else if ( species == "Rattus norvegicus" ){
-    transcripts=params.salmon_transcripts_rn  }
-  else{
-    genome = ""
-    println( "Warning: Species not recognized." )}
-
-  if ( params.paired_global && params.run_salmon )
-    """
-    salmon quant -l A \\
-      -i  ${transcripts} \\
-      -1  ${fastq_dir}/${read1} \\
-      -2  ${fastq_dir}/${read2} \\
-      -p  6 --validateMappings \\
-      -o  ${salmondir}/${sid}_0.salmon.salmon \\
-      --no-version-check
-    """
-  else if ( !params.paired_global && params.run_salmon )
-    """
-    salmon quant -l A \\
-      -i  ${transcripts} \\
-      -1  ${fastq_dir}/${read1} \\
-      -p  6 --validateMappings \\
-      -o  ${salmondir}/${sid}_0.salmon.salmon \\
-      --no-version-check
-    """
-  else
-    """
-    echo "skipping salmon"
-    """
-}
-
-
-/* ===============================================================
-  *      RSEM ALIGNMENT
-  =============================================================== */
-process rsem {
-  tag  { params.run_rsem  ? "$sid" : "blank_run"  }
-  cpus { params.run_rsem  ? params.cpu_high : params.cpu_min  }
-  memory { params.run_rsem  ?  params.mem_high : params.mem_min  }
-
-  input:
-  val x from fastqc_complete_ch_2.collect()
-  set sid, read1, read2, species from rsem_ch // from checkfiles_fastq
-
-  output:
-  val "x" into rsem_complete_ch_1
-  val "x" into rsem_complete_ch_2
-
-  script:
-  // species and references (bowtie2 refs)
-  if ( species == "Homo sapiens" ){
-    genome=params.rsem_bowtie2_genome_hs }
-  else if ( species == "Mus musculus" ){
-    genome=params.star_genome_mm }
-  else if ( species == "Rattus norvegicus" ){
-      genome=params.star_genome_rn }
-  else{
-    genome = ""
-    println( "Warning: Species not recognized." )
-  }
-
-  // paired end
-  if ( params.paired_global ){
-    rsemfiles = "${fastq_dir}/${read1} ${fastq_dir}/${read2}"
-    paired='--paired-end'}
-  else{
-    rsemfiles = "${fastq_dir}/${read1}"
-    paired=''}
-
-  // strand - NOTE the uroscan pipe is run without strandness flag.
-  if( params.strandness_global == "forward" )
-    strand = 'forward'
-  else if ( params.strandness_global == "reverse" )
-    strand = 'reverse'
-  else
-    strand = 'none'
-
-  if ( params.run_rsem && params.pipelineProfile == "uroscan" )
-    """
-    mkdir -p ${rsemdir}
-    rsem-calculate-expression \\
-        --num-threads ${task.cpus} \\
-        --paired-end \\
-        --bowtie2 \\
-        --bowtie2-path /opt/software/rsem-bowtie2-env/bin \\
-        --estimate-rspd \\
-        --append-names \\
-        --no-bam-output \\
-        ${rsemfiles} \\
-        ${genome} \\
-        ${rsemdir}/${sid}.rsem
-    """
-  else
-    """
-    echo "rsem not run"
-    """
-}
-
-
 /* ===============================================================
   *      STAR AND BAM SECTION
   =============================================================== */
@@ -511,12 +392,13 @@ process star  {
   memory { params.run_star  ?  params.mem_high : params.mem_min  }
 
   input:
-  val x from fastqc_complete_ch_3.collect()
+  // val x from fastqc_complete_ch_3.collect()
+  val x from fastqscreen_complete_ch.collect()
   set sid, read1, read2, species from star_ch // from checkfiles_fastq
 
   output:
   val "x" into star_complete_ch_1
-  val "x" into star_complete_ch_2
+  //val "x" into star_complete_ch_2
 
   script:
   if ( species == "Homo sapiens" ){
@@ -621,7 +503,7 @@ process markdups {
 
   output:
   val "x" into markdups_complete_ch_1
-  val "x" into markdups_complete_ch_2
+  //val "x" into markdups_complete_ch_2
   set sid, bam, strand, species, RIN, concentration into bam_filter_multimap_ch
 
   script:
@@ -653,6 +535,181 @@ process markdups {
 
 
 
+
+/* ===============================================================
+  *      -- SALMON  --
+  =============================================================== */
+
+process salmon  {
+  tag  { params.run_salmon  ? "$sid" : "blank_run"  }
+  cpus { params.run_salmon  ? params.cpu_standard : params.cpu_min  }
+  memory { params.run_salmon  ?  params.mem_standard : params.mem_min  }
+
+  input:
+  val x from markdups_complete_ch_1.collect()
+  //val x from fastqc_complete_ch_1.collect()
+  set sid, read1, read2, species from salmon_ch // from checkfiles_fastq
+
+  output:
+  val "x" into salmon_complete_ch
+
+  script:
+  if ( species == "Homo sapiens" ){
+    transcripts=params.salmon_transcripts_hs }
+  else if ( species == "Mus musculus" ){
+    transcripts=params.salmon_transcripts_mm  }
+  else if ( species == "Rattus norvegicus" ){
+    transcripts=params.salmon_transcripts_rn  }
+  else{
+    genome = ""
+    println( "Warning: Species not recognized." )}
+
+  if ( params.paired_global && params.run_salmon )
+    """
+    salmon quant -l A \\
+      -i  ${transcripts} \\
+      -1  ${fastq_dir}/${read1} \\
+      -2  ${fastq_dir}/${read2} \\
+      -p  6 --validateMappings \\
+      -o  ${salmondir}/${sid}_0.salmon.salmon \\
+      --no-version-check
+    """
+  else if ( !params.paired_global && params.run_salmon )
+    """
+    salmon quant -l A \\
+      -i  ${transcripts} \\
+      -1  ${fastq_dir}/${read1} \\
+      -p  6 --validateMappings \\
+      -o  ${salmondir}/${sid}_0.salmon.salmon \\
+      --no-version-check
+    """
+  else
+    """
+    echo "skipping salmon"
+    """
+}
+
+
+/* ===============================================================
+  *      RSEM ALIGNMENT
+  =============================================================== */
+process rsem {
+  tag  { params.run_rsem  ? "$sid" : "blank_run"  }
+  cpus { params.run_rsem  ? params.cpu_high : params.cpu_min  }
+  memory { params.run_rsem  ?  params.mem_high : params.mem_min  }
+
+  input:
+  // val x from fastqc_complete_ch_2.collect()
+  val x from salmon_complete_ch.collect()
+  set sid, read1, read2, species from rsem_ch // from checkfiles_fastq
+
+  output:
+  val "x" into rsem_complete_ch_1
+  //val "x" into rsem_complete_ch_2
+
+  script:
+  // species and references (bowtie2 refs)
+  if ( species == "Homo sapiens" ){
+    genome=params.rsem_bowtie2_genome_hs }
+  else if ( species == "Mus musculus" ){
+    genome=params.star_genome_mm }
+  else if ( species == "Rattus norvegicus" ){
+      genome=params.star_genome_rn }
+  else{
+    genome = ""
+    println( "Warning: Species not recognized." )
+  }
+
+  // paired end
+  if ( params.paired_global ){
+    rsemfiles = "${fastq_dir}/${read1} ${fastq_dir}/${read2}"
+    paired='--paired-end'}
+  else{
+    rsemfiles = "${fastq_dir}/${read1}"
+    paired=''}
+
+  // strand - NOTE the uroscan pipe is run without strandness flag.
+  if( params.strandness_global == "forward" )
+    strand = 'forward'
+  else if ( params.strandness_global == "reverse" )
+    strand = 'reverse'
+  else
+    strand = 'none'
+
+  if ( params.run_rsem && params.pipelineProfile == "uroscan" )
+    """
+    mkdir -p ${rsemdir}
+    rsem-calculate-expression \\
+        --num-threads ${task.cpus} \\
+        --paired-end \\
+        --bowtie2 \\
+        --bowtie2-path /opt/software/rsem-bowtie2-env/bin \\
+        --estimate-rspd \\
+        --append-names \\
+        --no-bam-output \\
+        ${rsemfiles} \\
+        ${genome} \\
+        ${rsemdir}/${sid}.rsem
+    """
+  else
+    """
+    echo "rsem not run"
+    """
+}
+
+
+/* ===============================================================
+  *      UROSCAN - BLADDER REPORT
+  =============================================================== */
+// Bladderreport need a temporary folder for each analysis since temp filles with non unique names are generated
+
+process bladderreport {
+  tag  { params.run_bladderreport  ? "$sid" : "blank_run"  }
+  cpus { params.run_bladderreport  ? params.cpu_mid : params.cpu_min  }
+  memory { params.run_bladderreport  ?  params.mem_mid : params.mem_min  }
+
+  input:
+  val x from rsem_complete_ch_1.collect()
+  // val x from star_complete_ch_2.collect()
+  set sid, bam, strand, species, RIN, concentration from bam_bladderreport_ch
+
+  output:
+  val "x" into bladderreport_complete_ch
+
+  script:
+  bladderreport_scriptsdir = project_dir+'/bin/bladderreport'
+  bladderreport_scriptname = params.bladderreport_scriptname
+
+  if ( params.run_bladderreport )
+    """
+    mkdir -p ${bladderreportdir}/tmp_${sid}
+    cp -r ${bladderreport_scriptsdir} ${bladderreportdir}/tmp_${sid}/
+    cd ${bladderreportdir}/tmp_${sid}/bladderreport
+
+    ## Run Rscript to generate markdown pdf report
+    Rscript -e "library('rmarkdown'); \\
+      rmarkdown::render( \\
+        '${bladderreportdir}/tmp_${sid}/bladderreport/${bladderreport_scriptname}',  \\
+          params = list(   \\
+            sampleid='${sid}', \\
+            rsem_in='${rsemdir}/${sid}.rsem.genes.results', \\
+            star_qc='${stardir}/${sid}_Log.final.out', \\
+            RIN='${RIN}', \\
+            koncentration='${concentration}'),  \\
+          output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
+
+    ## Run Chromium to generate html from pdf
+    cd ${bladderreportdir}
+    chromium --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
+    mv -f ${bladderreportdir}/tmp_${sid}/bladderreport/${sid}.LundClassifier.rds ${bladderreportdir}/${sid}.LundClassifier.rds
+    """
+  else
+    """
+    echo "run_bladderreport skipped"
+    """
+}
+
+
 /* ===============================================================
   *     FEATURECOUNTS SECTION
   =============================================================== */
@@ -665,7 +722,7 @@ process filter_multimap {
   memory { params.run_featurecounts  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from markdups_complete_ch_1.collect()
+  val x from bladderreport_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_filter_multimap_ch
 
   output:
@@ -766,7 +823,7 @@ process rnaseqmetrics {
   memory { params.run_rnaseqmetrics  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from markdups_complete_ch_2.collect()
+  val x from featurecounts_complete_ch.collect()
   set sid, bam, strand, species, RIN, concentration from bam_rnaseqmetrics_ch
 
   output:
@@ -926,56 +983,6 @@ process rseqc {
 
 
 
-/* ===============================================================
-  *      UROSCAN - BLADDER REPORT
-  =============================================================== */
-// Bladderreport need a temporary folder for each analysis since temp filles with non unique names are generated
-
-process bladderreport {
-  tag  { params.run_bladderreport  ? "$sid" : "blank_run"  }
-  cpus { params.run_bladderreport  ? params.cpu_mid : params.cpu_min  }
-  memory { params.run_bladderreport  ?  params.mem_mid : params.mem_min  }
-
-  input:
-  val x from rsem_complete_ch_1.collect()
-  val x from star_complete_ch_2.collect()
-  set sid, bam, strand, species, RIN, concentration from bam_bladderreport_ch
-
-  output:
-  val "x" into bladderreport_complete_ch
-
-  script:
-  bladderreport_scriptsdir = project_dir+'/bin/bladderreport'
-  bladderreport_scriptname = params.bladderreport_scriptname
-
-  if ( params.run_bladderreport )
-    """
-    mkdir -p ${bladderreportdir}/tmp_${sid}
-    cp -r ${bladderreport_scriptsdir} ${bladderreportdir}/tmp_${sid}/
-    cd ${bladderreportdir}/tmp_${sid}/bladderreport
-
-    ## Run Rscript to generate markdown pdf report
-    Rscript -e "library('rmarkdown'); \\
-      rmarkdown::render( \\
-        '${bladderreportdir}/tmp_${sid}/bladderreport/${bladderreport_scriptname}',  \\
-          params = list(   \\
-            sampleid='${sid}', \\
-            rsem_in='${rsemdir}/${sid}.rsem.genes.results', \\
-            star_qc='${stardir}/${sid}_Log.final.out', \\
-            RIN='${RIN}', \\
-            koncentration='${concentration}'),  \\
-          output_file='${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html')"
-
-    ## Run Chromium to generate html from pdf
-    cd ${bladderreportdir}
-    chromium --headless --disable-gpu --no-sandbox --print-to-pdf=${sid}.STAR.bladderreport.pdf ${bladderreportdir}/${sid}.STAR.bladderreport_anonymous.html
-    mv -f ${bladderreportdir}/tmp_${sid}/bladderreport/${sid}.LundClassifier.rds ${bladderreportdir}/${sid}.LundClassifier.rds
-    """
-  else
-    """
-    echo "run_bladderreport skipped"
-    """
-}
 
 
 
@@ -993,12 +1000,12 @@ process multiqc {
   memory { params.run_multiqc  ?  params.mem_standard : params.mem_min  }
 
   input:
-  val x from featurecounts_complete_ch.collect()
-  val x from fastqc_complete_ch_4.collect()
+  // val x from featurecounts_complete_ch.collect()
+  // val x from fastqc_complete_ch_4.collect()
   val x from rseqc_complete_ch.collect()
-  val x from fastqscreen_complete_ch.collect()
-  val x from rsem_complete_ch_2.collect()
-  val x from salmon_complete_ch.collect()
+  //val x from fastqscreen_complete_ch.collect()
+  //val x from rsem_complete_ch_2.collect()
+  //val x from salmon_complete_ch.collect()
 
   output:
   val "x" into multiqc_complete_ch
