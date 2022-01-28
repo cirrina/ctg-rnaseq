@@ -223,7 +223,7 @@ process checkfiles_fastq {
   set sid, read1, read2, species from fastq_ch
 
   output:
-  // val "x" into checkfiles_fastq_complete_ch
+  val "x" into checkfiles_fastq_complete_ch
   set sid, read1, read2, species into move_fastqc_ch
 
   script:
@@ -263,9 +263,11 @@ process move_fastq {
   memory { params.run_move_fastq  ?  params.mem_min : params.mem_min  }
 
   input:
+  val x from checkfiles_fastq_complete_ch.collect()
   set sid, read1, read2, species from move_fastqc_ch  // from check fastq
 
   output:
+  val "x" into move_fastq_complete_ch
   set sid, read1, read2, species into fastqc_ch
 
   script:
@@ -306,6 +308,7 @@ process fastqc {
   memory { params.run_fastqc  ? params.mem_standard : params.mem_min  }
 
   input:
+  val x from move_fastq_complete_ch.collect()
   set sid, read1, read2, species from fastqc_ch  // from move_fastqc_ch
 
   output:
@@ -1092,7 +1095,7 @@ process stage_delivery {
 
   input:
   val x from md5sum_complete_ch.collect()
-  val x from bladderreport_complete_ch.collect()
+  //val x from bladderreport_complete_ch.collect()
 
   output:
   val "x" into stage_delivery_complete_ch
