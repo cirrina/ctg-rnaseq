@@ -1,5 +1,5 @@
 ---
-title: 'bladderreport-ctg-1.1.1'
+title: 'bladderreport-ctg-1.1.2'
 params:
   #clarity_id: R09_T1
   rsem_in: ./uroscan_data/R09_T1.rsem
