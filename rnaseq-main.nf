@@ -1149,7 +1149,7 @@ process stage_delivery {
     cp ${project_dir}/rnaseq-driver.sh ${deliveryscripts}/
     cp ${project_dir}/rnaseq-main.nf ${deliveryscripts}/
     cp -r ${project_dir}/bin ${deliveryscripts}/
-    cp ${project_dir}/nextflow.config.* ${deliveryscripts}/
+    cp ${project_dir}/nextflow.config* ${deliveryscripts}/
     """
   else
     """

@@ -39,26 +39,37 @@ The pipeline is intiated using `rnaseq-driver.sh` that will:
 A project runfolder can be primed without starting the nextflow pipeline. Use the `-p`, *prime run* flag. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files.
 
 
-Example: initiate within a new NovaSeq RunFolder (v2.2.x).:
-
+#### Example: initiate within a NovaSeq RunFolder (v2.2.x).:
+##### 1. parse-samplesheet
 ```
 ## A standard pipeline run is preceeded by running `ctg-parse-samplesheet` and `ctg-demux2` scripts.
 
 ## 1. `parse-samplesheet` 
 ##  generate demux samplesheet (one or more projects) as well as project specific ctg samplesheets for ctg-rnaseq pipeline.
-/projects/fs1/shared/ctg-tools/bin/ctg-parse-samplesheet/1.3/parse-samplesheet.bash -s CTG_SampleSheet.test_rnaseq.csv
 
+/projects/fs1/shared/ctg-tools/bin/ctg-parse-samplesheet/1.3/parse-samplesheet.bash -s CTG_SampleSheet.test_rnaseq.csv
+  
+```
+##### 2. run demux2
+```
 ## 2. 'ctg-demux2' - run bcl2fastq demux for complete runfolder
+
 ctg-demux2 SampleSheet-demux-220110_A00681_0559_AHVNTTDRXY.csv
 
+```
+##### 3. Initiate ctg-rnaseq pipeline
+```
+## Initiate pipeline using `rnaseq-driver.sh`
 
-## 2. Initiate pipeline using `rnaseq-driver.sh`
 /projects/fs1/shared/ctg-dev/ctg-rnaseq/2.2.0/rnaseq-driver.sh \
   -s  SampleSheet-ctg-test_rnaseq.csv \
   -f /projects/fs1/shared/bcl2fastq-fastq/220110_A00681_0559_AHVNTTDRXY/test_rnaseq
-  
+
+cd /
+
 ```
 
+#### Example: Re-run failed run.
 Re-run a failed run: Done from within the project folder. Use this if scripts are not to be overwritten (if you have modified configs & scripts) :
 
 ```

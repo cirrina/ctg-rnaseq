@@ -140,13 +140,13 @@ echo "  ... samplesheet: $samplesheet"
 
 ## Read PROJECT ID from samplesheet
 ## ----------------------------------------------
-projectid=$(awk -F, '$1 == "ProjectId"' ${samplesheet} | awk -F, '{print $2}')
+projectid=$(awk -F, '$1 == "ProjectID"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... project id: $projectid"
 
 if [ -z "$projectid" ]; then
   echo ""; echo "Error: "
   echo " ProjectId is not properly supplied in samplesheet."
-  echo " CTG Project id must be given as 'ProjectId' within the [Header] section of sample sheet"; echo""; echo ""
+  echo " CTG Project id must be given as 'ProjectID' within the [Header] section of sample sheet"; echo""; echo ""
   exit 1
 fi
 if [[ $projectid =~ ' ' ]]; then
@@ -265,7 +265,7 @@ scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
 ## if -p true, prime_projectfolder_mode. must be executed outside execution dir.
 if [[ ${prime_projectfolder_mode} == "true" && "${exec_dir}" == "${project_dir}" ]]; then
   echo ""; echo " Can not prime workfolder with the same path as the one where script is executed"; echo ""
-  echo " You must specify a different projectId wihtin your SampleSheet"
+  echo " You must specify a different ProjectID wihtin your SampleSheet"
   exit 1
 fi
 
@@ -278,7 +278,7 @@ nf_config_project="${project_dir}/nextflow.config.params.${projectid}"
 if [[ $resume == "true" ]]; then
   if [[ "${script_exec_dir}" != "${project_dir}" ]]; then
     echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
-    echo " Nextflow resume flag -r must used when executing script from the project folder defined by projectId in samplesheet"
+    echo " Nextflow resume flag -r must used when executing script from the project folder defined by ProjectID in samplesheet"
     echo " Move to project directory and initiate resume"
     echo""; echo ""
     exit 1
@@ -366,7 +366,7 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   cd ${project_dir}
 
 
-  # Create nextflow configuration file -- nextflow.params_${projectid} --
+  # Create nextflow configuration file -- nextflow.params_${ProjectID} --
   #######################################################################
 
 
