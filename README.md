@@ -30,7 +30,7 @@ The pipeline is intiated using `rnaseq-driver.sh` that will:
 
 ### Quickstart ctg-rnaseq v2.2.x
 
-1. SampleSheet must be supplied using `-s` flag. The samplesheet is the main placeholder for input arguments, see SampleSheet section below. **.fastq** and **.bam** file names must be defined in the SampleSheet (`fastq_1`, `fastq_2` and `bam` columns in `[Data]` section). Usually provided by running `ctg-parse-samplesheet` script (`ctg-samplesheet-ProjectXX.csv`).
+1. SampleSheet must be supplied using `-s` flag. The samplesheet is the main placeholder for input arguments, see SampleSheet section below. **.fastq** and **.bam** filenames must be defined in the SampleSheet (`fastq_1`, `fastq_2` and `bam` columns in `[Data]` section). Usually provided by running `ctg-parse-samplesheet` script (`ctg-samplesheet-ProjectXX.csv`). Note that **bam filenames** are determined by the STAR process within this pipeline, whereas **fastq filenames** are set by demux prir this pipeline.
 2. The driver assumes that FASTQ file directory input through `-f` flag. Note that fastq-files wille be **moved from input dir to delivery dir**.
 3. Make sure that `PipelineVersion` and `PipelineProfile` are correctly supplied in SampleSheet.
 4. Run the `rnaseq-driver.sh` from within `Illumina Sequencing Runfolder`
@@ -740,6 +740,7 @@ Uroscan and rnaseq is run using different versions of star
 ### File Names
 
 By default STAR bam files are named
+NOTE THAT - If changing the output filenames of bam files - make sure to change this in the `ctg-parse-samplesheet` script as well.
 
 
 ### rnaseq & rnaseq_total (2.1.6)

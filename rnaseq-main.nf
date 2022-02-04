@@ -183,14 +183,14 @@ for ( line in all_lines ) {
 Channel
   .fromPath(sheet_nf)
   .splitCsv(header:true)
-  .map { row -> tuple( row.Sample_ID, row.fastq_1, row.fastq_2, row.Species ) }
+  .map { row -> tuple( row.Sample_ID, row.fastq_1, row.fastq_2, row.Sample_Species ) }
   .tap{ infoall }
   .set { fastq_ch }
 
 Channel
   .fromPath(sheet_nf)
   .splitCsv(header:true)
-  .map { row -> tuple( row.Sample_ID, row.bam, row.Strandness, row.Species, row.RIN, row.concentration ) }
+  .map { row -> tuple( row.Sample_ID, row.bam, row.Sample_Strandness, row.Sample_Species, row.RIN, row.concentration ) }
   .tap { infobam }
   .into { bam_checkbam_ch; bam_qualimap_ch; bam_rseqc_ch; bam_bladderreport_ch; bam_rnaseqmetrics_ch }
 
@@ -202,7 +202,7 @@ Channel
     .set { bam_featurecounts_ch }
 
 println " > Samples to process: "
-println "[Sample_ID,fastq1,fastq2,species]"
+println "[Sample_ID,fastq1,fastq2,Sample_Species]"
 infoall.subscribe { println "Info: $it" }
 
 
@@ -636,11 +636,11 @@ process rsem {
 
   // strand - NOTE the uroscan pipe is run without strandness flag.
   if( params.strandness_global == "forward" )
-    strand = 'forward'
+    strand_global = 'forward'
   else if ( params.strandness_global == "reverse" )
-    strand = 'reverse'
+    strand_global = 'reverse'
   else
-    strand = 'none'
+    strand_global = 'none'
 
   if ( params.run_rsem && params.pipelineProfile == "uroscan" )
     """
@@ -773,11 +773,11 @@ process featurecounts {
   fcounts_feature   =  'exon'
 
   if( params.strandness_global == "forward" ) {
-    strand_numeric = 1 }
+    strand_global_numeric = 1 }
   else if ( params.strandness_global == "reverse" ) {
-    strand_numeric = 2 }
+    strand_global_numeric = 2 }
   else {
-    strand_numeric = 0 }
+    strand_global_numeric = 0 }
 
   // gtf used for featurecounts
   if ( params.species_global == "Homo sapiens" ) {
@@ -802,7 +802,7 @@ process featurecounts {
       -a ${gtf} -g gene_id  \\
       -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
       -p \\
-      -s ${strand_numeric} \${bamstring}
+      -s ${strand_global_numeric} \${bamstring}
     """
   else if( params.run_featurecounts && !params.paired_global )
     """
@@ -816,7 +816,7 @@ process featurecounts {
       --extraAttributes gene_name,gene_type \\
       -a ${gtf} -g gene_id  \\
       -o ${featurecountsdir}/${projectid}_geneid.featureCounts.txt \\
-      -s ${strand_numeric} \${bamstring}
+      -s ${strand_global_numeric} \${bamstring}
     """
   else
     """
@@ -931,7 +931,7 @@ process qualimap {
   else if  ( species == "Mus musculus" ){
     gtf = params.gtf_mm}
   else if  ( species == "Rattus norvegicus" ){
-      gtf = params.gtf_rn}
+    gtf = params.gtf_rn}
   else{
     gtf=""}
 
