@@ -190,7 +190,7 @@ Channel
 Channel
   .fromPath(sheet_nf)
   .splitCsv(header:true)
-  .map { row -> tuple( row.Sample_ID, row.bam, row.Sample_Strandness, row.Sample_Species, row.RIN, row.concentration ) }
+  .map { row -> tuple( row.Sample_ID, row.bam, row.Sample_Strandness, row.Sample_Species, row.Sample_RIN, row.Sample_Concentration ) }
   .tap { infobam }
   .into { bam_checkbam_ch; bam_qualimap_ch; bam_rseqc_ch; bam_bladderreport_ch; bam_rnaseqmetrics_ch }
 
