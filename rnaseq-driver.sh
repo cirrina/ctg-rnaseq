@@ -222,7 +222,6 @@ if [[ ${species_global} != "Homo sapiens" ]] && [[ ${species_global} != "Mus mus
   exit 1
 fi
 
-
 paired_global=$(awk -F, '$1 == "Paired"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... paired_global, from samplesheet [Header]: ${paired_global}"
 if [[ ${paired_global} != "true" ]] && [[ ${paired_global} != "false"  ]]; then
