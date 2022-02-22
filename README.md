@@ -39,7 +39,8 @@ The pipeline is intiated using `rnaseq-driver.sh` that will:
 A project runfolder can be primed without starting the nextflow pipeline. Use the `-p`, *prime run* flag. This in order to modify parameters in the `nextflow.config.project.XXX` or the `nextflow.config` files.
 
 
-#### Example: initiate within a NovaSeq RunFolder (v2.2.x).:
+
+#### Example 1: A standard ctg-rnaseq run (from within a NovaSeq RunFolder, v2.2.x)
 ##### 1. parse-samplesheet
 ```
 ## A standard pipeline run is preceeded by running `ctg-parse-samplesheet` and `ctg-demux2` scripts.
@@ -69,7 +70,7 @@ cd /
 
 ```
 
-#### Example: Re-run failed run.
+#### Example 2: Re-run failed run.
 Re-run a failed run: Done from within the project folder. Use this if scripts are not to be overwritten (if you have modified configs & scripts) :
 
 ```
@@ -94,6 +95,14 @@ rnaseq-driver.sh \
   -r
 ```
 
+#### Example 3: Start a new rnaseq run but from existing fastq files
+In rare instances, fastq files are obtained by other means, or you want to re-run a project fronm fastq files using differnt parameters. 
+
+Prepare your sample sheet. Use a template from : 
+
+
+
+Define a new project name (non-existing folder within the pipeline/profile directories) and sep
 
 
 # Script Execution & Input args

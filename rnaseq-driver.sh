@@ -17,7 +17,7 @@ script_exec_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && p
 
 ## Root directories (based on ourr set folder naming conventions on lsens)
 
-scripts_root="/projects/fs1/shared/ctg-dev/pipelines"
+scripts_root="/projects/fs1/shared/ctg-pipelines"
 project_root='/projects/fs1/shared/ctg-projects'
 delivery_root='/projects/fs1/shared/ctg-delivery' ## should be added pipelineProfile/ProjectID
 ctg_qc_root='/projects/fs1/shared/ctg-qc/' ## should be added pipelineProfile/ProjectID
@@ -30,8 +30,8 @@ nf_script="rnaseq-main.nf"
 #  == Initiation ==
 #######################
 # fastq_custom=true ## set to false if no fastq_input_dir is supplied (will defalt to {project_})
-prime_projectfolder_mode=false ## -p true,  if to generate project folder and configs, but not initiate the nextgflow
-resume=false ## used to resume nextflow pipeline, Need to be executed within project workfolder.
+prime_projectfolder_mode='false' ## -p true,  if to generate project folder and configs, but not initiate the nextgflow
+resume='false' ## used to resume nextflow pipeline, Need to be executed within project workfolder.
 exec_dir=$(pwd)
 
 # usage message
@@ -41,24 +41,18 @@ usage() {
 [ -h help ] "  1>&2
 
     echo "------------------- "
-    echo " samplesheet      -s : IEM style laboratory SampleSheet. Project and pipeline specific parameters must be added "
-    echo " fastq_input_dir  -f : Set to a full path where all fastq files are located. individual filenames should be specified in ctg sample sheet. This flag will set 'run_blcl2fastq' to 'false' and all flags related to demux to false "
+    echo " samplesheet                -s : IEM style laboratory SampleSheet. Project and pipeline specific parameters must be added "
+    echo " fastq_input_dir            -f : Set to a full path where all fastq files are located. individual filenames should be specified in ctg sample sheet. This flag will set 'run_blcl2fastq' to 'false' and all flags related to demux to false "
     echo " prime_projectfolder_mode:  -p : Set to 'true' if you do not start nextflow. A dry run that will generate project folder, config files etc but will not initiate nextflow."
-    echo " resume           -r : Nextflow-specific. If to resume nextflow run. Can only be used when executing in Project work dir, NOT from Illumina runfolder"
-    echo " help             -h : print help message"
+    echo " resume                     -r : Nextflow-specific. If to resume nextflow run. Can only be used when executing in Project work dir, NOT from Illumina runfolder"
+    echo " help                       -h : print help message"
     echo " (see https://github.com/cirrina/rnaseq/blob/main/README.md for details)"
     echo "------------------- "
-    echo ""
     echo ""
 }
 
 exit_abnormal() {
   usage
-  echo "";echo "";
-  echo "----------------------- "
-  echo "  ERROR  "
-  echo "----------------------- "
-  echo "";echo "";echo ""
   exit 1
 }
 
@@ -67,15 +61,15 @@ exit_abnormal() {
 # == 1 ==   Check input arguments
 ################################################
 
-while getopts ":s:f:r:p:h" opt; do
+while getopts ":s:frph" opt; do
     case $opt in
       s) samplesheet=$OPTARG
 	          ;;
       f) fastq_input_dir=$OPTARG
             ;;
-      r) resume=true
+      r) resume='true'
        	    ;;
-      p) prime_projectfolder_mode=true
+      p) prime_projectfolder_mode='true'
             ;;
       h) exit_abnormal
         ;;
@@ -450,7 +444,8 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
     echo ""
     echo " prime_projectfolder_mode is TRUE "
     echo " ... exiting without submitting nextflow run"
-    echo " ... go to runfolder and edit your configs, then start run using rnaseq-driver"
+    echo " ... go to Project folder:  ${project_dir}"
+    echo " ... inspect & edit your configs, then start run using rnaseq-drive, "
     exit 0
   fi
 fi # end if projectfolder_setup_mode
