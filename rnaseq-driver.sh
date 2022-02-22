@@ -61,7 +61,7 @@ exit_abnormal() {
 # == 1 ==   Check input arguments
 ################################################
 
-while getopts ":s:frph" opt; do
+while getopts ":sfrph" opt; do
     case $opt in
       s) samplesheet=$OPTARG
 	          ;;
@@ -85,7 +85,7 @@ done
 shift "$(( OPTIND -1 ))"
 
 ## Check Sample Sheet. if file is present in work directory.
-if [ -z ${samplesheet} ]; then
+if [[ -z ${samplesheet} ]]; then
   echo ""; echo ""; echo "Error:"
   echo "You must specify sample sheet (in current dir): '-s' flag. "; echo ""
   exit 1
@@ -98,14 +98,14 @@ if [ ! -f ${samplesheet} ]; then
 fi
 
 ## If -f is defined (fastq_input_dir), set fastq_custom to true
-if [ -z ${fastq_input_dir} ]; then
+if [[ -z ${fastq_input_dir} ]] && [[ ${prime_projectfolder_mode} != "true"  ]]; then
   echo ""; echo ""; echo "Error:"
   echo "You must specify path where fastq files are located: '-f' flag. "; echo ""
   exit 1
 fi
 ## check if supplied fastq_input_dir is valid
 fastq_input_dir=$(realpath $fastq_input_dir)
-if [[ ! -d ${fastq_input_dir} ]]; then
+if [[ ! -d ${fastq_input_dir} ]] && [[ ${prime_projectfolder_mode} != "true"  ]]; then
   echo ""; echo ""; echo "Error:"
   echo "fastq_input_dir (-f) does not exist: ${fastq_input_dir} "; echo ""
   exit 1

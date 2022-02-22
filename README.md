@@ -98,12 +98,24 @@ rnaseq-driver.sh \
 #### Example 3: Start a new rnaseq run but from existing fastq files
 In rare instances, fastq files are obtained by other means, or you want to re-run a project fronm fastq files using differnt parameters. 
 
-Prepare your sample sheet. Use a template from : 
+Prepare your project specific sample sheet. Use a template from [Cirrinna Git](https://github.com/cirrina/ctg-rnaseq/blob/main/CTG_SampleSheet.rnaseq.template.csv): 
+
+**Note** Do not forget to speccify fastq file names in fastq_1 and fast_2 [Data] columns and to specify a new (non existing) project ID
+
+```
+
+## 1. Prime (Initiate) a new project folder from Project ID defined in SampleSheet
+projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.2.6.dev/rnaseq-driver.sh -s CTG_SampleSheet.rnaseq.uroscan_validation2.csv -p -f /projects/fs1/shared/bcl2fastq-demux/uroscan_validation/
+
+## 2. Check your nextflow config files
+emacs nextflow.config
+emacs nextflow.config.params.uroscan_validation2
+
+## 3. Initiate pipeline
 
 
 
-Define a new project name (non-existing folder within the pipeline/profile directories) and sep
-
+```
 
 # Script Execution & Input args
 
