@@ -140,7 +140,7 @@ echo "  ... project id: $projectid"
 if [ -z "$projectid" ]; then
   echo ""; echo "Error: "
   echo " ProjectId is not properly supplied in samplesheet."
-  echo " CTG Project id must be given as 'ProjectID' within the [Header] section of sample sheet"; echo""; echo ""
+  echo " CTG Project id must be given as 'ProjectID' within the [Header] section of sample sheet (mind the semantics)"; echo""; echo ""
   exit 1
 fi
 if [[ $projectid =~ ' ' ]]; then
@@ -459,7 +459,30 @@ if [[ "${exec_dir}" == "${project_dir}" ]]; then
   ## add expected files - nextflow.main config.project ...
   echo " Script executed within the defined project workfolder."
   echo " ... will NOT overwrite scripts and configs. Assume all scripts are present."
-  projectfolder_setup_mode=false
+  echo " ... -s SampleSheet must be same as defined in  ${nf_config_project}"
+
+  ## make sure that specified SampleSheet matches the one specified in nextflow config file
+    ## For completion these must be the same.
+    ## Note that parameters in the config files are the only that matters.
+    ## If changing samplesheet params - make sure that params in config files have been changed as\
+    ## If a new samplesheet is applied, consider priming a new project folder with -p glag
+
+    samplesheet_cfg="$(grep ".*samplesheet.*=.*" ${nf_config_project} | cut -d \' -f2)"
+    echo "${samplesheet_cfg}"
+
+    if [ "${samplesheet_cfg}" != "${samplesheet}" ]; then
+      echo " Warning: "
+      echo " SampleSheet argument (-s): ${samplesheet}"
+      echo " ${samplesheet}"
+      echo " does not match samplesheet supplied in ${nf_config_project}"
+      echo " ${samplesheet_cfg}"
+      echo ""
+      echo " make sure that these are the same"
+      echo " Note that parameters in the config files are the only that matters when (re-)initiating pipeline whithin project folder "
+      echo " If changing samplesheet params - make sure that params in config files also have been changed"
+      echo " If changing multiple samplesheet params - you may want to delete and re-prime the project folder using -p flag"
+      exit 1
+    fi
 
   ## update the fastq_input_dir (-f argument) in config file
   sed "s|fastq_input_dir.*|fastq_input_dir            =  \'$fastq_input_dir\'|g" ${nf_config_project} > tmp.txt ; mv tmp.txt ${nf_config_project}

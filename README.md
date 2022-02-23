@@ -105,14 +105,14 @@ Prepare your project specific sample sheet. Use a template from [Cirrinna Git](h
 ```
 
 ## 1. Prime (Initiate) a new project folder from Project ID defined in SampleSheet
-projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.2.6.dev/rnaseq-driver.sh -s CTG_SampleSheet.rnaseq.uroscan_validation2.csv -p -f /projects/fs1/shared/bcl2fastq-demux/uroscan_validation/
+projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.2.6.dev/rnaseq-driver.sh -s CTG_SampleSheet.rnaseq.uroscan_validation2.csv -p 
 
 ## 2. Check your nextflow config files
 emacs nextflow.config
 emacs nextflow.config.params.uroscan_validation2
 
 ## 3. Initiate pipeline
-
+projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.2.6.dev/rnaseq-driver.sh -s CTG_SampleSheet.rnaseq.uroscan_validation2.csv -p -f /projects/fs1/shared/bcl2fastq-demux/uroscan_validation/
 
 
 ```
