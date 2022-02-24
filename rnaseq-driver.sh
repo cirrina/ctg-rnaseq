@@ -61,7 +61,7 @@ exit_abnormal() {
 # == 1 ==   Check input arguments
 ################################################
 
-while getopts ":sfrph" opt; do
+while getopts "s:f:rph" opt; do
     case $opt in
       s) samplesheet=$OPTARG
 	          ;;

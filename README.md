@@ -6,7 +6,6 @@ Primary data processing pipeline for Illumina RNA-seq data produced at CTG. Buil
 
 The pipeline can handle different RNAseq Assays (library preparation kits), and reference Species. Different assays will require differences in read strandness, read trimming etc. These input parameters are set in the SampleSheet and the profile-specific nextflow.config files (see below).
 
-**Note on Demultiplexing and Fastq:**  As of versions ≥2.2.x the pipeline assumes fastq files as starting input (`-f`). Demultiplexing is no longer performed within the actual pipeline. Instead demux is typically performed on an entire RunFolder using the `/ctg-tools/bin/ctg-demux2` tool.
 
 **Note on ProjectId/Sample_Project:**  Only **one project** is allowed per pipeline run. `ProjectId` is supplied through the SampleSheet `[Header]` section. Thus, for a run, all individual `Sample_Project` entries in the SampleSheet `[Data]` section must be same as `ProjectId` for all samples. Run `ctg-parse-samplesheet` to generate a proper sample-specific input sheet named `SampleSheet-ctg-ProjectXXX.csv`.
 
@@ -25,7 +24,15 @@ The pipeline is intiated using `rnaseq-driver.sh` that will:
 
 * Prime a work directory (copy scripts and configs to this dir)
 * Generate a run/project-specific nextflow.config.params file
-* Initiate the `nextflow-main.nf` nextflow piepline script
+* Initiate the `nextflow-main.nf` nextflow piepline 
+
+#### ! note - before running:
+- FASTQ file input. the pipeline (2.2.x) requires fastq files as starting input (`-f`). Demultiplexing is not performed within the pipeline. Demux is typically performed on an entire RunFolder using the `/ctg-tools/bin/ctg-demux2` tool.
+- `ctg-parse-samplesheet`: The FASTQ file names must be supplied in the [Data] section of SampleSheet. A typical rnasqeq workflow include running 
+	1. 	`ctg-parse-samplesheet` : generate demux and project-specific samplesheets. see [ctg-parse-samplesheet](https://github.com/cirrina/ctg-parse-samplesheet)
+	2. 	`ctg-demux2` 			 : perform demux of entire runfolder/flowcell (and MultiQC of runfolder + demux stats)
+	3. 	`ctg-rnaseq`            : run nexflow pipline for using project specific samplesheets (if >1 project on flowcell, initiate muliple pipelines)
+	4.  `ctg-deliver`           : send results from deliveru folder to lfs server - one per project.
 
 
 ### Quickstart ctg-rnaseq v2.2.x
@@ -41,17 +48,17 @@ A project runfolder can be primed without starting the nextflow pipeline. Use th
 
 
 #### Example 1: A standard ctg-rnaseq run (from within a NovaSeq RunFolder, v2.2.x)
-##### 1. parse-samplesheet
+##### 1. ctg-parse-samplesheet
 ```
 ## A standard pipeline run is preceeded by running `ctg-parse-samplesheet` and `ctg-demux2` scripts.
 
 ## 1. `parse-samplesheet` 
-##  generate demux samplesheet (one or more projects) as well as project specific ctg samplesheets for ctg-rnaseq pipeline.
+##  generate demux samplesheet (one or more projects) as well as project specific ctg samplesheets for ctg-rnaseq pipeline. Note to set correct (latest?) version....
 
-/projects/fs1/shared/ctg-tools/bin/ctg-parse-samplesheet/1.3/parse-samplesheet.bash -s CTG_SampleSheet.test_rnaseq.csv
+/projects/fs1/shared/ctg-tools/bin/ctg-parse-samplesheet/1.4.x/parse-samplesheet.sh -s CTG_SampleSheet.demux.220221_A00681_0592_AHKKJJDRXY.csv
   
 ```
-##### 2. run demux2
+##### 2. ctg-demux2
 ```
 ## 2. 'ctg-demux2' - run bcl2fastq demux for complete runfolder
 
@@ -62,9 +69,9 @@ ctg-demux2 SampleSheet-demux-220110_A00681_0559_AHVNTTDRXY.csv
 ```
 ## Initiate pipeline using `rnaseq-driver.sh`
 
-/projects/fs1/shared/ctg-dev/ctg-rnaseq/2.2.0/rnaseq-driver.sh \
+/projects/fs1/shared/ctg-dev/ctg-rnaseq/2.2.x/rnaseq-driver.sh \
   -s  SampleSheet-ctg-test_rnaseq.csv \
-  -f /projects/fs1/shared/bcl2fastq-fastq/220110_A00681_0559_AHVNTTDRXY/test_rnaseq
+  -f /projects/fs1/shared/bcl2fastq-fastq/220110_A00681_0559_AHVNTTDRXY.csv/test_rnaseq
 
 cd /
 
@@ -83,7 +90,7 @@ rnaseq-driver.sh \
 Prime a work folder (but do not start a run)
 
 ```
-/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.2.0/rnaseq-driver.sh \
+/projects/fs1/shared/ctg-pipelines/ctg-rnaseq/2.2.x/rnaseq-driver.sh \
   -s 2021_024_SampleSheet-IEM.csv -p true
 ```
 
