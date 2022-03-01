@@ -371,14 +371,17 @@ scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
 
 ### singularity containers
 
-Different types of containers have been generated: **(i)** pipeline specific that aims to include much (all) required software modules and executables needed for a specific pipeline. These are often called `ctg-rnaseq`, `sc-arc-10x` etc. **(ii)** The second type of containers built to include only one module. These are instead named accordning to sofware & version (sometimes followed by the version of the script used to build that container), like `singularity-singularity-rseqc_4.0.0-1.0.1.sif `. The second type of containers are more flexible and easier to build (e.g. avoiding lib conflitcts ), e.g. 
+Different types of containers have been generated: **(i)** pipeline specific that aims to include some/much/all required software modules and executables needed for a specific pipeline. These are often called `ctg-rnaseq`, `sc-arc-10x` etc. **(ii)** The second type of containers built to include only one module. These are instead named accordning to sofware & version (sometimes followed by the version of the script used to build that container), like `singularity-singularity-rseqc_4.0.0-1.0.1.sif `. The second type of containers are more flexible and easier to build (e.g. avoiding lib-conflitcts ).
+
+Regardless on how the container is built, each pipline should have a dedicated folder that contain all containers used in that pipeline.  
 
 ```
 /projects/fs1/shared/ctg-containers/
     |--  ctg-rnaseq
     |     |--  singularity-bladderreport-1.2.1.sif
     |     |--  singularity-ctg-rnaseq-1.0.2.sif
-    |     └──  singularity-uroscan-1.0.1.sif
+    |     |--  ....
+    |     └──  singularity-rseqc_4.0.0-1.0.1.sif 
     └──  rseqc
       └──  singularity-rseqc_4.0.0-1.0.1.sif   
 
