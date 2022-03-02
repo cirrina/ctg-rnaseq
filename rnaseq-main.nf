@@ -1181,14 +1181,18 @@ process finalize_pipeline {
   if (params.run_finalize_pipeline)
     """
     ## Copy QC files to ctg-qc
-    ## -----------------------
     cp -r ${multiqcdir} ${ctg_qc_dir}
     cp -r ${fastqcdir} ${ctg_qc_dir}
     cd ${project_dir}
     cp ${samplesheet} ${ctg_qc_dir}
 
+    ## Write cronlog
+    #touch ${runfolder}/ctg.rnaseq.done
+    #cronlog_all="/projects/fs1/shared/ctg-cron/ctg-cron.log"
+    #rf=\$(basename ${runfolder})
+    #echo "\$(date): \$rf: DONE: rnaseq ($projid)" >> \$cronlog
+
     ## Chmod all dirs
-    ## -----------------------
     find ${delivery_dir} -user $USER -exec chmod g+rw {} +
     find ${project_dir} -user $USER -exec chmod g+rw {} +
     find ${ctg_qc_dir} -user $USER -exec chmod g+rw {} +
