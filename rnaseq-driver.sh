@@ -162,6 +162,8 @@ echo "  ... pipelineName: $pipelineName"
 pipelineVersion=$(awk -F, '$1 == "PipelineVersion"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... pipelineVersion: $pipelineVersion"
 pipelineProfile=$(awk -F, '$1 == "PipelineProfile"' ${samplesheet} | awk -F, '{print $2}')
+echo "  ... pipelineProfile: $pipelineProfile"
+runFolder=$(awk -F, '$1 == "RunFolder"' ${samplesheet} | awk -F, '{print $2}')
 
 # PipelineName
 if [ -z "$pipelineName" ]; then
@@ -390,6 +392,7 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo "  ctg_qc_dir         =  '${ctg_qc_dir}'                   " >> ${nf_config_project}
   echo "  fastq_input_dir    =  '${fastq_input_dir}'                        " >> ${nf_config_project}
   echo ""                                                               >> ${nf_config_project}
+  echo "  runFolder          =   ${runFolder}                        " >> ${nf_config_project}
   echo "  sharedflowcell     =   ${sharedflowcell}                   " >> ${nf_config_project}
   echo "  species_global     =  '${species_global}'                     " >> ${nf_config_project}
   echo "  paired_global      =   ${paired_global}                     " >> ${nf_config_project}

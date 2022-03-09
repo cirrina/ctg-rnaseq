@@ -215,7 +215,7 @@ infoall.subscribe { println "Info: $it" }
 // if paired run, check bit
 process checkfiles_fastq {
 
-  tag  "$sid"
+  tag  "${projectid}__${sid}"
   cpus params.cpu_min
   memory params.mem_min
 
@@ -258,7 +258,7 @@ process checkfiles_fastq {
 // Check if present in fastq_dir rather than fastq_input_dir - if file is already in expected folder and do not move
 process move_fastq {
 
-  tag  { params.run_move_fastq  ? "$projectid" : "blank_run"  }
+  tag  { params.run_move_fastq  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_move_fastq  ? params.cpu_min : params.cpu_min  }
   memory { params.run_move_fastq  ?  params.mem_min : params.mem_min  }
 
@@ -303,7 +303,7 @@ process move_fastq {
   =============================================================== */
 
 process fastqc {
-  tag  { params.run_fastqc  ? "$sid" : "blank_run"  }
+  tag  { params.run_fastqc  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_fastqc  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_fastqc  ? params.mem_standard : params.mem_min  }
 
@@ -349,7 +349,7 @@ process fastqc {
 
 process fastqscreen {
 
-    tag  { params.run_fastqscreen  ? "$sid" : "blank_run"  }
+    tag  { params.run_fastqscreen  ? "${projectid}__${sid}" : "blank_run"  }
     cpus { params.run_fastqscreen  ? params.cpu_standard : params.cpu_min  }
     memory { params.run_fastqscreen  ?  params.mem_standard : params.mem_min  }
 
@@ -390,7 +390,7 @@ process fastqscreen {
   =============================================================== */
 
 process star  {
-  tag  { params.run_star  ? "$sid" : "blank_run"  }
+  tag  { params.run_star  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_star  ? params.cpu_high : params.cpu_min  }
   memory { params.run_star  ?  params.mem_high : params.mem_min  }
 
@@ -444,7 +444,7 @@ process star  {
 
 
 process checkfiles_bam {
-  tag  { params.run_checkfiles_bam  ? "$sid" : "blank_run"  }
+  tag  { params.run_checkfiles_bam  ? "${projectid}__${sid}" : "blank_run"  }
   cpus params.cpu_min
   memory params.mem_min
 
@@ -472,7 +472,7 @@ process checkfiles_bam {
 
 
 process index_bam {
-  tag  { params.run_index_bam  ? "$sid" : "blank_run"  }
+  tag  { params.run_index_bam  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_index_bam  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_index_bam  ?  params.mem_standard : params.mem_min  }
 
@@ -499,7 +499,7 @@ process index_bam {
 
 // picard markdups
 process markdups {
-  tag  { params.run_markdups  ? "$sid" : "blank_run"  }
+  tag  { params.run_markdups  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_markdups  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_markdups  ?  params.mem_standard : params.mem_min  }
 
@@ -547,7 +547,7 @@ process markdups {
   =============================================================== */
 
 process salmon  {
-  tag  { params.run_salmon  ? "$sid" : "blank_run"  }
+  tag  { params.run_salmon  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_salmon  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_salmon  ?  params.mem_standard : params.mem_min  }
 
@@ -600,7 +600,7 @@ process salmon  {
   *      RSEM ALIGNMENT
   =============================================================== */
 process rsem {
-  tag  { params.run_rsem  ? "$sid" : "blank_run"  }
+  tag  { params.run_rsem  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_rsem  ? params.cpu_high : params.cpu_min  }
   memory { params.run_rsem  ?  params.mem_high : params.mem_min  }
 
@@ -678,7 +678,7 @@ process rsem {
 // Bladderreport need a temporary folder for each analysis since temp filles with non unique names are generated
 
 process bladderreport {
-  tag  { params.run_bladderreport  ? "$sid" : "blank_run"  }
+  tag  { params.run_bladderreport  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_bladderreport  ? params.cpu_mid : params.cpu_min  }
   memory { params.run_bladderreport  ?  params.mem_mid : params.mem_min  }
 
@@ -731,7 +731,7 @@ process bladderreport {
 // Featurecounts will only use primary mapped read anlyway - but tends to crash if multi mapped sequences are included
 
 process filter_multimap {
-  tag  { params.run_featurecounts  ? "$sid" : "blank_run"  }
+  tag  { params.run_featurecounts  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_featurecounts  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_featurecounts  ?  params.mem_standard : params.mem_min  }
 
@@ -832,7 +832,7 @@ process featurecounts {
 
 // picard rnaseqmetrics
 process rnaseqmetrics {
-  tag  { params.run_rnaseqmetrics  ? "$sid" : "blank_run"  }
+  tag  { params.run_rnaseqmetrics  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_rnaseqmetrics  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_rnaseqmetrics  ?  params.mem_standard : params.mem_min  }
 
@@ -914,7 +914,7 @@ process rnaseqmetrics {
 // qualimap us quite redundant given the other apps Used
 // If to be used a container that does uses Qualimap inastalled through pip3 NOT conda
 process qualimap {
-  tag  { params.run_qualimap  ? "$sid" : "blank_run"  }
+  tag  { params.run_qualimap  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_qualimap  ? params.cpu_high : params.cpu_min  }
   memory { params.run_qualimap  ?  params.mem_high : params.mem_min  }
 
@@ -948,7 +948,7 @@ process qualimap {
 
 
 process rseqc {
-  tag  { params.run_rseqc  ? "$sid" : "blank_run"  }
+  tag  { params.run_rseqc  ? "${projectid}__${sid}" : "blank_run"  }
   cpus { params.run_rseqc  ? params.cpu_high : params.cpu_min  }
   memory { params.run_rseqc  ?  params.mem_high : params.mem_min  }
 
@@ -1009,7 +1009,7 @@ process rseqc {
 
 
 process multiqc {
-  tag  { params.run_multiqc  ? "$projectid" : "blank_run"  }
+  tag  { params.run_multiqc  ? "${projectid}" : "blank_run"  }
   cpus { params.run_multiqc  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_multiqc  ?  params.mem_standard : params.mem_min  }
 
@@ -1052,7 +1052,7 @@ process multiqc {
 // perform md5sums on FASTQ and BAM directories
 
 process md5sum {
-  tag  { params.run_md5sum  ? "$projectid" : "blank_run"  }
+  tag  { params.run_md5sum  ? "${projectid}" : "blank_run"  }
   cpus { params.run_md5sum  ? params.cpu_high : params.cpu_min  }
   memory { params.run_md5sum  ?  params.mem_high : params.mem_min  }
 
@@ -1100,7 +1100,7 @@ process md5sum {
 // copy SampleSheets & Scripts
 
 process stage_delivery {
-  tag  { params.run_stage_delivery  ? "$projectid" : "blank_run"  }
+  tag  { params.run_stage_delivery  ? "${projectid}" : "blank_run"  }
   cpus { params.run_stage_delivery  ? params.cpu_standard : params.cpu_min  }
   memory { params.run_stage_delivery  ?  params.mem_standard : params.mem_min  }
 
@@ -1187,10 +1187,10 @@ process finalize_pipeline {
     cp ${samplesheet} ${ctg_qc_dir}
 
     ## Write cronlog
-    #touch ${runfolder}/ctg.rnaseq.done
-    #cronlog_all="/projects/fs1/shared/ctg-cron/ctg-cron.log"
-    #rf=\$(basename ${runfolder})
-    #echo "\$(date): \$rf: DONE: rnaseq ($projid)" >> \$cronlog
+    touch ${runfolder}/ctg.rnaseq.${projectid}.done
+    cronlog_all="/projects/fs1/shared/ctg-cron/ctg-cron.log"
+    rf=\$(basename ${params.runFolder}) ## wo path
+    echo "\$(date): \$rf: DONE: ctg-rnaseq (${projectid})" >> \$cronlog
 
     ## Chmod all dirs
     find ${delivery_dir} -user $USER -exec chmod g+rw {} +
