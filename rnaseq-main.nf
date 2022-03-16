@@ -183,14 +183,14 @@ for ( line in all_lines ) {
 Channel
   .fromPath(sheet_nf)
   .splitCsv(header:true)
-  .map { row -> tuple( row.Sample_ID, row.fastq_1, row.fastq_2, row.Sample_ReferenceGenome ) }
+  .map { row -> tuple( row.Sample_ID, row.fastq_1, row.fastq_2, row.Sample_Species ) }
   .tap{ infoall }
   .set { fastq_ch }
 
 Channel
   .fromPath(sheet_nf)
   .splitCsv(header:true)
-  .map { row -> tuple( row.Sample_ID, row.bam, row.Sample_Strandness, row.Sample_ReferenceGenome, row.Sample_RIN, row.Sample_Concentration ) }
+  .map { row -> tuple( row.Sample_ID, row.bam, row.Sample_Strandness, row.Sample_Species, row.Sample_RIN, row.Sample_Concentration ) }
   .tap { infobam }
   .into { bam_checkbam_ch; bam_qualimap_ch; bam_rseqc_ch; bam_bladderreport_ch; bam_rnaseqmetrics_ch }
 
@@ -202,7 +202,7 @@ Channel
     .set { bam_featurecounts_ch }
 
 println " > Samples to process: "
-println "[Sample_ID,fastq1,fastq2,Sample_ReferenceGenome]"
+println "[Sample_ID,fastq1,fastq2,Sample_Species]"
 infoall.subscribe { println "Info: $it" }
 
 
