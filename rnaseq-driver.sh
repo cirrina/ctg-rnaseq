@@ -205,14 +205,14 @@ fi
 ## Read params from samplesheet [Header].
 ## -------------------------------
 
-## species
+## species = ReferenceGenome
 # indicate shared species, i.e. for all samples. Will only be used for modules that input ALL samples. Default is to use the species option supplied as column header in [Data] section.
-species_global=$(awk -F, '$1 == "Species"' ${samplesheet} | awk -F, '{print $2}')
+species_global=$(awk -F, '$1 == "ReferenceGenome"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... species_global, from samplesheet [Header]: ${species_global}"
 if [[ ${species_global} != "Homo sapiens" ]] && [[ ${species_global} != "Mus musculus"  ]] && [[ ${species_global} != "Rattus norwegicus"  ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
   echo " species_global is not properly supplied in samplesheet.";
-  echo " Must be supplied as 'Species' within the [Header] section of sample sheet";
+  echo " Must be supplied as 'ReferenceGenome' within the [Header] section of sample sheet";
   echo " Accepted values are Homo sapiens, Mus musculus and Rattus norwegicus";
   echo""; echo ""
   exit 1
