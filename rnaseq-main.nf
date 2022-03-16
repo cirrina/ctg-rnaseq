@@ -15,7 +15,7 @@ delivery_dir        =  params.delivery_dir
 file(delivery_dir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
 ctg_qc_dir          =  params.ctg_qc_dir
 file(ctg_qc_dir).mkdir() // main nexttlow work dir for output of analyses. Subdirectory of the project foilder. Files and folders will be moved and copiued from this folder upon pipeline  completion.
-
+//runfolder_path      =  params.runfolder_path
 
 /* ===============================================================
   *      DEFINE PATHS FROM INPUT PARAMS
