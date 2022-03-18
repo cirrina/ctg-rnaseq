@@ -14,6 +14,8 @@
 # script execution dir. If generate workfolder & copy scripts, this WILL be checked & warn against the script version rovided in samplesheet
 # if initiating script in project workfolder, the script here is used & version will not be checked
 script_exec_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd ) # Where is this script located...
+script_exec_dir=$(cd ${script_exec_dir} && pwd -P) # needed in case script exec dir is a symlink
+# echo ${script_exec_dir}
 
 ## Root directories (based on ourr set folder naming conventions on lsens)
 
