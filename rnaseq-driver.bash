@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 
 
 #######################################
@@ -326,29 +326,36 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo "  ... ... scripts_dir:  $scripts_dir"
   echo "  ... ... project workfolder:  $project_dir "
   echo ""
-  # Prompt user to approve running in current directory and input
-  read -p "
-  proceed? (y/n)
-   ... " prompt
 
-  if [[ $prompt != "y" ]]; then
-      echo ""; echo " Exiting!! "
-      exit 0
-  fi
-  echo ""
+  # Prompt user to approve running in current directory and input
+  # read -p "
+  # proceed? (y/n)
+  #  ... " prompt
+  #
+  # if [[ $prompt != "y" ]]; then
+  #     echo ""; echo " Exiting!! "
+  #     exit 0
+  # fi
+  # echo ""
 
   if [[ -d ${project_dir} ]]; then
     echo ""
-    read -p "  ... Warning!!
-  ... ... project work folder already exists!
-  ... ... scripts & configs will be overwritten!
-
-  proceed? (y/n)
-   ... " prompt
-    if [[ $prompt != "y" ]]; then
-        echo ""; echo "Exiting!! "
-        exit 0
-    fi
+    echo "... ... WARNING! project work folder already exists!"
+    echo "... ... remove this to continue."
+    echo ""; echo "Exiting!! "
+    exit 0
+    #
+    #   read -p "  ... Warning!!
+    # ... ... project work folder already exists!
+    # ... ... scripts & configs will be overwritten!
+    #
+    #
+    # proceed? (y/n)
+    #  ... " prompt
+    #   if [[ $prompt != "y" ]]; then
+    #       echo ""; echo "Exiting!! "
+    #       exit 0
+    #   fi
   fi
   echo ""
   echo ""
@@ -534,19 +541,19 @@ echo " ... delivery dir  : $delivery_dir";
 echo ""; echo "";
 
 # Prompt user to approve running in current directory and input
-echo "";
-read -p "
-  Initiating nextflow pipeline - proceed? (y/n)
-  ... " prompt
-if [[ $prompt != "y" ]]; then
-  echo ""; echo "Exiting!! "
-  exit 0
-fi
+# echo "";
+# read -p "
+#   Initiating nextflow pipeline - proceed? (y/n)
+#   ... " prompt
+# if [[ $prompt != "y" ]]; then
+#   echo ""; echo "Exiting!! "
+#   exit 0
+# fi
 
 ## intiate the nextflow command. include project specific config & profile -p
-nohup nextflow run $nf_script -c ${nf_config_project} -profile ${pipelineProfile} > log.nextflow.progress &
+nextflow run $nf_script -c ${nf_config_project} -profile ${pipelineProfile} > log.nextflow.progress &
 
-echo "";echo ""
+echo ""; echo ""
 echo "  Running :   nextflow run $nf_pipe -c ${nf_config_project} -profile ${pipelineProfile}"
 echo "";
 echo "  ########################## "
