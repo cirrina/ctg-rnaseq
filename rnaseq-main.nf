@@ -1190,7 +1190,9 @@ process finalize_pipeline {
     touch ${runfolder}/ctg.rnaseq.${projectid}.done
     cronlog_all="/projects/fs1/shared/ctg-cron/ctg-cron.log"
     rf=\$(basename ${params.runFolder}) ## wo path
-    echo "\$(date): \$rf: DONE: ctg-rnaseq (${projectid})" >> \$cronlog
+    echo "\$(date): \$rf: DONE: ctg-rnaseq (${projectid})" >> \${cronlog_all}    
+    cronlog="/projects/fs1/shared/ctg-cron/ctg-pipe-cron/logs/rnaseq/rnaseq.${runfolder}.${samplesheet}.log"
+    echo "\$(date): ${runfolder}: DONE: rnaseq (${projectid})" >> \${cronlog}
 
     ## Chmod all dirs
     find ${delivery_dir} -user $USER -exec chmod g+rw {} +

@@ -560,7 +560,7 @@ cd ${project_dir}
 module load Java
 module load nextflow/19.04.1
 module load Singularity
-nextflow run ${nf_script} -c ${nf_config_project} -profile ${pipelineProfile} > log.nextflow.progress &
+nextflow run ${nf_script} -c ${nf_config_project} -profile ${pipelineProfile} > log.nextflow.progress
 
 echo ""; echo ""
 echo "  Running :   nextflow run ${nf_pipe} -c ${nf_config_project} -profile ${pipelineProfile}"
