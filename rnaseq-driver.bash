@@ -174,12 +174,13 @@ if [ -z "$pipelineName" ]; then
  Must be given as 'PipelineName, rnaseq' within the [Header] section of sample sheet"; echo""; echo ""
   exit 1
 fi
+
 # PipelineVersion
 ## --------------------------
 if [ -z "$pipelineVersion" ]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR : "; echo " ---------------------------  ";
   echo "Warning: 'PiepelineVersion' is not properly supplied in samplesheet. \
- Must be given as 'PipelineVersion, 3.0.0' within the [Header] section of sample sheet"; echo""; echo ""
+ Must be given as 'PipelineVersion', 'current' or '2.1.5' within the [Header] section of sample sheet"; echo""; echo ""
   exit 1
 fi
 
@@ -255,9 +256,15 @@ fi
 project_dir="${project_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 delivery_dir="${delivery_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 ctg_qc_dir="${ctg_qc_root}/${pipelineName}/${pipelineProfile}/${projectid}"
+
 ## scripts - where and what version of pipelie sctips to copy to project work dir
-# e.g. scripts_dir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/v1.0' # "/Users/david/scripts/ctg-rnaseq/workflow/" REPLACE WITH BASEDIR FROM SCRIPT EXECUTIoN
-scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
+
+## As from version 2.2.10, scripts are primarily run using 'current'. The script dir path not used as from samplesheet. the path is saved in the project specific params file
+# e.g. scripts_dir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/current'
+# scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
+script_exec_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd ) # Where is this script located... may be a symlink 'current'
+script_exec_dir=$(cd ${script_exec_dir} && pwd -P) # needed in case script exec dir is a symlink
+
 
 ## if -p true, prime_projectfolder_mode. must be executed outside execution dir.
 if [[ ${prime_projectfolder_mode} == "true" && "${exec_dir}" == "${project_dir}" ]]; then
@@ -304,27 +311,27 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   projectfolder_setup_mode=true
   echo "  ... ... projectfolder_setup_mode: ${projectfolder_setup_mode}"
 
-  ##  Check if scripts_dir exist
-  if [[ ! -d ${scripts_dir} ]]; then
+  ##  Check if script_exec_dir exist
+  if [[ ! -d ${script_exec_dir} ]]; then
     echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
-    echo " scripts_dir does not exist: ${scripts_dir} "; echo ""
+    echo " script_exec_dir does not exist: ${script_exec_dir} "; echo ""
     echo " Make sure PipelineName and PipelineVersion are correctly supplied in SampleSheet"; echo " AND that they match a directory whtin the scripts_root folder: ${scripts_root}."
     exit 1
   fi
 
   ## verify that script execution dir matches the path in which this script was executed
-  if [[ "${script_exec_dir}" != "${scripts_dir}" ]]; then
-    echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
-    echo " PipelineVersion in SampleSheet does not match the scripts_dir where this script is initiated : "
-    echo " ... scripts version specific dir (given in SampleSheet) : ${scripts_dir} ";
-    echo " ... script execution dir : ${script_exec_dir} "; echo ""
-    exit 1
-  fi
+  # if [[ "${script_exec_dir}" != "${scripts_dir}" ]]; then
+  #   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
+  #   echo " PipelineVersion in SampleSheet does not match the scripts_dir where this script is initiated : "
+  #   echo " ... scripts version specific dir (given in SampleSheet) : ${scripts_dir} ";
+  #   echo " ... script execution dir : ${script_exec_dir} "; echo ""
+  #   exit 1
+  # fi
 
   ## Warnings & Prompt.
   echo ""
-  echo "  ... ... scripts_dir:  $scripts_dir"
-  echo "  ... ... project workfolder:  $project_dir "
+  echo "  ... ... scripts_dir:  ${script_exec_dir}"
+  echo "  ... ... project workfolder:  ${project_dir} "
   echo ""
 
   # Prompt user to approve running in current directory and input
@@ -364,7 +371,7 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   ## ------------------------
   mkdir -p ${project_dir}
   ## Copy scripts from version specific pipeline scripts dir
-  cp -r ${scripts_dir}/* ${project_dir}/ # copy all scripts to workfolder. Will overwrite netflow.config
+  cp -r ${script_exec_dir}/* ${project_dir}/ # copy all scripts to workfolder. Will overwrite netflow.config
   ## Copy samplesheet to project workfolder
   cp ${samplesheet} ${project_dir}
   cd ${project_dir}
@@ -425,7 +432,7 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo "  ... Project dir        :  ${project_dir}"
   echo "  ... Nextflow config    :  ${nf_config_project}"
   echo "  ... samplesheet        :  ${samplesheet}"
-  echo "  ... Scripts dir        :  ${scripts_dir}"
+  echo "  ... Scripts dir        :  ${script_exec_dir}"
   echo ""
 
   chmod -R 775 ${project_dir}
