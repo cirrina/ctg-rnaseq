@@ -535,16 +535,14 @@ fi
 ################################################
 ##  == 6 ==  Execute the NextFlow rnaseq-main.nf sctipt
 ################################################
-cd ${project_dir}
-
 echo ""; echo "";
 echo " Initiating nextflow pipeline"
-echo " ... pipelineName      : $pipelineName";
-echo " ... pipelineVersion   : $pipelineVersion";
-echo " ... pipelineProfile   : $pipelineProfile";
-echo " ... project id    : $projectid";
-echo " ... project dir   : $project_dir";
-echo " ... delivery dir  : $delivery_dir";
+echo " ... pipelineName      : ${pipelineName}";
+echo " ... pipelineVersion   : ${pipelineVersion}";
+echo " ... pipelineProfile   : ${pipelineProfile}";
+echo " ... project id    : ${projectid}";
+echo " ... project dir   : ${project_dir}";
+echo " ... delivery dir  : ${delivery_dir}";
 echo ""; echo "";
 
 # Prompt user to approve running in current directory and input
@@ -558,10 +556,14 @@ echo ""; echo "";
 # fi
 
 ## intiate the nextflow command. include project specific config & profile -p
-nextflow run $nf_script -c ${nf_config_project} -profile ${pipelineProfile} > log.nextflow.progress &
+cd ${project_dir}
+module load Java
+module load nextflow/19.04.1
+module load Singularity
+nextflow run ${nf_script} -c ${nf_config_project} -profile ${pipelineProfile} > log.nextflow.progress &
 
 echo ""; echo ""
-echo "  Running :   nextflow run $nf_pipe -c ${nf_config_project} -profile ${pipelineProfile}"
+echo "  Running :   nextflow run ${nf_pipe} -c ${nf_config_project} -profile ${pipelineProfile}"
 echo "";
 echo "  ########################## "
 echo "      S U B M I T T E D "
