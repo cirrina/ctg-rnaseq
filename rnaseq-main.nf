@@ -1146,7 +1146,7 @@ process stage_delivery {
     ## --------------------------------------------------------------
 
     mkdir -p ${deliveryscripts}
-    cp ${project_dir}/rnaseq-driver.sh ${deliveryscripts}/
+    cp ${project_dir}/rnaseq-driver.bash ${deliveryscripts}/
     cp ${project_dir}/rnaseq-main.nf ${deliveryscripts}/
     cp -r ${project_dir}/bin ${deliveryscripts}/
     cp ${project_dir}/nextflow.config* ${deliveryscripts}/
@@ -1190,7 +1190,7 @@ process finalize_pipeline {
     touch ${runfolder}/ctg.rnaseq.${projectid}.done
     cronlog_all="/projects/fs1/shared/ctg-cron/ctg-cron.log"
     rf=\$(basename ${params.runFolder}) ## wo path
-    echo "\$(date): \$rf: DONE: ctg-rnaseq (${projectid})" >> \${cronlog_all}    
+    echo "\$(date): \$rf: DONE: rnaseq (${projectid})" >> \${cronlog_all}    
     cronlog="/projects/fs1/shared/ctg-cron/ctg-pipe-cron/logs/rnaseq/rnaseq.${runfolder}.${samplesheet}.log"
     echo "\$(date): ${runfolder}: DONE: rnaseq (${projectid})" >> \${cronlog}
 
