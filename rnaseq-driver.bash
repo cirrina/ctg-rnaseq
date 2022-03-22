@@ -165,7 +165,7 @@ pipelineVersion=$(awk -F, '$1 == "PipelineVersion"' ${samplesheet} | awk -F, '{p
 echo "  ... pipelineVersion: $pipelineVersion"
 pipelineProfile=$(awk -F, '$1 == "PipelineProfile"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... pipelineProfile: $pipelineProfile"
-runFolder=$(awk -F, '$1 == "RunFolder"' ${samplesheet} | awk -F, '{print $2}')
+runfolder=$(awk -F, '$1 == "RunFolder"' ${samplesheet} | awk -F, '{print $2}')
 
 # PipelineName
 if [ -z "$pipelineName" ]; then
@@ -311,6 +311,12 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   projectfolder_setup_mode=true
   echo "  ... ... projectfolder_setup_mode: ${projectfolder_setup_mode}"
 
+  ## if runfolder is supplied and if matches the besename of execution dir
+  runfolder_path=''
+  if [[ "${runfolder}" != "" ]]; then
+    runfolder_path=${exec_dir}
+  fi
+
   ##  Check if script_exec_dir exist
   if [[ ! -d ${script_exec_dir} ]]; then
     echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
@@ -399,6 +405,7 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo "  pipelineName       =  '${pipelineName}'                      " >> ${nf_config_project}
   echo "  pipelineProfile    =  '${pipelineProfile}'                   " >> ${nf_config_project}
   echo "  pipelineVersion    =  '${pipelineVersion}'                   " >> ${nf_config_project}
+  echo "  exec_dir    =  '${exec_dir}'                   " >> ${nf_config_project}
   echo "  script_execution_dir  =  '${script_exec_dir}'               " >> ${nf_config_project}
   echo ""                                                               >> ${nf_config_project}
   echo "  // Project and run directories                               " >> ${nf_config_project}
@@ -408,7 +415,8 @@ if [[ "${exec_dir}" != "${project_dir}" ]]; then
   echo "  ctg_qc_dir         =  '${ctg_qc_dir}'                   " >> ${nf_config_project}
   echo "  fastq_input_dir    =  '${fastq_input_dir}'                        " >> ${nf_config_project}
   echo ""                                                               >> ${nf_config_project}
-  echo "  runFolder          =   '${runFolder}'                        " >> ${nf_config_project}
+  echo "  runfolder          =   '${runfolder}'                        " >> ${nf_config_project}
+  echo "  runfolder_path     =   '${runfolder_path}'                        " >> ${nf_config_project}
   echo "  sharedflowcell     =   ${sharedflowcell}                   " >> ${nf_config_project}
   echo "  species_global     =  '${species_global}'                     " >> ${nf_config_project}
   echo "  paired_global      =   ${paired_global}                     " >> ${nf_config_project}
