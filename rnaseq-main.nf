@@ -112,8 +112,8 @@ def msg_startup = """\
     ---------------------------------
     project id              :  ${projectid}
     project work dir        :  ${project_dir}
-    nextflow execution dir  :  ${baseDir}
-    nextflow tmp output dir :  ${nf_tmp_dir}
+    project delivery dir    :  ${delivery_dir}
+    ctg qc dir              :  ${ctg_qc_dir}
     nextflow work dir       :  ${workDir}
     samplesheet             :  ${samplesheet}
    """
