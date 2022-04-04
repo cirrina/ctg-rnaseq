@@ -221,11 +221,11 @@ if [[ ${species_global} != "Homo sapiens" ]] && [[ ${species_global} != "Mus mus
   exit 1
 fi
 
-paired_global=$(awk -F, '$1 == "Paired"' ${samplesheet} | awk -F, '{print $2}')
+paired_global=$(awk -F, '$1 == "PairedReads"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... paired_global, from samplesheet [Header]: ${paired_global}"
 if [[ ${paired_global} != "true" ]] && [[ ${paired_global} != "false"  ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
-  echo " paired_global is not properly supplied in samplesheet."; echo " Must be supplied as 'Paired' 'true' OR 'false' within the [Header] section of sample sheet"; echo""; echo ""
+  echo " paired_global is not properly supplied in samplesheet."; echo " Must be supplied as 'PairedReads' 'true' OR 'false' within the [Header] section of sample sheet"; echo""; echo ""
   exit 1
 fi
 
@@ -256,14 +256,6 @@ fi
 project_dir="${project_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 delivery_dir="${delivery_root}/${pipelineName}/${pipelineProfile}/${projectid}"
 ctg_qc_dir="${ctg_qc_root}/${pipelineName}/${pipelineProfile}/${projectid}"
-
-## scripts - where and what version of pipelie sctips to copy to project work dir
-
-## As from version 2.2.10, scripts are primarily run using 'current'. The script dir path not used as from samplesheet. the path is saved in the project specific params file
-# e.g. scripts_dir='/projects/fs1/shared/ctg-dev/pipelines/rnaseq/current'
-# scripts_dir="${scripts_root}/${pipelineName}/${pipelineVersion}"
-script_exec_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd ) # Where is this script located... may be a symlink 'current'
-script_exec_dir=$(cd ${script_exec_dir} && pwd -P) # needed in case script exec dir is a symlink
 
 
 ## if -p true, prime_projectfolder_mode. must be executed outside execution dir.
