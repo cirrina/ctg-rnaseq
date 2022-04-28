@@ -221,11 +221,11 @@ if [[ ${species_global} != "Homo sapiens" ]] && [[ ${species_global} != "Mus mus
   exit 1
 fi
 
-paired_global=$(awk -F, '$1 == "PairedReads"' ${samplesheet} | awk -F, '{print $2}')
+paired_global=$(awk -F, '$1 == "PairedEnd"' ${samplesheet} | awk -F, '{print $2}')
 echo "  ... paired_global, from samplesheet [Header]: ${paired_global}"
 if [[ ${paired_global} != "true" ]] && [[ ${paired_global} != "false"  ]]; then
   echo ""; echo ""; echo " ---------------------------  "; echo " ERROR "; echo " ---------------------------  ";echo ""
-  echo " paired_global is not properly supplied in samplesheet."; echo " Must be supplied as 'PairedReads' 'true' OR 'false' within the [Header] section of sample sheet"; echo""; echo ""
+  echo " paired_global is not properly supplied in samplesheet."; echo " Must be supplied as 'PairedEnd' 'true' OR 'false' within the [Header] section of sample sheet"; echo""; echo ""
   exit 1
 fi
 
